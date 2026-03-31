@@ -7,11 +7,12 @@ using System.IO;
 using System.Linq;
 using System.Media;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 //MIT License
 
-//Copyright (c) 2025 lloyd99901
+//Copyright (c) 2025 DimonByte
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -572,19 +573,31 @@ namespace LunarROMCorruptor
                     }
                 }
 
-                // Update stash list if enabled
                 if (EnableStashSavesChkbox.Checked)
                 {
+
                     if (InternalStashItems.Count > 50000)
                     {
                         StashBytesList.Items.Add("LargeStash");
                     }
                     else
                     {
-                        foreach (var item in InternalStashItems)
+                        // take a snapshot so the background thread works on a stable collection
+                        var snapshot = InternalStashItems.ToArray();
+
+                        // run conversion/packing off the UI thread
+                        Task.Run(() =>
                         {
-                            StashBytesList.Items.Add(item);
-                        }
+                            var objects = Array.ConvertAll(snapshot, item => (object)item);
+
+                            // marshal the minimal UI work back to the UI thread
+                            StashBytesList.BeginInvoke(new Action(() =>
+                            {
+                                StashBytesList.BeginUpdate();
+                                StashBytesList.Items.AddRange(objects);
+                                StashBytesList.EndUpdate();
+                            }));
+                        });
                     }
                 }
 

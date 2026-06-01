@@ -12,22 +12,22 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="CorruptionEngineOptions.cs">
+    <Compile Update="Forms\CorruptionEngineOptions.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="CorruptionQueueForm.cs">
+    <Compile Update="Forms\CorruptionQueueForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="InputBox.cs">
+    <Compile Update="Forms\InputBox.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="MainCorruptionForm.cs">
+    <Compile Update="Forms\MainCorruptionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="SelectProcess.cs">
+    <Compile Update="Forms\SelectProcess.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="StashEditor.cs">
+    <Compile Update="Forms\StashEditor.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

@@ -1,6 +1,6 @@
 ﻿//MIT License
 
-//Copyright (c) 2025 DimonByte
+//Copyright (c) 2026 DimonByte
 
 //Permission is hereby granted, free of charge, to any person obtaining a copy
 //of this software and associated documentation files (the "Software"), to deal
@@ -29,30 +29,24 @@
 //Don't use this on system32 or any other system files...
 
 using LunarROMCorruptor.CorruptionInternals;
+using LunarROMCorruptor.Modules;
 using LunarROMCorruptor.Properties;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
 using System.Media;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace LunarROMCorruptor
 {
     public partial class MainCorruptionForm : Form
     {
-        private byte[] ROM; //Used to store the file that is loaded into the program
+        private byte[]? ROM; //Used to store the file that is loaded into the program
         private int MaxByte; //This stores the maxium amount of bytes in the file that is loaded
         private int StartByte; //This stores the start byte that the user sets
         private int EndByte; //This stores the end byte that the user sets
-        private readonly Random rnd = new Random(); //Used for random number generation
-        private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} [Debug Build]"; //"v1.0.4 - Build Number: " + 
-        public List<string> InternalStashItems = new List<string>(); //Adding to this list will make corruptions faster as it's not in the GUI so it doesn't have to render every item update.
-        readonly CorruptionQueueForm CorruptionQueueFormSettings = new CorruptionQueueForm(); //Creates the corruption queue form and then it will be read later by the main form.
-        public readonly CorruptionEngineOptions CorruptionEngineFrame = new CorruptionEngineOptions() //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        private readonly Random rnd = new(); //Used for random number generation
+        private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; //"v1.0.4 - Build Number: " + 
+        public List<string> InternalStashItems = []; //Adding to this list will make corruptions faster as it's not in the GUI so it doesn't have to render every item update.
+        readonly CorruptionQueueForm CorruptionQueueFormSettings = new(); //Creates the corruption queue form and then it will be read later by the main form.
+        public readonly CorruptionEngineOptions CorruptionEngineFrame = new() //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         {
             TopLevel = false
         };
@@ -123,16 +117,24 @@ namespace LunarROMCorruptor
         {
             try
             {
-                // Enumerate through the CorruptionStashList directory and add all files to the Stash list.
                 string stashListPath = Path.Combine(Application.StartupPath, "CorruptionStashList");
                 StashFileList.Items.Clear();
-                StashFileList.Items.AddRange(Directory.GetFiles(stashListPath).Select(Path.GetFileName).ToArray());
+                if (!Directory.Exists(stashListPath))
+                {
+                    return;
+                }
+                string[] files = Directory.GetFiles(stashListPath);
+                if (files != null && files.Length > 0)
+                {
+                    StashFileList.Items.AddRange([.. files.Select(Path.GetFileName)!]);
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error enumerating corruption stash list. This folder may not exist or your anti-virus/ransomware protection may be enabled and is blocking LRC from searching those directories. {ex.Message}", $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
+
 
         public void RefreshFileSaves()
         {
@@ -141,7 +143,14 @@ namespace LunarROMCorruptor
                 // Enumerate through the Saves directory and add all files to the File Saves list.
                 string savesPath = Path.Combine(Application.StartupPath, "Saves");
                 FilesaveList.Items.Clear();
-                FilesaveList.Items.AddRange(Directory.GetFiles(savesPath).Select(Path.GetFileName).ToArray());
+
+                string[] files = Directory.GetFiles(savesPath);
+
+                // Check if files array is null or empty before adding to the list
+                if (files != null && files.Length > 0)
+                {
+                    FilesaveList.Items.AddRange([.. files.Select(Path.GetFileName)!]);
+                }
             }
             catch (Exception ex)
             {
@@ -191,7 +200,7 @@ namespace LunarROMCorruptor
                     return;
                 }
                 //Discard the previous ROM loaded into memory
-                ROM = Array.Empty<byte>();
+                ROM = [];
                 //GC collection force -Forces garbage collection
                 GC.Collect();
                 GC.WaitForPendingFinalizers(); // Ensure finalizers have run and resources are actually freed
@@ -462,6 +471,9 @@ namespace LunarROMCorruptor
                     }
 
                     // Start Corruption in CorruptionCore
+                    //Check null reference assignment.
+                    //here:
+
                     ROM = CorruptionCore.StartCorruption(ROM, StartByte, EndByte, CorruptEverynthByteRadioBtn.Checked, tmpintensity, CorruptionEngineComboBox.Text);
 
                     // Attempt to save corrupted file
@@ -478,7 +490,7 @@ namespace LunarROMCorruptor
                     }
                     else
                     {
-                        MessageBox.Show($"The file {filePath} could not be corrupted. (Corruption returned nothing)", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show($"The file {filePath} could not be corrupted. ROM returned null.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
 
@@ -534,8 +546,22 @@ namespace LunarROMCorruptor
                     CorruptionCore.AttemptProtectedFileOverride(SaveasTxt.Text);
                 }
 
+                // Check if ROM is null and initialize it if needed
+                if (ROM == null)
+                {
+                    try
+                    {
+                        ROM = File.ReadAllBytes(FileSelectiontxt.Text);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Could not load the file {FileSelectiontxt.Text}.\n\n{ex}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                }
+
                 // Clone ROM and start corruption
-                byte[] FinROM = (byte[])ROM.Clone();
+                byte[]? FinROM = (byte[])ROM.Clone();
                 FinROM = CorruptionCore.StartCorruption(FinROM, StartByte, EndByte, CorruptEverynthByteRadioBtn.Checked, tmpintensity, CorruptionEngineComboBox.Text);
 
                 // Validate corruption result
@@ -621,10 +647,8 @@ namespace LunarROMCorruptor
             CorruptButton.BackColor = Color.Green; //Change colour of the corrupt button
             if (!SilentCorruptionchbox.Checked) //check if silent corruption is on. if it is, don't play the sound.
             {
-                using (var soundPlayer = new SoundPlayer(Resources.success3))
-                {
-                    soundPlayer.Play();
-                }
+                using var soundPlayer = new SoundPlayer(Resources.success3);
+                soundPlayer.Play();
             }
 
             CorruptButtonColorChanger.Start(); //Change the corruption button colour back to normal after the timer ticks.
@@ -640,43 +664,42 @@ namespace LunarROMCorruptor
         private void Form1_DragDrop(object sender, DragEventArgs e)
         {
             AttentionPictureBox.Hide();
+            var data = e.Data?.GetData(DataFormats.FileDrop);
 
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (data == null)
+                return;
+
+            string[] files = (string[])data;
 
             if (files.Length > 1)
             {
-                // Enable Corruption Queue
                 CorruptionQueueChkbox.Checked = true;
-
                 // Add files to the listbox in the CorruptionQueue
                 foreach (var item in files)
                 {
                     CorruptionQueueFormSettings.CorruptionQueueList.Items.Add(item);
                 }
-
-                // Set TopMost
                 CorruptionQueueFormSettings.TopMost = true;
                 CorruptionQueueFormSettings.ShowDialog();
-
-                // Revert Topmost
                 CorruptionQueueFormSettings.TopMost = false;
             }
             else
             {
                 foreach (var path in files)
                 {
-                    LoadFile(path); // Loads the ROM.
+                    LoadFile(path);
                 }
             }
         }
 
+
         private void Form1_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
-            {
-                AttentionPictureBox.Show();
-                e.Effect = DragDropEffects.Copy;
-            }
+            var data = e.Data?.GetDataPresent(DataFormats.FileDrop);
+            if (data == null)
+                return;
+            AttentionPictureBox.Show();
+            e.Effect = DragDropEffects.Copy;
         }
 
         private void Restorefilebtn_Click(object sender, EventArgs e)
@@ -697,10 +720,8 @@ namespace LunarROMCorruptor
                 CorruptButton.BackColor = Color.Green;
                 if (!SilentCorruptionchbox.Checked)
                 {
-                    using (var soundPlayer = new SoundPlayer(Resources.success3))
-                    {
-                        soundPlayer.Play();
-                    }
+                    using var soundPlayer = new SoundPlayer(Resources.success3);
+                    soundPlayer.Play();
                 }
                 CorruptButtonColorChanger.Start();
             }
@@ -717,14 +738,12 @@ namespace LunarROMCorruptor
                 return;
             }
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new();
             StashFileList.Items.Clear();
 
             if (StashBytesList.Items[0].ToString() == "LargeStash")
             {
-                if (MessageBox.Show("This is a large stash which may take awhile to load in the future. Are you sure you want to save anyway?", $"Warning - {nameof(LunarROMCorruptor)}",
- MessageBoxButtons.YesNo,
- MessageBoxIcon.Exclamation) == DialogResult.Yes)
+                if (MessageBox.Show("This is a large stash which may take awhile to load in the future. Are you sure you want to save anyway?", $"Warning - {nameof(LunarROMCorruptor)}",MessageBoxButtons.YesNo,MessageBoxIcon.Exclamation) == DialogResult.Yes)
                 {
                     foreach (var listitem in InternalStashItems)
                     {
@@ -756,12 +775,12 @@ namespace LunarROMCorruptor
             File.WriteAllText(randomFileName, builder.ToString());
 
             // Populate StashFileList with the names of all files in the specified directory
-            StashFileList.Items.AddRange(Directory.GetFiles(stashListDirectory).Select(Path.GetFileName).ToArray());
+            StashFileList.Items.AddRange([.. Directory.GetFiles(stashListDirectory).Select(Path.GetFileName)]);
         }
 
         private void StashEditorbtn_Click(object sender, EventArgs e)
         {
-            StashEditor frm1 = new StashEditor();
+            StashEditor frm1 = new();
             try
             {
                 frm1.AttemptStashLoad(Application.StartupPath + "\\CorruptionStashList\\" + StashFileList.SelectedItems[0].ToString());
@@ -772,41 +791,68 @@ namespace LunarROMCorruptor
 
         private void RenameStash_Click(object sender, EventArgs e)
         {
-            InputBox input = new InputBox
+            // Create and show input dialog
+            InputBox input = new()
             {
                 Text = "Rename to?"
             };
             input.ShowDialog();
-            if (string.IsNullOrEmpty(input.InputBoxTxtBox.Text)) { return; }
-            var exc = Path.GetExtension(Application.StartupPath + @"\CorruptionStashList\" + StashFileList.GetItemText(StashFileList.SelectedItem));
-            //Check if file doesnt exist
-            if (!File.Exists(Application.StartupPath + @"\CorruptionStashList\" + StashFileList.GetItemText(StashFileList.SelectedItem)))
+
+            // Validate input
+            if (string.IsNullOrEmpty(input.InputBoxTxtBox.Text))
+            {
+                return;
+            }
+
+            // Get file paths
+            string selectedItemPath = Path.Combine(Application.StartupPath, "CorruptionStashList", StashFileList.GetItemText(StashFileList.SelectedItem));
+            string fileName = Path.GetFileName(selectedItemPath);
+            string extension = Path.GetExtension(selectedItemPath);
+            string destinationPath = Path.Combine(Application.StartupPath, "CorruptionStashList", input.InputBoxTxtBox.Text + extension);
+
+            // Validate file exists
+            if (!File.Exists(selectedItemPath))
             {
                 MessageBox.Show("File doesn't exist!");
                 return;
             }
-            //Check if the file rename is vaild, e.g do not allow CON
-            if (input.InputBoxTxtBox.Text.Contains("CON") || input.InputBoxTxtBox.Text.Contains("PRN") || input.InputBoxTxtBox.Text.Contains("AUX") || input.InputBoxTxtBox.Text.Contains("NUL") || input.InputBoxTxtBox.Text.Contains("COM1") || input.InputBoxTxtBox.Text.Contains("COM2") || input.InputBoxTxtBox.Text.Contains("COM3") || input.InputBoxTxtBox.Text.Contains("COM4") || input.InputBoxTxtBox.Text.Contains("COM5") || input.InputBoxTxtBox.Text.Contains("COM6") || input.InputBoxTxtBox.Text.Contains("COM7") || input.InputBoxTxtBox.Text.Contains("COM8") || input.InputBoxTxtBox.Text.Contains("COM9") || input.InputBoxTxtBox.Text.Contains("LPT1") || input.InputBoxTxtBox.Text.Contains("LPT2") || input.InputBoxTxtBox.Text.Contains("LPT3") || input.InputBoxTxtBox.Text.Contains("LPT4") || input.InputBoxTxtBox.Text.Contains("LPT5") || input.InputBoxTxtBox.Text.Contains("LPT6") || input.InputBoxTxtBox.Text.Contains("LPT7") || input.InputBoxTxtBox.Text.Contains("LPT8") || input.InputBoxTxtBox.Text.Contains("LPT9"))
-            {
-                MessageBox.Show("Handle Error: Invalid File Name!");
-                return;
-            }
-            //Check if the file rename is vaild, check normal things.
-            if (input.InputBoxTxtBox.Text.Contains("\\") || input.InputBoxTxtBox.Text.Contains("/") || input.InputBoxTxtBox.Text.Contains(":") || input.InputBoxTxtBox.Text.Contains("*") || input.InputBoxTxtBox.Text.Contains("?") || input.InputBoxTxtBox.Text.Contains("\"") || input.InputBoxTxtBox.Text.Contains("<") || input.InputBoxTxtBox.Text.Contains(">") || input.InputBoxTxtBox.Text.Contains("|"))
+
+            // Validate file name
+            if (!IsValidFileName(input.InputBoxTxtBox.Text))
             {
                 MessageBox.Show("Invalid File Name!");
                 return;
             }
-            string selectedItemPath = Path.Combine(Application.StartupPath, "CorruptionStashList", StashFileList.GetItemText(StashFileList.SelectedItem));
-            string destinationPath = Path.Combine(Application.StartupPath, "CorruptionStashList", input.InputBoxTxtBox.Text + exc);
 
+            // Move file
             File.Move(selectedItemPath, destinationPath);
 
-            // Refresh StashFileList after moving the file
+            // Refresh file list
             StashFileList.Items.Clear();
-            StashFileList.Items.AddRange(Directory.GetFiles(Path.Combine(Application.StartupPath, "CorruptionStashList")).Select(Path.GetFileName).ToArray());
+            StashFileList.Items.AddRange(
+                Directory.GetFiles(Path.Combine(Application.StartupPath, "CorruptionStashList"))
+                    .Select(Path.GetFileName)
+            );
 
             input.Dispose();
+        }
+
+        private static bool IsValidFileName(string fileName)
+        {
+            // Check for reserved names
+            string[] reservedNames = [ "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5",
+                              "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4",
+                              "LPT5", "LPT6", "LPT7", "LPT8", "LPT9" ];
+
+            if (reservedNames.Any(name => fileName.Equals(name, StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            // Check for invalid characters
+            char[] invalidChars = ['\\', '/', ':', '*', '?', '"', '<', '>', '|'];
+
+            return !fileName.Any(invalidChars.Contains);
         }
 
         private void RefreshStash_Click(object sender, EventArgs e)
@@ -830,7 +876,7 @@ namespace LunarROMCorruptor
                     string stashListDirectory = Path.Combine(Application.StartupPath, "CorruptionStashList");
 
                     // Populate StashFileList with the names of all files in the specified directory
-                    StashFileList.Items.AddRange(Directory.GetFiles(stashListDirectory).Select(Path.GetFileName).ToArray());
+                    StashFileList.Items.AddRange([.. Directory.GetFiles(stashListDirectory).Select(Path.GetFileName)]);
                 }
             }
             catch (UnauthorizedAccessException)
@@ -876,7 +922,7 @@ namespace LunarROMCorruptor
 
         private void FilesaveRenameBtn_Click(object sender, EventArgs e)
         {
-            InputBox input = new InputBox
+            InputBox input = new()
             {
                 Text = "Rename to?"
             };
@@ -908,7 +954,7 @@ namespace LunarROMCorruptor
 
             // Refresh FilesaveList after moving the file
             FilesaveList.Items.Clear();
-            FilesaveList.Items.AddRange(Directory.GetFiles(Path.Combine(Application.StartupPath, "Saves")).Select(Path.GetFileName).ToArray());
+            FilesaveList.Items.AddRange([.. Directory.GetFiles(Path.Combine(Application.StartupPath, "Saves")).Select(Path.GetFileName)]);
 
             input.Dispose();
         }
@@ -929,7 +975,7 @@ namespace LunarROMCorruptor
 
                     // Refresh FilesaveList with the names of all files in the specified directory
                     FilesaveList.Items.Clear();
-                    FilesaveList.Items.AddRange(Directory.GetFiles(savesDirectory).Select(Path.GetFileName).ToArray());
+                    FilesaveList.Items.AddRange([.. Directory.GetFiles(savesDirectory).Select(Path.GetFileName)]);
                 }
             }
             catch (UnauthorizedAccessException)
@@ -949,6 +995,9 @@ namespace LunarROMCorruptor
             CorruptUsingStashFile(Application.StartupPath + "\\CorruptionStashList\\" + StashFileList.GetItemText(StashFileList.SelectedItem));
         }
 
+        private static readonly string[] separator = [".", "("];
+        private static readonly string[] separatorArray = ["(", ")"];
+
         public void CorruptUsingStashFile(string StashFileLocation)
         {
             //Check if ROM isn't null before running code
@@ -964,8 +1013,8 @@ namespace LunarROMCorruptor
                 Object[] Instructions;
                 try
                 {
-                    splitStrings = line.Split(new string[] { "(", ")" }, StringSplitOptions.None);
-                    Instructions = line.Split(new string[] { ".", "(" }, StringSplitOptions.None);
+                    splitStrings = line.Split(separatorArray, StringSplitOptions.None);
+                    Instructions = line.Split(separator, StringSplitOptions.None);
                 }
                 catch (Exception ex)
                 {
@@ -1024,10 +1073,8 @@ namespace LunarROMCorruptor
             CorruptButton.BackColor = Color.Green;
             if (!SilentCorruptionchbox.Checked)
             {
-                using (var soundPlayer = new SoundPlayer(Resources.success3))
-                {
-                    soundPlayer.Play();
-                }
+                using var soundPlayer = new SoundPlayer(Resources.success3);
+                soundPlayer.Play();
             }
             CorruptButtonColorChanger.Start();
             if (Runemulatorchbox.Checked && string.IsNullOrEmpty(EmulatorLocationtxt.Text))
@@ -1294,7 +1341,7 @@ namespace LunarROMCorruptor
                 //Unload ROMS
                 UnloadROMFromMemory();
                 StartEmulatorPanel.Visible = false;
-                EngineSelectPanel.Visible = false;
+                CheckBoxUpperPanel.Visible = false;
                 CorruptButton.Text = "Start";
                 Openfilebtn.Text = "Load Process";
                 Changesaveasbtn.Visible = false;
@@ -1303,7 +1350,7 @@ namespace LunarROMCorruptor
             else
             {
                 StartEmulatorPanel.Visible = true;
-                EngineSelectPanel.Visible = true;
+                CheckBoxUpperPanel.Visible = true;
                 CorruptButton.Text = "Corrupt File";
                 Openfilebtn.Text = "Open File";
                 Changesaveasbtn.Visible = true;
@@ -1353,22 +1400,20 @@ namespace LunarROMCorruptor
         {
             if (ByteViewPictureBox.Image != null)
             {
-                using (SaveFileDialog saveFileDialog = new SaveFileDialog())
+                using SaveFileDialog saveFileDialog = new();
+                saveFileDialog.Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|All Files (*.*)|*.*";
+                saveFileDialog.Title = "Save Image";
+
+                if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    saveFileDialog.Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|All Files (*.*)|*.*";
-                    saveFileDialog.Title = "Save Image";
+                    // Get the Bitmap from the PictureBox
+                    Bitmap imageToSave = new(ByteViewPictureBox.Image);
 
-                    if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                    {
-                        // Get the Bitmap from the PictureBox
-                        Bitmap imageToSave = new Bitmap(ByteViewPictureBox.Image);
+                    // Save the image to the specified path
+                    imageToSave.Save(saveFileDialog.FileName);
 
-                        // Save the image to the specified path
-                        imageToSave.Save(saveFileDialog.FileName);
-
-                        // Dispose the image to free up resources
-                        imageToSave.Dispose();
-                    }
+                    // Dispose the image to free up resources
+                    imageToSave.Dispose();
                 }
             }
         }

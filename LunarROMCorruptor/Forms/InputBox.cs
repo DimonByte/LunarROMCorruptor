@@ -1,7 +1,4 @@
-﻿using System;
-using System.Windows.Forms;
-
-namespace LunarROMCorruptor
+﻿namespace LunarROMCorruptor
 {
     public partial class InputBox : Form
     {

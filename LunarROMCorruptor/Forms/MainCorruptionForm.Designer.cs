@@ -37,7 +37,7 @@
             FileSaveOpenLocationBtn = new Button();
             FilesaveDelete = new Button();
             FilesaveSavebtn = new Button();
-            FilesaveCopysavetobtn = new Button();
+            CopySaveToCorruptedFileBtn = new Button();
             FilesaveList = new ListBox();
             FilesaveEnableAutoSaves = new CheckBox();
             CorruptionEngineComboBox = new ComboBox();
@@ -260,7 +260,7 @@
             FileSaveTab.Controls.Add(FilesaveRenameBtn);
             FileSaveTab.Controls.Add(FilesaveDelete);
             FileSaveTab.Controls.Add(FilesaveSavebtn);
-            FileSaveTab.Controls.Add(FilesaveCopysavetobtn);
+            FileSaveTab.Controls.Add(CopySaveToCorruptedFileBtn);
             FileSaveTab.Controls.Add(FilesaveList);
             FileSaveTab.Controls.Add(FilesaveEnableAutoSaves);
             FileSaveTab.Location = new Point(4, 24);
@@ -335,24 +335,24 @@
             FilesaveSavebtn.UseVisualStyleBackColor = false;
             FilesaveSavebtn.Click += FilesaveSavebtn_Click;
             // 
-            // FilesaveCopysavetobtn
+            // CopySaveToCorruptedFileBtn
             // 
-            FilesaveCopysavetobtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            FilesaveCopysavetobtn.BackColor = Color.FromArgb(52, 60, 111);
-            FilesaveCopysavetobtn.FlatAppearance.BorderSize = 0;
-            FilesaveCopysavetobtn.FlatStyle = FlatStyle.Flat;
-            FilesaveCopysavetobtn.ForeColor = Color.FromArgb(213, 216, 216);
-            FilesaveCopysavetobtn.Image = Properties.Resources.arrow_up_circle_solid;
-            FilesaveCopysavetobtn.ImageAlign = ContentAlignment.TopCenter;
-            FilesaveCopysavetobtn.Location = new Point(578, 134);
-            FilesaveCopysavetobtn.Margin = new Padding(2, 3, 2, 3);
-            FilesaveCopysavetobtn.Name = "FilesaveCopysavetobtn";
-            FilesaveCopysavetobtn.Size = new Size(163, 67);
-            FilesaveCopysavetobtn.TabIndex = 158;
-            FilesaveCopysavetobtn.Text = "Copy Save to Corrupted File";
-            FilesaveCopysavetobtn.TextAlign = ContentAlignment.BottomCenter;
-            FilesaveCopysavetobtn.UseVisualStyleBackColor = false;
-            FilesaveCopysavetobtn.Click += FilesaveCopysavetobtn_Click;
+            CopySaveToCorruptedFileBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            CopySaveToCorruptedFileBtn.BackColor = Color.FromArgb(52, 60, 111);
+            CopySaveToCorruptedFileBtn.FlatAppearance.BorderSize = 0;
+            CopySaveToCorruptedFileBtn.FlatStyle = FlatStyle.Flat;
+            CopySaveToCorruptedFileBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            CopySaveToCorruptedFileBtn.Image = Properties.Resources.arrow_up_circle_solid;
+            CopySaveToCorruptedFileBtn.ImageAlign = ContentAlignment.TopCenter;
+            CopySaveToCorruptedFileBtn.Location = new Point(578, 134);
+            CopySaveToCorruptedFileBtn.Margin = new Padding(2, 3, 2, 3);
+            CopySaveToCorruptedFileBtn.Name = "CopySaveToCorruptedFileBtn";
+            CopySaveToCorruptedFileBtn.Size = new Size(163, 67);
+            CopySaveToCorruptedFileBtn.TabIndex = 158;
+            CopySaveToCorruptedFileBtn.Text = "Copy Save to Corrupted File";
+            CopySaveToCorruptedFileBtn.TextAlign = ContentAlignment.BottomCenter;
+            CopySaveToCorruptedFileBtn.UseVisualStyleBackColor = false;
+            CopySaveToCorruptedFileBtn.Click += CopySaveToCorruptedFileBtn_Click;
             // 
             // FilesaveList
             // 
@@ -390,13 +390,13 @@
             CorruptionEngineComboBox.Font = new Font("Tahoma", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
-            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine" });
+            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine" });
             CorruptionEngineComboBox.Location = new Point(134, 239);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
             CorruptionEngineComboBox.Size = new Size(157, 21);
             CorruptionEngineComboBox.TabIndex = 166;
-            CorruptionEngineComboBox.Text = "Manual";
+            CorruptionEngineComboBox.Text = "Manual Engine";
             CorruptionEngineComboBox.SelectedIndexChanged += CorruptionEngineComboBox_SelectedIndexChanged;
             // 
             // CorruptionEnginelbl
@@ -2260,7 +2260,7 @@
         internal System.Windows.Forms.Button FilesaveReloadbtn;
         internal System.Windows.Forms.Button FilesaveRenameBtn;
         internal System.Windows.Forms.TabPage FileSaveTab;
-        internal System.Windows.Forms.Button FilesaveCopysavetobtn;
+        internal System.Windows.Forms.Button CopySaveToCorruptedFileBtn;
         internal System.Windows.Forms.Button FilesaveDelete;
         internal System.Windows.Forms.ListBox FilesaveList;
         internal System.Windows.Forms.CheckBox FilesaveEnableAutoSaves;

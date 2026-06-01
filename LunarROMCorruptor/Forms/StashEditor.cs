@@ -20,6 +20,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+using LunarROMCorruptor.Modules;
 using System.Text;
 
 namespace LunarROMCorruptor
@@ -158,7 +159,7 @@ namespace LunarROMCorruptor
             //fileCount += 1
             var rnd = new Random().Next(1000, 999999999);
             File.WriteAllText(Application.StartupPath + @"\CorruptionStashList\" + rnd + ".stash", builder.ToString());
-            Program.Form.RefreshCorruptionStashList();
+            IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
             Console.WriteLine(Application.StartupPath + @"\CorruptionStashList\" + rnd + ".stash" + " - Saved to a brand new stash file.");
             return Application.StartupPath + @"\CorruptionStashList\" + rnd + ".stash";
         }
@@ -184,7 +185,7 @@ namespace LunarROMCorruptor
                 builder.AppendLine();
             }
             File.WriteAllText(LoadedStashLocation, builder.ToString());
-            Program.Form.RefreshCorruptionStashList();
+            IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
             Console.WriteLine(LoadedStashLocation + " - Saved to existing stash file.");
         }
         private void StashEditor_FormClosing(object sender, FormClosingEventArgs e)

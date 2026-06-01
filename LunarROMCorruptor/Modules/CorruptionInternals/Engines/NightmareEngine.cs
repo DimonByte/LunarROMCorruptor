@@ -23,9 +23,10 @@
 //Acknowledgements:
 //This engine is from the WindowsGlitchHarvester, a ROM corruptor. This code is an attempt to get the same results as the original engine.
 
-using LunarROMCorruptor.CorruptionInternals;
+using LunarROMCorruptor.Modules;
+using LunarROMCorruptor.Modules.CorruptionInternals;
 
-namespace LunarROMCorruptor.CorruptionEngines
+namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
     internal class NightmareEngine
     {

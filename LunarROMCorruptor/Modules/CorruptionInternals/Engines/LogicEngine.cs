@@ -20,7 +20,9 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
-namespace LunarROMCorruptor.CorruptionEngines
+using LunarROMCorruptor.Modules;
+
+namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
     internal class LogicEngine
     {

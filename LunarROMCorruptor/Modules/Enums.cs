@@ -1,4 +1,4 @@
-﻿namespace LunarROMCorruptor
+﻿namespace LunarROMCorruptor.Modules
 {
     public enum CorruptionOptions
     {

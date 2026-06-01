@@ -1,18 +1,8 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{444FC1A4-AFCC-4505-89E4-4AC867165FC2}</ProjectGuid>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>LunarROMCorruptor</RootNamespace>
-    <AssemblyName>LunarROMCorruptor</AssemblyName>
-    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <Deterministic>true</Deterministic>
     <IsWebBootstrapper>false</IsWebBootstrapper>
-    <TargetFrameworkProfile />
     <ForceDesignerDPIUnaware>true</ForceDesignerDPIUnaware>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
@@ -28,149 +18,25 @@
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>
-    </DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
+    <DefineConstants></DefineConstants>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationIcon>icon%281%29.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\x64\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <DebugType>full</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-    <PlatformTarget>x64</PlatformTarget>
-    <LangVersion>7.3</LangVersion>
-    <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Deployment" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Windows.Forms" />
-    <Reference Include="System.Xml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ByteView.cs" />
-    <Compile Include="CorruptionEngineOptions.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="CorruptionEngineOptions.Designer.cs">
-      <DependentUpon>CorruptionEngineOptions.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CorruptionEngines\FractalEngine.cs" />
-    <Compile Include="CorruptionEngines\LerpEngine.cs" />
-    <Compile Include="CorruptionEngines\LogicEngine.cs" />
-    <Compile Include="CorruptionEngines\ManualEngine.cs" />
-    <Compile Include="CorruptionEngines\MergeEngine.cs" />
-    <Compile Include="CorruptionInternals\Enums.cs" />
-    <Compile Include="CorruptionInternals\CorruptionCore.cs" />
-    <Compile Include="CorruptionInternals\ProcessCorruptionCore.cs" />
-    <Compile Include="CorruptionQueueForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="CorruptionQueueForm.Designer.cs">
-      <DependentUpon>CorruptionQueueForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="MainCorruptionForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="MainCorruptionForm.Designer.cs">
-      <DependentUpon>MainCorruptionForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="InputBox.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="InputBox.Designer.cs">
-      <DependentUpon>InputBox.cs</DependentUpon>
-    </Compile>
-    <Compile Include="CorruptionEngines\NightmareEngine.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SelectProcess.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SelectProcess.Designer.cs">
-      <DependentUpon>SelectProcess.cs</DependentUpon>
-    </Compile>
-    <Compile Include="StashEditor.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="StashEditor.Designer.cs">
-      <DependentUpon>StashEditor.cs</DependentUpon>
-    </Compile>
-    <EmbeddedResource Include="CorruptionEngineOptions.resx">
-      <DependentUpon>CorruptionEngineOptions.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="CorruptionQueueForm.resx">
-      <DependentUpon>CorruptionQueueForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="MainCorruptionForm.resx">
-      <DependentUpon>MainCorruptionForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="InputBox.resx">
-      <DependentUpon>InputBox.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-      <SubType>Designer</SubType>
-    </EmbeddedResource>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-      <DesignTime>True</DesignTime>
-    </Compile>
-    <EmbeddedResource Include="SelectProcess.resx">
-      <DependentUpon>SelectProcess.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="StashEditor.resx">
-      <DependentUpon>StashEditor.cs</DependentUpon>
-    </EmbeddedResource>
-    <None Include="app.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>PublicSettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
@@ -183,15 +49,6 @@
     <Content Include="icon%281%29.ico" />
     <Content Include="icon.ico" />
     <Content Include="Guide.txt" />
-    <None Include="Resources\app-window.png" />
-    <None Include="Resources\arrow-up-circle-solid.png" />
-    <None Include="Resources\edit-pencil.png" />
-    <None Include="Resources\restart.png" />
-    <None Include="Resources\floppy-disk-arrow-in.png" />
-    <None Include="Resources\upload.png" />
-    <None Include="Resources\icon.png" />
-    <None Include="Resources\Loading.png" />
-    <None Include="Resources\Loading.jpg" />
     <None Include="Resources\imageres_53532.png" />
     <None Include="Resources\imageres_53394.png" />
     <None Include="Resources\psr_205.png" />
@@ -205,7 +62,6 @@
     <None Include="Resources\imageres_53392.png" />
     <None Include="Resources\imageres_53391.png" />
     <None Include="Resources\imageres_5339.png" />
-    <None Include="Resources\success3.wav" />
     <None Include="Resources\SendSmallGray.png" />
     <None Include="Resources\Joystick.png" />
     <None Include="Resources\Send4.png" />
@@ -226,9 +82,6 @@
     <None Include="Resources\icons8-open-file-under-cursor-20.png" />
     <None Include="Resources\icons8-open-file-under-cursor-25.png" />
     <None Include="Resources\icons8-open-file-under-cursor-50.png" />
-    <None Include="Resources\dragicon.png" />
     <None Include="Resources\icon %282%29.png" />
-    <None Include="Resources\success2.wav" />
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

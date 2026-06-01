@@ -1,16 +1,4 @@
-﻿using LunarROMCorruptor.CorruptionInternals;
-using LunarROMCorruptor.Properties;
-using System;
-using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Linq;
-using System.Media;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-
-//MIT License
+﻿//MIT License
 
 //Copyright (c) 2025 DimonByte
 
@@ -40,6 +28,18 @@ using System.Windows.Forms;
 //You may get banned if this corruptor is used in online games or games with anti-cheat software.
 //Don't use this on system32 or any other system files...
 
+using LunarROMCorruptor.CorruptionInternals;
+using LunarROMCorruptor.Properties;
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Media;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
 namespace LunarROMCorruptor
 {
     public partial class MainCorruptionForm : Form
@@ -65,6 +65,8 @@ namespace LunarROMCorruptor
         private void Form1_Load(object sender, EventArgs e)
         {
             //MainTabControl.TabPages.Remove(MemCorruptPage); // For now, remove process memory corruption tab
+            CorrupteverynthbyteTrackbar.TickStyle = TickStyle.None; //Fixes mem leak.
+            IntensityTrackbar.TickStyle = TickStyle.None; //Fixes mem leak.
             Text = $"{nameof(LunarROMCorruptor)} - " + vernumber;
             AboutVerLabel.Text = vernumber;
             if (!Directory.Exists(Application.StartupPath + "\\Saves\\")) //If file doesn't exist, assume it's the first time the program has been run and create the directory.

@@ -28,11 +28,20 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
     public class CorruptionCore
     {
+        public static byte[]? ROM; //Used to store the file that is loaded into the program
+        public static int MaxByte; //This stores the maxium amount of bytes in the file that is loaded
+        public static int StartByte; //This stores the start byte that the user sets
+        public static int EndByte; //This stores the end byte that the user sets]
+        public static double rawFileSize; //This stores the file size of the loaded ROM, used for some calculations in the engines
+        public static string fileSizeUnit; //This stores the unit of the file size (E.g. MB, GB) used for some calculations in the engines
         private static readonly Random rnd = new();
-        //Main Corruption Core:
-        //This is where the corruption happens, this function below corrupts bytes by going to their respective corruption engines (E.g. NightmareEngine.cs) and using the output of that engine to corrupt the ROM.
-        //Inside the engine is where the code that manipulates the byte happens. Once it has set the byte, it writes a new item to the internal stash list which is used to store the changes made to the ROM.
-        public static byte ClampByte(int x) //This is to prevent the byte from going over 255 or going under 0
+
+        /// <summary>
+        /// Ensures that byte values don't go under 0 or above 255, this is used in some of the engines to prevent overflow and underflow errors that can cause the program to crash.
+        /// </summary>
+        /// <param name="x"></param>
+        /// <returns></returns>
+        public static byte ClampByte(int x) 
         {
             if (x < 0)
                 return 0;
@@ -64,8 +73,60 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 }
             }
         }
-
-
+        /// <summary>
+        /// Loads ROM into memory interally, this doesn't handle GUI updates.
+        /// </summary>
+        /// <param name="FileLocation"></param>
+        /// <returns></returns>
+        public static bool LoadROM(string FileLocation)
+        {
+            var fileInfo = new FileInfo(FileLocation);
+            if (fileInfo.Length < 2147483648) //Check if file is less than 2GB
+            {
+                if (fileInfo.Length == 0)
+                {
+                    MessageBox.Show("The selected file is empty. Please select a valid ROM file.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                ROM = File.ReadAllBytes(FileLocation);
+                MaxByte = ROM.Length - 1;
+                long fileSize;
+                fileSize = fileInfo.Length;
+                if (fileSize > 1073741824) // Greater than 1 GB
+                {
+                    fileSizeUnit = "GB";
+                    rawFileSize = Math.Round((double)fileSize / 1073741824, 2);
+                }
+                else if (fileSize < 1000000) // Less than 1 MB
+                {
+                    fileSizeUnit = "KB";
+                    rawFileSize = Math.Round((double)fileSize / 1000, 2);
+                }
+                else // Less than 1 GB but more than or equal to 1 MB
+                {
+                    fileSizeUnit = "MB";
+                    rawFileSize = Math.Round((double)fileSize / 1000000, 2);
+                }
+                return true;
+            }
+            else
+            {
+                MessageBox.Show("The selected file is too large. Please select a ROM file smaller than 2GB.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+        /// <summary>
+        /// Main corruption function.
+        /// </summary>
+        /// <param name="ROM"></param> The untouched ROM.
+        /// <param name="StartByte"></param> The start byte that the user sets, this is used in the engines to determine where to start corrupting from.
+        /// <param name="EndByte"></param> The end byte that the user sets, this is used in the engines to determine where to stop corrupting.
+        /// <param name="CorruptNthByte"></param> Whether the user has selected to corrupt every nth byte or to use intensity mode, this is used in the engines to determine how to corrupt the ROM.
+        /// <param name="Intensity"></param> The intensity that the user sets, this is used in the engines to determine how many bytes to corrupt or how many bytes to skip when corrupting every nth byte.
+        /// <param name="CorruptionEngine"></param> The corruption engine that the user selects, this is used to determine which engine to use when corrupting the ROM.
+        /// <returns>Corrupted ROM</returns>
         public static byte[]? StartCorruption(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity, string CorruptionEngine)
         {
             switch (CorruptionEngine)

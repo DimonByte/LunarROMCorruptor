@@ -1,125 +1,118 @@
-<p align="center">
-    <img src="static/images/icon.png" alt="LunarROMCorruptor Icon" />
-</p>
+<div align="center">
+
+<img src="static/images/icon.png" alt="LunarROMCorruptor Icon" width="128" height="128" />
 
 # LunarROMCorruptor
 
-[![CodeFactor](https://www.codefactor.io/repository/github/lloyd99901/lunarromcorruptor/badge)](https://www.codefactor.io/repository/github/lloyd99901/lunarromcorruptor)
-[![GitHub issues](https://img.shields.io/github/issues/lloyd99901/LunarROMCorruptor)](https://github.com/lloyd99901/LunarROMCorruptor/issues)
-[![GitHub stars](https://img.shields.io/github/stars/lloyd99901/LunarROMCorruptor)](https://github.com/lloyd99901/LunarROMCorruptor/stargazers)
-[![GitHub license](https://img.shields.io/github/license/lloyd99901/LunarROMCorruptor)](https://github.com/lloyd99901/LunarROMCorruptor/blob/master/LICENSE)
+**Versatile, multi-engine file corruption for ROMs and any binary data.**
 
-## Corrupt any file(s) (not just ROMs!) using multiple different engines
+[![GitHub issues](https://img.shields.io/github/issues/DimonByte/LunarROMCorruptor?distro=true)](https://github.com/lloyd99901/LunarROMCorruptor/issues)
+[![GitHub stars](https://img.shields.io/github/stars/DimonByte/LunarROMCorruptor)](https://github.com/lloyd99901/LunarROMCorruptor/stargazers)
+[![GitHub license](https://img.shields.io/github/license/DimonByte/LunarROMCorruptor)](https://github.com/lloyd99901/LunarROMCorruptor/blob/master/LICENSE)
+![GitHub CodeQL](https://github.com/DimonByte/LunarROMCorruptor/actions/workflows/codeql.yml/badge.svg)
+![GitHub DOTNET](https://github.com/DimonByte/LunarROMCorruptor/actions/workflows/dotnet-desktop.yml/badge.svg)
 
-![MainWindow](https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/MainInterface.png)
+</div>
 
-## Features
+---
 
-### Corrupt the way **you** want to
-Tailor your corruption to perfection with this versatile corruptor. With countless customization options, you have complete control over how the corruptor operates, allowing you to achieve the perfect level of corruption every time.
+## Overview
 
-### Corrupt Every Nth Byte and Intensity Mode
-With Corrupt Every Nth Byte, you can apply regular corruptions to your file by specifying the interval to corrupt (e.g., every 1st byte, every 2nd byte, etc.). On the other hand, Intensity allows for randomized corruptions, where the corruptor selects random addresses to modify.
+LunarROMCorruptor is a advanced tool designed to corrupt binary data through various algorithmic engines. While optimized for ROM hacking, its capabilities extend to **any file format**. Whether you are looking for random bit-flips or complex mathematical interpolation, LunarROMCorruptor provides the precision tools needed for high-quality glitch art.
 
-### File Saves and Stash Saves
-After you've found the perfect corruption, you can choose to save your progress using either the File Save or the Stash Save features. The File Save option makes a copy of the entire corrupted file and stores it in the 'Saves' directory.
+<div align="center">
+    <img src="https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/MainInterface.png" alt="Main Interface Screenshot" width="60%" />
+</div>
 
-On the other hand, the Stash Save feature saves only the addresses of the changed bytes and their new values, which takes up less space. In addition to the Stash Save, there's a stash editor that allows you to fine-tune the corrupted bytes and addresses to achieve the desired effect.
+---
 
-![StashEdit](https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/StashEdit.png)
+## Key Features
 
-For instance, let's say there's a corruption that alters the color of Mario in Super Mario Bros but crashes the game when you try to start it. You can use the stash editor to remove the bytes that cause the crash and retain the byte responsible for changing the color. This functionality is similar to how the Stash Saves and Editor work on the Windows Glitch Harvester.
+| Feature | Description |
+| :--- | :--- |
+| **Multi-Engine Support** | Switch between Nightmare, Merge, Logic, and Lerp engines seamlessly. |
+| **Precision Control** | Use "Every Nth Byte" or "Intensity Mode" for predictable or chaotic corruption. |
+| **Smart Saving** | Use **File Saves** for full copies or **Stash Saves** (address-only) to save massive amounts of space. |
+| **Stash Editor** | Fine-tune specific corrupted bytes without re-running the entire process. |
+| **ByteView** | Visualize binary data as RGB/Grayscale pixels to "see" the bytes change. |
+| **Automation** | Automate randomization of intensity, byte ranges, and engine selection. |
+| **Batch Processing** | Drag-and-drop entire folders or multiple files for mass corruption. |
 
-### Corrupt multiple files
-Not only can you corrupt just a ROM or a singular file, you can use this corruptor to corrupt several files or even select an entire folder of files to corrupt.
+---
 
-![MainWindow](https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/CorruptionQueue.png)
+## Corruption Engines
 
-### Corruption Engines
-Here are the following corruption engines that come with LunarROMCorruptor
- - Nightmare Engine:
+LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of corruption.
 
-   A simple, yet effective way of corrupting files, with three corruption modes: RANDOM, RANDOMTILT and TILT.
+| Engine | Logic Type | Best For... |
+| :--- | :--- | :--- |
+| **Nightmare** | Random/Tilt | Classic, chaotic bit-flipping and value shifting. |
+| **Merge** | Pattern Injection |  Injection	Overwriting random ROM addresses with data from any source file (e.g., injecting video noise into a ROM). |
+| **Logic** | Bitwise Ops | Advanced manipulation using `AND`, `OR`, `XNOR`, `SHIFT`, etc. |
+| **Lerp** | Interpolation | Smooth, gradient-based transitions between byte values. |
+| **Manual** | User Defined | Complete manual control over every single operation. |
 
-    -RANDOM
+#### The Nightmare Engine Modes:
+*   `RANDOM`: Sets selected bytes to a random value (0-255).
+*   `RANDOMTILT`: Randomly adds or subtracts a user-defined offset.
+*   `TILT`: Applies a fixed mathematical shift (e.g., `Value + 10`).
 
-     The selected byte gets set with a random value of 0 to 255.
+#### The Merge Engine Modes:
+*   `File Selection`: The file that will have its bytes copied from. This file wont be changed.
+*   `Replace byte with the byte at the same position`: The merge file and the ROM will be checked to see if there is a byte in the random address LRC chose. If there is the merge file byte will override the ROM byte at the ROM byte address selected.
+*   `Corruption Type`: NONE or RANGE.
+*   `MOD 256`
 
-    -RANDOMTILT
+#### The Lerp Engine Modes:
+*   `Split Value`: Sets the interpolation value.
 
-     The selected byte gets set with a random value of 0 to 255 or a user specified value gets added/subtracted from the byte.
+#### The Logic Engine Modes:
+*   `Operation Type`: AND, OR, XOR, NOT, NAND, NOR, SWAP, SHIFT
 
-    -TILT
+---
 
-     The selected byte will have its value added or subtracted by a user specified value. (e.g. 255 - 3, 242 + 1)
+## Visualizing Data with ByteView
 
- - Merge Engine
+The built-in **ByteView** transforms binary data into a visual image. By mapping byte values to RGB or grayscale pixels, you can observe patterns that are invisible in a standard hex editor. The view updates in real-time as you apply corruption engines.
 
-   An engine that copies bytes from one file to the other to create corruption (For example, 'merging' bytes from Super Mario Bros. with Donkey Kong bytes).
-   
- - Logic Engine
+<div align="center">
+    <img src="https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/ByteView.png" alt="ByteView Screenshot" width="50%" />
+</div>
 
-   An engine that uses bitwise/logical operations on two selected bytes.
-   
-        AND
-        OR
-        XOR
-        NOT
-        NAND
-        NOR
-        SWAP
-        SHIFT
-   
- - Lerp Engine
+---
 
-   An engine that takes the 2 neighbouring bytes where the selected byte is and corrupts the selected byte by using linear interpolation
-   (e.g. 0 21 100 would become 0 50 100 if the Lerp Setting was set to 0.5)
+## Safety & Disclaimer
 
- - Manual Engine
+> [!CAUTION]
+> **CORRUPTION WARNING**
+>
+> *   **Epilepsy Warning:** Corruption can result in rapid, flashing imagery. Use with caution.
+> *   **System Stability:** Corrupting critical system files (like `system32`) can cause irreversible OS damage. Always use a Virtual Machine for testing.
+*   **Anti-Cheat Risk:** Using this tool on online games or protected software **will likely result in permanent account bans**. 
+*   **No Warranty:** This software is provided **"AS IS"**. The developer is not responsible for any data loss, hardware instability (BSOD), or loss of access to digital accounts.
 
-   (User manually enables and sets what types of corruption takes place in the file.)
+---
 
-### ByteView
-ByteView is a utility designed to provide users with a visual representation of binary content, offering users a visual representation via RGB or grayscale pixels. This tool provides a structured interface for the observation and analysis of byte values. ByteView is particularly useful for those seeking a non-intrusive approach to examining the underlying byte information within files. It also updates the ByteView when you corrupt the file, allowing the user to see the changes to the file with visuals.
+## Technical Requirements
 
-![ByteView](https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/ByteView.png)
+*   **Runtime:** `.NET Core 10.0`
+*   **Development Environment:** `Microsoft Visual Studio 2026` (Recommended)
+*   **Platform:** Windows
 
-### Misc
-- With more engines and settings to play around with, the more interesting results you can get with the engines.
-- Allows drag and drop. No need to search for the file you want to corrupt.
-- Can run an emulator after corruption.
-- Audible feedback when corruption is done.
-- Corrupt multiple files.
-- Saves settings.
-- Automation. (Randomize the intensity, start & end byte, randomize the corruption engine and even corrupt the file automatically using automation)
-
-## Progress
-- [x] Import GUI from the old project
-- [x] Fully convert the VB.NET code from the old project and convert to C#
-- [x] Do bug testing
-- [x] Code Refactoring (Optimize the engines, code cleanup, etc)
-
-## About
-This project started around 2019 and was originally made in VB.NET. I was fascinated by other corruptors and wanted to make my own. The project was finished in the same year, but since the code was very messy, I decided not to release it.
-
-A year later, I decided to remake it in C#, mainly because I want to teach myself more C#, but also to do some code refactoring to make it more optimized.
-
-LunarROMCorruptor uses engines to corrupt files, each engine has its usage and its own settings that can be changed.
-I've included the Nightmare Engine, which is an engine from the Windows Glitch Harvester, into the project so that people that are most familiar with that engine can use it.
-
-### Requirements
-.NET Framework 4.7.2 is required to run the program.
-For development, Microsoft Visual Studio Community 2022 is recommended.
 ## Contributing
-Pull requests are welcome. Major and minor.
-## Notes
-Active development is in the unstable branch of this repo. The master branch is for stable updates.
+
+Contributions welcome!
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/Feature`)
+3. Commit your Changes (`git commit -m 'Add some Feature'`)
+4. Push to the Branch (`git push origin feature/Feature`)
+5. Open a Pull Request
 
 ## License
-[MIT](https://choosealicense.com/licenses/mit/)
 
-## Corruption Warning
-- If you have epilepsy, it is advisable to refrain from participating in corruption activities, due to the flashing imagery that may occur with corruptions.
-- When corrupting specific games, there's a remote possibility of encountering a Blue Screen of Death (BSOD). Although BSOD occurrences are infrequent and generally don't cause major harm to your computer, they will prompt an automatic restart. Always ensure you save any ongoing work before engaging in corruption to avoid data loss.
-- Using this corruptor in online games or those protected by anti-cheat software may result in account bans. Additionally, refrain from corrupting essential system files, such as system32, as it can lead to irreversible damage to personal or critical system data. If you really want to, do it in a virutal machine to minimize potential risks.
-- It is essential to recognize that this program comes with no warranties of any kind and is provided "AS IS." Users are personally responsible for backing up their data before use and for any consequences arising from the appropriate or inappropriate use of the program. Refrain from corrupting multiplayer game files, as anti-cheat software may be triggered.
+Distributed under the **MIT License**. See `LICENSE` for more information.
+
+<div align="center">
+<sub>Built for Corruption</sub>
+</div>

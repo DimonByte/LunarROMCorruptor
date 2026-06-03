@@ -144,6 +144,7 @@
             label1 = new Label();
             pictureBox1 = new PictureBox();
             tabPage1 = new TabPage();
+            TraceLoggerTxtBox = new RichTextBox();
             SaveLogBtn = new Button();
             Panel2 = new Panel();
             CorruptButton = new Button();
@@ -170,7 +171,6 @@
             StartEmulatorlbl = new Label();
             StartEmulatorPanel = new Panel();
             BrowseEmulatorbutton = new Button();
-            TraceLoggerTxtBox = new RichTextBox();
             FileSaveTab.SuspendLayout();
             FileCorruptionTab.SuspendLayout();
             Panel4.SuspendLayout();
@@ -832,7 +832,7 @@
             Corruptusingstashbtn.BackColor = Color.FromArgb(52, 60, 111);
             Corruptusingstashbtn.FlatAppearance.BorderSize = 0;
             Corruptusingstashbtn.FlatStyle = FlatStyle.Flat;
-            Corruptusingstashbtn.Font = new Font("Segoe UI", 6.5F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Corruptusingstashbtn.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Corruptusingstashbtn.ForeColor = Color.FromArgb(213, 216, 216);
             Corruptusingstashbtn.Image = Properties.Resources.arrow_up_circle_solid;
             Corruptusingstashbtn.ImageAlign = ContentAlignment.MiddleLeft;
@@ -1874,6 +1874,16 @@
             tabPage1.Text = "Logs";
             tabPage1.UseVisualStyleBackColor = true;
             // 
+            // TraceLoggerTxtBox
+            // 
+            TraceLoggerTxtBox.Dock = DockStyle.Fill;
+            TraceLoggerTxtBox.Location = new Point(0, 0);
+            TraceLoggerTxtBox.Name = "TraceLoggerTxtBox";
+            TraceLoggerTxtBox.ReadOnly = true;
+            TraceLoggerTxtBox.Size = new Size(750, 267);
+            TraceLoggerTxtBox.TabIndex = 3;
+            TraceLoggerTxtBox.Text = "";
+            // 
             // SaveLogBtn
             // 
             SaveLogBtn.BackColor = Color.FromArgb(52, 60, 111);
@@ -2196,16 +2206,6 @@
             BrowseEmulatorbutton.Text = "Select Program";
             BrowseEmulatorbutton.UseVisualStyleBackColor = false;
             BrowseEmulatorbutton.Click += BrowseEmulatorbutton_Click;
-            // 
-            // TraceLoggerTxtBox
-            // 
-            TraceLoggerTxtBox.Dock = DockStyle.Fill;
-            TraceLoggerTxtBox.Location = new Point(0, 0);
-            TraceLoggerTxtBox.Name = "TraceLoggerTxtBox";
-            TraceLoggerTxtBox.ReadOnly = true;
-            TraceLoggerTxtBox.Size = new Size(750, 267);
-            TraceLoggerTxtBox.TabIndex = 3;
-            TraceLoggerTxtBox.Text = "";
             // 
             // MainCorruptionForm
             // 

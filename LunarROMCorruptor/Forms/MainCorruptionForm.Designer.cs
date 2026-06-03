@@ -1736,7 +1736,7 @@
             MemCorruptPage.Padding = new Padding(4, 3, 4, 3);
             MemCorruptPage.Size = new Size(750, 294);
             MemCorruptPage.TabIndex = 7;
-            MemCorruptPage.Text = "Process Memory Corruption";
+            MemCorruptPage.Text = "Memory Corruption";
             // 
             // panel1
             // 

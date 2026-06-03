@@ -54,8 +54,8 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 
 #### The Nightmare Engine Modes:
 *   `RANDOM`: Sets selected bytes to a random value (0-255).
-*   `RANDOMTILT`: Randomly adds or subtracts a user-defined offset.
-*   `TILT`: Applies a fixed mathematical shift (e.g., `Value + 10`).
+*   `RANDOMTILT`: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
+*   `TILT`: Adds or subtracts a fixed mathematical shift (e.g., `Value + 10`).
 
 #### The Merge Engine Modes:
 *   `File Selection`: The file that will have its bytes copied from. This file wont be changed.

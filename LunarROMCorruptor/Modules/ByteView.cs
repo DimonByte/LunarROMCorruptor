@@ -26,7 +26,7 @@ namespace LunarROMCorruptor.Modules
     {
         public static Bitmap? ConvertByteToImage(byte[] data, bool enableColour)
         {
-
+            TraceLogger.Log("Converting byte array to image...");
             if (data == null) return null; //Ignore invalid null data
 
             int bytesPerPixel = 3; // Assuming 3 bytes for RGB
@@ -73,12 +73,14 @@ namespace LunarROMCorruptor.Modules
                     image.SetPixel(j, i, color);
                 }
             }
+            TraceLogger.Log("Byte array successfully converted to image.");
             return image;
         }
 
         public static Bitmap FlipImage(Bitmap original, bool horizontal, bool vertical)
         {
             // Check if the original image is null, if so return bitmap of 1x1 pixel to avoid null reference exceptions
+            TraceLogger.Log("Flipping image...");
             if (original == null)
             {
                 return new Bitmap(1, 1);
@@ -91,7 +93,7 @@ namespace LunarROMCorruptor.Modules
 
             if (vertical)
                 flippedImage.RotateFlip(RotateFlipType.RotateNoneFlipY);
-
+            TraceLogger.Log("Image flipped successfully.");
             return flippedImage;
         }
     }

@@ -1,0 +1,71 @@
+﻿using System.Diagnostics;
+
+namespace LunarROMCorruptor.Modules
+{
+    internal class FileOverrideHelper
+    {
+        public static void AttemptProtectedFileOverride(string targetFilePath)
+        {
+            TraceLogger.Log($"Attempting protected file override for file: {targetFilePath}");
+            if (string.IsNullOrEmpty(targetFilePath))
+            {
+                TraceLogger.Log("LRC - Corruption Core: Target file path is null or empty.", StatusSeverityType.Error);
+                return;
+            }
+            try
+            {
+                bool isAdmin = CommandRunner.IsRunAsAdmin();
+
+                // Check if file exists and is protected
+                if (!File.Exists(targetFilePath))
+                {
+                    TraceLogger.Log($"LRC - Corruption Core: Target file does not exist: {targetFilePath}", StatusSeverityType.Error);
+                    return;
+                }
+
+                if (!isAdmin)
+                {
+                    // Run the entire override process elevated
+                    TraceLogger.Log("LRC - Corruption Core: Not running as admin. Attempting to elevate for file ownership override.", StatusSeverityType.Warning);
+
+                    string takeOwnCommand = $"takeown /F \"{targetFilePath}\"";
+                    string icaclsCommand = $"icacls \"{targetFilePath}\" /grant {Environment.UserDomainName}\\{Environment.UserName}:(OI)(CI)F /T";
+
+                    // Create a PowerShell command that will execute both commands
+                    string fullCommand = $"{takeOwnCommand} ; {icaclsCommand}";
+
+                    bool elevatedSuccess = CommandRunner.RunElevatedCommand("cmd.exe", $"/c \"{fullCommand}\"");
+
+                    if (elevatedSuccess)
+                    {
+                        TraceLogger.Log("LRC - Corruption Core: File ownership and permission override completed successfully with elevated permissions.", StatusSeverityType.Information);
+                    }
+                    else
+                    {
+                        TraceLogger.Log("LRC - Corruption Core: Failed to complete file override with elevated permissions.", StatusSeverityType.Error);
+                    }
+                }
+                else
+                {
+                    // Already running as admin, proceed directly
+                    TraceLogger.Log("LRC - Corruption Core: Running as admin. Proceeding with file ownership override.", StatusSeverityType.Information);
+
+                    using (Process cmdProcess = new())
+                    {
+                        cmdProcess.StartInfo.FileName = "CMD.exe";
+                        cmdProcess.StartInfo.Arguments = $"/c takeown /F \"{targetFilePath}\" && icacls \"{targetFilePath}\" /grant {Environment.UserDomainName}\\{Environment.UserName}:(OI)(CI)F /T";
+                        cmdProcess.StartInfo.CreateNoWindow = true;
+                        cmdProcess.StartInfo.UseShellExecute = false;
+                        cmdProcess.Start();
+                        cmdProcess.WaitForExit();
+                    }
+                    TraceLogger.Log("LRC - Corruption Core: File ownership and permission override completed successfully.", StatusSeverityType.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"LRC - Corruption Core: Error during File Ownership and Permission Override. Exception: {ex.Message}", StatusSeverityType.Error);
+            }
+        }
+    }
+}

@@ -143,6 +143,8 @@
             AboutVerLabel = new Label();
             label1 = new Label();
             pictureBox1 = new PictureBox();
+            tabPage1 = new TabPage();
+            SaveLogBtn = new Button();
             Panel2 = new Panel();
             CorruptButton = new Button();
             SaveasTxt = new TextBox();
@@ -168,6 +170,7 @@
             StartEmulatorlbl = new Label();
             StartEmulatorPanel = new Panel();
             BrowseEmulatorbutton = new Button();
+            TraceLoggerTxtBox = new RichTextBox();
             FileSaveTab.SuspendLayout();
             FileCorruptionTab.SuspendLayout();
             Panel4.SuspendLayout();
@@ -212,6 +215,7 @@
             AboutTab.SuspendLayout();
             panel5.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            tabPage1.SuspendLayout();
             Panel2.SuspendLayout();
             FileSelectPanel.SuspendLayout();
             CheckBoxUpperPanel.SuspendLayout();
@@ -646,7 +650,7 @@
             EveryNthByte.BackColor = Color.FromArgb(29, 32, 32);
             EveryNthByte.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             EveryNthByte.ForeColor = Color.FromArgb(213, 216, 216);
-            EveryNthByte.Location = new Point(96, 22);
+            EveryNthByte.Location = new Point(94, 22);
             EveryNthByte.Margin = new Padding(2, 3, 2, 3);
             EveryNthByte.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             EveryNthByte.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
@@ -944,6 +948,7 @@
             MainTabControl.Controls.Add(AutomationPage);
             MainTabControl.Controls.Add(MemCorruptPage);
             MainTabControl.Controls.Add(AboutTab);
+            MainTabControl.Controls.Add(tabPage1);
             MainTabControl.Dock = DockStyle.Fill;
             MainTabControl.Location = new Point(0, 82);
             MainTabControl.Margin = new Padding(2, 3, 2, 3);
@@ -1504,7 +1509,7 @@
             byteViewColourChkbox.TabIndex = 1;
             byteViewColourChkbox.Text = "Colour Mode";
             byteViewColourChkbox.UseVisualStyleBackColor = true;
-            byteViewColourChkbox.CheckedChanged += byteViewColourChkbox_CheckedChanged;
+            byteViewColourChkbox.CheckedChanged += ByteViewColourChkbox_CheckedChanged;
             // 
             // ByteViewLbl
             // 
@@ -1858,6 +1863,35 @@
             pictureBox1.TabIndex = 0;
             pictureBox1.TabStop = false;
             // 
+            // tabPage1
+            // 
+            tabPage1.Controls.Add(TraceLoggerTxtBox);
+            tabPage1.Controls.Add(SaveLogBtn);
+            tabPage1.Location = new Point(4, 24);
+            tabPage1.Name = "tabPage1";
+            tabPage1.Size = new Size(750, 294);
+            tabPage1.TabIndex = 9;
+            tabPage1.Text = "Logs";
+            tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // SaveLogBtn
+            // 
+            SaveLogBtn.BackColor = Color.FromArgb(52, 60, 111);
+            SaveLogBtn.Dock = DockStyle.Bottom;
+            SaveLogBtn.FlatAppearance.BorderSize = 0;
+            SaveLogBtn.FlatStyle = FlatStyle.Flat;
+            SaveLogBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            SaveLogBtn.Image = Properties.Resources.floppy_disk_arrow_in;
+            SaveLogBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            SaveLogBtn.Location = new Point(0, 267);
+            SaveLogBtn.Margin = new Padding(2, 3, 2, 3);
+            SaveLogBtn.Name = "SaveLogBtn";
+            SaveLogBtn.Size = new Size(750, 27);
+            SaveLogBtn.TabIndex = 2;
+            SaveLogBtn.Text = "Save Log";
+            SaveLogBtn.UseVisualStyleBackColor = false;
+            SaveLogBtn.Click += SaveLogBtn_Click;
+            // 
             // Panel2
             // 
             Panel2.BackColor = Color.FromArgb(70, 70, 120);
@@ -2163,6 +2197,16 @@
             BrowseEmulatorbutton.UseVisualStyleBackColor = false;
             BrowseEmulatorbutton.Click += BrowseEmulatorbutton_Click;
             // 
+            // TraceLoggerTxtBox
+            // 
+            TraceLoggerTxtBox.Dock = DockStyle.Fill;
+            TraceLoggerTxtBox.Location = new Point(0, 0);
+            TraceLoggerTxtBox.Name = "TraceLoggerTxtBox";
+            TraceLoggerTxtBox.ReadOnly = true;
+            TraceLoggerTxtBox.Size = new Size(750, 267);
+            TraceLoggerTxtBox.TabIndex = 3;
+            TraceLoggerTxtBox.Text = "";
+            // 
             // MainCorruptionForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -2178,7 +2222,7 @@
             Name = "MainCorruptionForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "LunarROMCorruptor - vx.x - UNSTABLE BUILD";
-            Load += Form1_Load;
+            Load += MainForm_Load;
             DragDrop += Form1_DragDrop;
             DragEnter += Form1_DragEnter;
             DragLeave += Form1_DragLeave;
@@ -2243,6 +2287,7 @@
             panel5.ResumeLayout(false);
             panel5.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            tabPage1.ResumeLayout(false);
             Panel2.ResumeLayout(false);
             FileSelectPanel.ResumeLayout(false);
             FileSelectPanel.PerformLayout();
@@ -2394,6 +2439,9 @@
         internal System.Windows.Forms.CheckBox OverrideArgumentschbox;
         private System.Windows.Forms.Label StartEmulatorlbl;
         internal System.Windows.Forms.Panel StartEmulatorPanel;
+        private TabPage tabPage1;
+        internal Button SaveLogBtn;
+        private RichTextBox TraceLoggerTxtBox;
     }
 }
 

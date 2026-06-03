@@ -53,13 +53,15 @@ namespace LunarROMCorruptor.Modules
         {
             try
             {
+                TraceLogger.Log($"Refreshing file list for directory: {directoryPath}");
                 listBox?.Items?.Clear();
 
                 if (string.IsNullOrEmpty(directoryPath) || !Directory.Exists(directoryPath))
                 {
+                    TraceLogger.Log($"Directory does not exist: {directoryPath}", StatusSeverityType.Warning);
                     return;
                 }
-
+                TraceLogger.Log($"Directory exists: {directoryPath}. Attempting to get files.");
                 string[] files = Directory.GetFiles(directoryPath);
                 if (files != null && files.Length > 0)
                 {
@@ -68,8 +70,7 @@ namespace LunarROMCorruptor.Modules
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error enumerating {Path.GetFileName(directoryPath)} list. This folder may not exist or your anti-virus/ransomware protection may be enabled and is blocking LRC from searching those directories. {ex.Message}",
-                    $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log($"Error enumerating files in directory: {directoryPath}. Exception: {ex.Message}", StatusSeverityType.Error);
             }
         }
 
@@ -77,18 +78,19 @@ namespace LunarROMCorruptor.Modules
         {
             if (string.IsNullOrEmpty(saveAsTxt) || saveAsTxt == "No save location set.")
             {
+                TraceLogger.Log("No valid file path provided. Aborting save operation.", StatusSeverityType.Warning);
                 return;
             }
 
             if (!File.Exists(saveAsTxt))
             {
-                MessageBox.Show("The file you're trying to save doesn't exist. Please load a file first.",
-                    $"{nameof(LunarROMCorruptor)} - ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log($"File does not exist at path: {saveAsTxt}. Aborting save operation.", StatusSeverityType.Error);
                 return;
             }
 
             try
             {
+                TraceLogger.Log($"Attempting to save corrupted file copy from: {saveAsTxt}");
                 string fileName = Path.GetFileName(saveAsTxt);
                 string extension = Path.GetExtension(fileName);
                 string savesPath = SavesDirectory;
@@ -96,6 +98,7 @@ namespace LunarROMCorruptor.Modules
                 // Create directory if it doesn't exist
                 if (!Directory.Exists(savesPath))
                 {
+                    TraceLogger.Log($"Saves directory does not exist. Creating directory at: {savesPath}");
                     Directory.CreateDirectory(savesPath);
                 }
 
@@ -105,10 +108,11 @@ namespace LunarROMCorruptor.Modules
 
                 File.Copy(saveAsTxt, Path.Combine(savesPath, newFileName));
                 filesaveList?.Items?.Add(newFileName);
+                TraceLogger.Log($"File copy saved successfully as: {newFileName}");
             }
             catch (ArgumentException)
             {
-                MessageBox.Show("SaveCorruptedFile Argument Error: Is there a file loaded?");
+                TraceLogger.Log("Argument error (FileSave). Did you select an item?", StatusSeverityType.Error, true);
             }
         }
 
@@ -116,6 +120,7 @@ namespace LunarROMCorruptor.Modules
         {
             if (stashBytesList?.Items?.Count == 0)
             {
+                TraceLogger.Log("No stash bytes to transfer. Aborting stash save operation.", StatusSeverityType.Warning);
                 return;
             }
 
@@ -123,11 +128,13 @@ namespace LunarROMCorruptor.Modules
 
             if (stashBytesList?.Items?.Count > 0 && stashBytesList.Items[0].ToString() == "LargeStash")
             {
+                TraceLogger.Log("Large stash detected. Prompting user for confirmation before saving.", StatusSeverityType.Warning);
                 if (MessageBox.Show("This is a large stash which may take awhile to load in the future. Are you sure you want to save anyway?",
                     $"Warning - {nameof(LunarROMCorruptor)}", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
                 {
                     if (internalStashItems != null)
                     {
+                        TraceLogger.Log("User confirmed saving large stash. Adding internal stash items to the file content.", StatusSeverityType.Information);
                         foreach (var listItem in internalStashItems)
                         {
                             builder.Append(listItem);
@@ -141,6 +148,7 @@ namespace LunarROMCorruptor.Modules
             {
                 if (internalStashItems != null)
                 {
+                    TraceLogger.Log("Adding internal stash items to the file content.", StatusSeverityType.Information);
                     foreach (var listItem in internalStashItems)
                     {
                         builder.Append(listItem);
@@ -152,6 +160,7 @@ namespace LunarROMCorruptor.Modules
             // Ensure directory exists
             if (!Directory.Exists(CorruptionStashDirectory))
             {
+                TraceLogger.Log($"Corruption stash directory does not exist. Creating directory at: {CorruptionStashDirectory}", StatusSeverityType.Information);
                 Directory.CreateDirectory(CorruptionStashDirectory);
             }
 
@@ -160,8 +169,15 @@ namespace LunarROMCorruptor.Modules
                 "unnamed" : Path.GetFileNameWithoutExtension(fileSelectionTxt);
             string randomFileName = Path.Combine(CorruptionStashDirectory, $"{fileNameWithoutExtension}-{rnd.Next(1000, 999999999)}.stash");
 
-            File.WriteAllText(randomFileName, builder.ToString());
-
+            TraceLogger.Log($"Saving stash to file: {randomFileName}", StatusSeverityType.Information);
+            try
+            {
+                File.WriteAllText(randomFileName, builder.ToString());
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Error writing stash to file: {randomFileName}. Exception: {ex.Message}", StatusSeverityType.Error);
+            }
             // Refresh stash file list
             RefreshFileList(stashFileList, CorruptionStashDirectory);
         }
@@ -183,11 +199,13 @@ namespace LunarROMCorruptor.Modules
             {
                 Text = dialogTitle
             };
+            TraceLogger.Log($"Prompting user for new file name with dialog title: {dialogTitle}", StatusSeverityType.Information);
             input.ShowDialog();
 
             // Validate input
             if (string.IsNullOrEmpty(input?.InputBoxTxtBox?.Text))
             {
+                TraceLogger.Log("No file name entered. Aborting rename operation.", StatusSeverityType.Warning, true);
                 input?.Dispose();
                 return;
             }
@@ -198,7 +216,8 @@ namespace LunarROMCorruptor.Modules
                 string? selectedItemText = listBox?.GetItemText(listBox?.SelectedItem);
                 if (string.IsNullOrEmpty(selectedItemText))
                 {
-                    MessageBox.Show("No item selected!");
+                    TraceLogger.Log("No item selected for renaming. Aborting rename operation.", StatusSeverityType.Warning, true);
+                    //MessageBox.Show("No item selected!");
                     input?.Dispose();
                     return;
                 }
@@ -208,7 +227,7 @@ namespace LunarROMCorruptor.Modules
                 // Validate file exists
                 if (!File.Exists(selectedItemPath))
                 {
-                    MessageBox.Show("File doesn't exist!");
+                    TraceLogger.Log($"Selected file does not exist at path: {selectedItemPath}. Aborting rename operation.", StatusSeverityType.Error, true);
                     input?.Dispose();
                     return;
                 }
@@ -216,7 +235,7 @@ namespace LunarROMCorruptor.Modules
                 // Validate file name
                 if (!IsValidFileName(input.InputBoxTxtBox.Text))
                 {
-                    MessageBox.Show("Invalid File Name!");
+                    TraceLogger.Log($"Invalid file name entered: {input.InputBoxTxtBox.Text}. Aborting rename operation.", StatusSeverityType.Warning, true);
                     input?.Dispose();
                     return;
                 }
@@ -226,10 +245,12 @@ namespace LunarROMCorruptor.Modules
                 string destinationPath = Path.Combine(directoryPath, input.InputBoxTxtBox.Text + extension);
 
                 // Move file
+                TraceLogger.Log($"Renaming file from: {selectedItemPath} to: {destinationPath}", StatusSeverityType.Information);
                 File.Move(selectedItemPath, destinationPath);
 
                 if (listBox?.Items != null)
                 {
+                    TraceLogger.Log($"Updating ListBox item for renamed file. New name: {input.InputBoxTxtBox.Text + extension}", StatusSeverityType.Information);
                     int selectedIndex = listBox.SelectedIndex;
                     listBox.Items[selectedIndex] = input.InputBoxTxtBox.Text + extension;
                 }
@@ -241,7 +262,7 @@ namespace LunarROMCorruptor.Modules
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error renaming file: {ex.Message}");
+                TraceLogger.Log($"Error renaming file. Exception: {ex.Message}", StatusSeverityType.Error, true);
                 input?.Dispose();
             }
         }
@@ -262,6 +283,7 @@ namespace LunarROMCorruptor.Modules
             {
                 if (listBox?.SelectedItems?.Count == 0)
                 {
+                    TraceLogger.Log("No items selected for deletion. Aborting delete operation.", StatusSeverityType.Warning, true);
                     return;
                 }
 
@@ -269,12 +291,14 @@ namespace LunarROMCorruptor.Modules
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question) == DialogResult.Yes)
                 {
+                    TraceLogger.Log($"User confirmed deletion of selected items. Deleting files from directory: {directoryPath}", StatusSeverityType.Information);
                     foreach (var item in listBox!.SelectedItems.Cast<object>())
                     {
                         string? itemText = item?.ToString();
                         if (!string.IsNullOrEmpty(itemText))
                         {
                             string fullPath = Path.Combine(directoryPath, itemText);
+                            TraceLogger.Log($"Attempting to delete file at path: {fullPath}", StatusSeverityType.Information);
                             File.Delete(fullPath);
                         }
                     }
@@ -285,12 +309,11 @@ namespace LunarROMCorruptor.Modules
             }
             catch (UnauthorizedAccessException)
             {
-                MessageBox.Show("Access Denied or nothing was selected for deletion. Check if you can write or have authorization to that directory.",
-                    $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Access denied when attempting to delete file. Check permissions for the directory.", StatusSeverityType.Error, true);
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message);
+                TraceLogger.Log($"Error deleting file. Exception: {ex.Message}", StatusSeverityType.Error, true);
             }
         }
 
@@ -298,6 +321,7 @@ namespace LunarROMCorruptor.Modules
         {
             if (string.IsNullOrEmpty(saveAsTxt) || saveAsTxt == "No save location set.")
             {
+                TraceLogger.Log("No valid file path provided. Aborting copy operation.", StatusSeverityType.Warning);
                 return;
             }
 
@@ -306,23 +330,21 @@ namespace LunarROMCorruptor.Modules
                 string? selectedItemText = filesaveList?.GetItemText(filesaveList?.SelectedItem);
                 if (string.IsNullOrEmpty(selectedItemText))
                 {
-                    MessageBox.Show("No item selected!",
-                        $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("No item selected for copying. Aborting copy operation.", StatusSeverityType.Warning, true);
                     return;
                 }
 
                 string sourcePath = Path.Combine(SavesDirectory, selectedItemText);
                 File.Copy(sourcePath, saveAsTxt, true);
+                TraceLogger.Log($"File copied successfully from: {sourcePath} to: {saveAsTxt}", StatusSeverityType.Information);
             }
             catch (ArgumentException)
             {
-                MessageBox.Show("Argument error (FileSave). Did you select an item?",
-                    $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Argument error (FileSave). Did you select an item?", StatusSeverityType.Error, true);
             }
             catch (DirectoryNotFoundException)
             {
-                MessageBox.Show("File not found (FileSave). Did you select an item?",
-                    $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Directory not found (FileSave). Check if the source directory exists.", StatusSeverityType.Error, true);
             }
         }
 

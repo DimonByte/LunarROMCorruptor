@@ -9,7 +9,7 @@
         Vector2Engine,
         ManualEngine
     }
-    internal class EngineEnums
+    internal class EngineParser
     {
         // Helper method to convert enum to display text
         public static string GetEngineDisplayName(CorruptionEngineType engineType)
@@ -39,6 +39,17 @@
                 "Manual Engine" => CorruptionEngineType.ManualEngine,
                 _ => CorruptionEngineType.NightmareEngine // default fallback
             };
+        }
+
+        public static CorruptionOptions? ParseCorruptionOptions(string comboBoxText)
+        {
+            if (Enum.TryParse(comboBoxText, out CorruptionOptions corruptionType))
+            {
+                return corruptionType;
+            }
+
+            TraceLogger.Log($"Failed to parse corruption type from combo box text: '{comboBoxText}'", StatusSeverityType.Error, true);
+            return null;
         }
     }
 }

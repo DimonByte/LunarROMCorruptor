@@ -51,25 +51,40 @@ namespace LunarROMCorruptor
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, EventArgs e)
+        private void OnTraceLogEntryAdded(string logEntry, LunarROMCorruptor.Modules.StatusSeverityType severity)
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action<string, LunarROMCorruptor.Modules.StatusSeverityType>(OnTraceLogEntryAdded), logEntry, severity);
+                return;
+            }
+            TraceLoggerTxtBox.AppendText($"{logEntry}{Environment.NewLine}");
+            TraceLoggerTxtBox.SelectionStart = TraceLoggerTxtBox.Text.Length;
+            TraceLoggerTxtBox.ScrollToCaret();
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
         {
             //MainTabControl.TabPages.Remove(MemCorruptPage); // For now, remove process memory corruption tab
+            TraceLogger.OnLogEntryAdded += OnTraceLogEntryAdded;
+            TraceLogger.Log("LunarROMCorruptor started.");
             Text = $"{nameof(LunarROMCorruptor)} - " + vernumber;
             AboutVerLabel.Text = vernumber;
             if (!Directory.Exists(Application.StartupPath + "\\Saves\\")) //If file doesn't exist, assume it's the first time the program has been run and create the directory.
             {
                 try
                 {
+                    TraceLogger.Log("Saves directory not found. Attempting to create directory...");
                     Directory.CreateDirectory(Application.StartupPath + "\\Saves\\");
                     Directory.CreateDirectory(Application.StartupPath + "\\CorruptionStashList\\");
                     MessageBox.Show($"Welcome to {nameof(LunarROMCorruptor)}!{Environment.NewLine}{Environment.NewLine}Disclaimer:{Environment.NewLine}{nameof(LunarROMCorruptor)} is distributed under an MIT license.{Environment.NewLine}{Environment.NewLine}By clicking OK, you agree to that license and also understand the risks and disclaimers provided.{Environment.NewLine}{Environment.NewLine}This program can irreversibly corrupt personal or critical system data if you're not careful.{Environment.NewLine}This program comes with no warranty of ANY kind and is provided 'AS IS'.{Environment.NewLine}You're responsible for backing up your data before use and for any damage that comes with the use or misuse of this program.{Environment.NewLine}{Environment.NewLine}This message will not show up again but you can read the license again by going to the 'About' tab.{Environment.NewLine}{Environment.NewLine}Enjoy!", $"{nameof(LunarROMCorruptor)} - INFO", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. Error: {ex}", $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. {ex}", StatusSeverityType.Error, true);
                 }
             }
-            CorruptionEngineComboBox.Text = EngineEnums.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
+            CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
             AllowDrop = true;
             BrowseEmulatorbutton.Enabled = false;
             EmulatorLocationtxt.BackColor = Color.Gray;
@@ -109,11 +124,13 @@ namespace LunarROMCorruptor
 
         public void LoadFile(string FileLocation)
         {
+            TraceLogger.Log($"Attempting to load file: {FileLocation}");
             AttentionPictureBox.Image = Resources.Loading;
             AttentionPictureBox.Show();
             Refresh();
             if (CorruptionCore.LoadROM(FileLocation))
             {
+                TraceLogger.Log($"File loaded successfully: {FileLocation}");
                 StartByteTrackBar.Value = 0;
                 StartByteTrackBar.Maximum = CorruptionCore.MaxByte;
                 EndByteTrackbar.Maximum = CorruptionCore.MaxByte;
@@ -130,10 +147,11 @@ namespace LunarROMCorruptor
                 CorruptButton.Text = $"Corrupt File ({CorruptionCore.rawFileSize} {CorruptionCore.fileSizeUnit})";
                 AttentionPictureBox.Hide();
                 AttentionPictureBox.Image = Resources.dragicon;
+                TraceLogger.Log($"File loaded and UI updated for file: {FileLocation}");
             }
             else
             {
-                MessageBox.Show("Failed to load the file. Please ensure it's a valid file and try again.", $"{nameof(LunarROMCorruptor)} - ERROR", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log($"Failed to load file: {FileLocation}", StatusSeverityType.Error, true);
             }
         }
 
@@ -212,7 +230,7 @@ namespace LunarROMCorruptor
         private void CorruptionEngineComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             // Main Form - Change what the CorruptionEngineFrame displays.
-            var selectedEngine = EngineEnums.ParseEngineType(CorruptionEngineComboBox.Text);
+            var selectedEngine = EngineParser.ParseEngineType(CorruptionEngineComboBox.Text);
             CorruptionEngineFrame.MergeEnginePanel.Visible = selectedEngine == CorruptionEngineType.MergeEngine;
             CorruptionEngineFrame.LogicEnginePanel.Visible = selectedEngine == CorruptionEngineType.LogicEngine;
             CorruptionEngineFrame.NightmareEnginePanel.Visible = selectedEngine == CorruptionEngineType.NightmareEngine;
@@ -266,24 +284,28 @@ namespace LunarROMCorruptor
 
         private void CorruptButton_Click(object sender, EventArgs e)
         {
+            TraceLogger.Log("Corruption process started by user.");
             //Main Function - Starts the corruption process.
-
+            //ROM is used in multi file corruption and will store the corrupted file data.
+            //FINROM is used in single file corruption and is the one that gets corrupted and saved. And ROM will then contain the original file for restore purposes.
             //---Check if the corruption queue has been enabled--- If so, use this multi-corruption code.
             if (CorruptionQueueChkbox.Checked) //Multiple File Corruption
             {
+                TraceLogger.Log("Corruption Queue enabled. Starting multi-file corruption process.");
                 // Validate queue is not empty and handle multiple files selection
                 if (CorruptionQueueFormSettings.CorruptionQueueList.Items.Count == 0)
                 {
-                    MessageBox.Show("The corruption queue is empty.\n\nPlease add files to the queue.", "Empty Queue", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("Corruption Queue is empty. Aborting corruption process.", StatusSeverityType.Error, true);
                     return;
                 }
                 else if (FileSelectiontxt.Text != "---Multiple files selected---")
                 {
-                    MessageBox.Show("There are files waiting in the corruption queue, but they have not been sent to the corruptor.\n\nYou need to open the corruption queue and click 'Send files to the corruptor' before you can corrupt them.", "Corruption Queue Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("Corruption Queue has files but the main form is still showing a single file selected. This likely means the user hasn't sent the files to the corruptor yet. Aborting corruption process.", StatusSeverityType.Error, true);
                     return;
                 }
                 else if (CorruptionQueueFormSettings.CorruptionQueueList.Items.Count >= 100)
                 {
+                    TraceLogger.Log("Corruption Queue has a large number of files (100 or more). This may lead to long corruption times and potential performance issues.", StatusSeverityType.Warning);
                     MessageBox.Show("The corruption queue is rather full of files.\n\nBe aware that this will impact corruption times.", "Full Queue", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
 
@@ -292,7 +314,7 @@ namespace LunarROMCorruptor
                 {
                     if (!File.Exists(item))
                     {
-                        MessageBox.Show($"The file {item} does not exist.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        TraceLogger.Log($"File in corruption queue does not exist: {item}. Aborting corruption process for that file.", StatusSeverityType.Error, true);
                         return;
                     }
                 }
@@ -300,12 +322,12 @@ namespace LunarROMCorruptor
                 // Validate Start and End bytes
                 if (StartByteNumb.Value > EndByteNumb.Value)
                 {
-                    MessageBox.Show("Start Byte cannot be greater than End Byte!", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("Start Byte value is greater than End Byte value. Aborting corruption process.", StatusSeverityType.Error, true);
                     return;
                 }
 
-                CorruptionCore.StartByte = (int)Math.Min(StartByteNumb.Value, CorruptionCore.MaxByte);
-                CorruptionCore.StartByte = (int)EndByteNumb.Value;
+                int SelectedStartByte = (int)Math.Min(StartByteNumb.Value, CorruptionCore.MaxByte);
+                int SelectedEndByte = (int)EndByteNumb.Value;
 
                 // Determine corruption intensity
                 int tmpintensity = CorruptEverynthByteRadioBtn.Checked ? (int)EveryNthByte.Value : (int)Intensity.Value;
@@ -318,9 +340,18 @@ namespace LunarROMCorruptor
                 // Process each file in the corruption queue
                 foreach (var filePath in CorruptionQueueFormSettings.CorruptionQueueList.Items.Cast<ListViewItem>().Select(i => i.Text))
                 {
+                    TraceLogger.Log($"Starting corruption for file: {filePath}");
                     // Load the file into ROM byte array
-                    //OPTIMIZE AND REFACTOR: This code is loading a ROM without using CorruptionCore.LoadROM, which means it doesn't have the error handling and file validation that LoadROM provides. It also means that if the file is large, it will allocate a large byte array in memory which could cause issues.
-                    CorruptionCore.ROM = File.ReadAllBytes(filePath);
+                    if (CorruptionCore.LoadROM(filePath))
+                    {
+                        TraceLogger.Log($"Failed to load file: {filePath}. Skipping this file and moving to the next one in the queue.", StatusSeverityType.Error, true);
+                        return;
+                    }
+                    if (CorruptionCore.ROM == null)
+                    {
+                        TraceLogger.Log($"File loaded but ROM is null for file: {filePath}. This indicates a problem with loading the file into memory. Stopping corruption...", StatusSeverityType.Error, true);
+                        break;
+                    }
                     CorruptionCore.MaxByte = CorruptionCore.ROM.Length - 1;
                     StartByteTrackBar.Value = 0;
                     StartByteTrackBar.Maximum = CorruptionCore.MaxByte;
@@ -336,12 +367,12 @@ namespace LunarROMCorruptor
                     // Attempt File Owner Override if enabled
                     if (AttemptProtectedFileOverrideChkBox.Checked && File.Exists(SaveasTxt.Text))
                     {
-                        CorruptionCore.AttemptProtectedFileOverride(SaveasTxt.Text);
+                        FileOverrideHelper.AttemptProtectedFileOverride(SaveasTxt.Text);
                     }
 
                     // Start Corruption in CorruptionCore
-
-                    CorruptionCore.ROM = CorruptionCore.StartCorruption(CorruptionCore.ROM, CorruptionCore.StartByte, CorruptionCore.EndByte, CorruptEverynthByteRadioBtn.Checked, tmpintensity, EngineEnums.GetEngineDisplayName(EngineEnums.ParseEngineType(CorruptionEngineComboBox.Text)));
+                    TraceLogger.Log($"Starting corruption for file: {filePath} using engine: {CorruptionEngineComboBox.Text}");
+                    CorruptionCore.ROM = CorruptionCore.StartCorruption(CorruptionCore.ROM, SelectedStartByte, SelectedEndByte, CorruptEverynthByteRadioBtn.Checked, tmpintensity, EngineParser.GetEngineDisplayName(EngineParser.ParseEngineType(CorruptionEngineComboBox.Text)));
 
                     // Attempt to save corrupted file
 
@@ -349,16 +380,17 @@ namespace LunarROMCorruptor
                     {
                         try
                         {
-                            File.WriteAllBytes(filePath, CorruptionCore.ROM);
+                            TraceLogger.Log($"Attempting to save corrupted file: {filePath}");
+                            CorruptionCore.SaveROM(CorruptionCore.ROM, filePath);
                         }
                         catch (Exception ex)
                         {
-                            MessageBox.Show($"The file {filePath} could not be saved.\n\n{ex}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            TraceLogger.Log($"Failed to save corrupted file: {filePath}. Exception: {ex}", StatusSeverityType.Error, true);
                         }
                     }
                     else
                     {
-                        MessageBox.Show($"The file {filePath} could not be corrupted. ROM returned null.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        TraceLogger.Log($"Corruption returned null for file: {filePath}. No data has been saved and corruption has been aborted for this file.", StatusSeverityType.Error, true);
                     }
                 }
 
@@ -375,7 +407,7 @@ namespace LunarROMCorruptor
                     }
                     else
                     {
-                        MessageBox.Show("Emulator doesn't exist.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        TraceLogger.Log("Emulator path is set to run after corruption but the file does not exist. Please check your emulator path settings. Aborting emulator launch.", StatusSeverityType.Error, true);
                     }
                 }
             }
@@ -386,12 +418,12 @@ namespace LunarROMCorruptor
                 // Validate Start and End bytes
                 if (StartByteNumb.Value > EndByteNumb.Value)
                 {
-                    MessageBox.Show("Start Byte cannot be greater than End Byte!", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("Start Byte value is greater than End Byte value. Aborting corruption process.", StatusSeverityType.Error, true);
                     return;
                 }
 
-                CorruptionCore.StartByte = (int)Math.Min(StartByteNumb.Value, CorruptionCore.MaxByte);
-                CorruptionCore.EndByte = (int)EndByteNumb.Value;
+                int SelectedStartByte = (int)Math.Min(StartByteNumb.Value, CorruptionCore.MaxByte);
+                int SelectedEndByte = (int)EndByteNumb.Value;
 
                 // Determine corruption intensity
                 int tmpintensity = CorruptEverynthByteRadioBtn.Checked ? (int)EveryNthByte.Value : (int)Intensity.Value;
@@ -399,7 +431,7 @@ namespace LunarROMCorruptor
                 // Validate file selection
                 if (string.IsNullOrEmpty(FileSelectiontxt.Text) || FileSelectiontxt.Text == "No file selected." || !File.Exists(FileSelectiontxt.Text))
                 {
-                    MessageBox.Show("Please select a valid file to corrupt.", "Invalid File", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("No valid file selected for corruption. Please select a valid file before attempting to corrupt.", StatusSeverityType.Error, true);
                     return;
                 }
 
@@ -411,40 +443,40 @@ namespace LunarROMCorruptor
                 // Attempt File Owner Override if enabled
                 if (AttemptProtectedFileOverrideChkBox.Checked && File.Exists(SaveasTxt.Text))
                 {
-                    CorruptionCore.AttemptProtectedFileOverride(SaveasTxt.Text);
+                    FileOverrideHelper.AttemptProtectedFileOverride(SaveasTxt.Text);
                 }
 
                 // Check if ROM is null and initialize it if needed
                 if (CorruptionCore.ROM == null)
                 {
-                    MessageBox.Show($"ROM File isn't loaded into LRC, please load a file. (ROM is null when attempting to corrupt.)", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("ROM is null when attempting to corrupt. This likely means the file wasn't loaded properly into memory. Aborting corruption process.", StatusSeverityType.Error, true);
                     return;
                 }
 
                 // Clone ROM and start corruption
-                byte[]? FinROM = (byte[])CorruptionCore.ROM.Clone(); //Gets duplicated so original ROM can be restored. FINROM is the one that gets corrupted and saved.
-                FinROM = CorruptionCore.StartCorruption(FinROM, CorruptionCore.StartByte, CorruptionCore.EndByte, CorruptEverynthByteRadioBtn.Checked, tmpintensity, EngineEnums.GetEngineDisplayName(EngineEnums.ParseEngineType(CorruptionEngineComboBox.Text)));
+                CorruptionCore.FINROM = (byte[])CorruptionCore.ROM.Clone(); //Gets duplicated so original ROM can be restored. FINROM is the one that gets corrupted and saved.
+                CorruptionCore.FINROM = CorruptionCore.StartCorruption(CorruptionCore.FINROM, SelectedStartByte, SelectedEndByte, CorruptEverynthByteRadioBtn.Checked, tmpintensity, EngineParser.GetEngineDisplayName(EngineParser.ParseEngineType(CorruptionEngineComboBox.Text)));
 
                 // Validate corruption result
-                if (FinROM == null) //Something went wrong here...
+                if (CorruptionCore.FINROM == null) //Something went wrong here...
                 {
-                    MessageBox.Show("The corrupted ROM returned from the corruption engine with NULL. Something went wrong. No data has been saved and corruption has been aborted.", $"Fatal Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log("The corrupted ROM returned from the corruption engine is null. This indicates a critical error in the corruption process. No data has been saved and corruption has been aborted.", StatusSeverityType.Fatal, true);
                     return;
                 }
 
                 // Attempt to save corrupted ROM
                 try
                 {
-                    File.WriteAllBytes(SaveasTxt.Text, FinROM);
+                    CorruptionCore.SaveROM(CorruptionCore.FINROM, SaveasTxt.Text);
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Unable to save file.\n{ex}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Failed to save corrupted file: {SaveasTxt.Text}. Exception: {ex}", StatusSeverityType.Error, true);
                     return;
                 }
 
                 if (FilesaveEnableAutoSaves.Checked) //Save the corrupted file copy into the file saves if auto saves is enabled.
-                { 
+                {
                     IOManager.SaveCorruptedFileCopy(SaveasTxt.Text, FilesaveList);
                 }
 
@@ -457,9 +489,10 @@ namespace LunarROMCorruptor
                     }
                     else
                     {
-                        MessageBox.Show("Emulator doesn't exist.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        TraceLogger.Log("Emulator path is set to run after corruption but the file does not exist. Please check your emulator path settings. Aborting emulator launch.", StatusSeverityType.Error, true);
                     }
                 }
+
 
                 if (EnableStashSavesChkbox.Checked)
                 {
@@ -492,15 +525,20 @@ namespace LunarROMCorruptor
                 // Update ByteView if enabled
                 if (ByteViewupdateWhenCorruptedChkBox.Checked)
                 {
-                    ByteViewPictureBox.Image = ByteView.ConvertByteToImage(FinROM, byteViewColourChkbox.Checked);
-                    if (flipVerticalChkbox.Checked || flipHorizontalChkbox.Checked)
+                    Bitmap? img = ByteView.ConvertByteToImage(CorruptionCore.FINROM, byteViewColourChkbox.Checked);
+                    if (img == null)
                     {
-                        //FIXME: Converting null literal to non-nullable type. This should be fixed by ensuring that ByteView.ConvertByteToImage never returns null.
-                        ByteViewPictureBox.Image = ByteView.FlipImage((Bitmap)ByteViewPictureBox.Image, flipHorizontalChkbox.Checked, flipVerticalChkbox.Checked);
+                        TraceLogger.Log("ByteView conversion failed: no image produced. This likely means there was an error in the conversion process or the corrupted data is not suitable for image representation.", StatusSeverityType.Error, true);
+                    }
+                    else
+                    {
+                        if (flipVerticalChkbox.Checked || flipHorizontalChkbox.Checked)
+                        {
+                            img = ByteView.FlipImage(img, flipHorizontalChkbox.Checked, flipVerticalChkbox.Checked);
+                        }
+                        ByteViewPictureBox.Image = img;
                     }
                 }
-                // Clear FINROM and clean memory
-                FinROM = null;
                 GC.Collect();
             }
 
@@ -512,6 +550,7 @@ namespace LunarROMCorruptor
             }
 
             CorruptButtonColorChanger.Start(); //Change the corruption button colour back to normal after the timer ticks.
+            TraceLogger.Log($"Corruption process completed. Stash Item Count: {InternalStashItems.Count}");
             Console.WriteLine("Corruption Complete: Number of Stash Items: " + InternalStashItems.Count); //Debugging
         }
 
@@ -537,6 +576,7 @@ namespace LunarROMCorruptor
                 // Add files to the listbox in the CorruptionQueue
                 foreach (var item in files)
                 {
+                    TraceLogger.Log($"File added to corruption queue via drag and drop: {item}");
                     CorruptionQueueFormSettings.CorruptionQueueList.Items.Add(item);
                 }
                 CorruptionQueueFormSettings.TopMost = true;
@@ -547,6 +587,7 @@ namespace LunarROMCorruptor
             {
                 foreach (var path in files)
                 {
+                    TraceLogger.Log($"File dropped onto main form: {path}. Attempting to load this file.");
                     LoadFile(path);
                 }
             }
@@ -563,31 +604,12 @@ namespace LunarROMCorruptor
 
         private void Restorefilebtn_Click(object sender, EventArgs e)
         {
-            try
+            if (CorruptionCore.ROM == null)
             {
-                if (CorruptionCore.ROM == null)
-                {
-                    MessageBox.Show("Error: Cannot restore file. No ROM loaded.", "Restore File", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                if (SaveasTxt.Text == "No save location set.")
-                {
-                    MessageBox.Show("No save location set! Cannot restore.", "Restore File", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                File.WriteAllBytes(SaveasTxt.Text, CorruptionCore.ROM);// Try to write the ROM that is in memory into the save as file.
-                CorruptButton.BackColor = Color.Green;
-                if (!SilentCorruptionchbox.Checked)
-                {
-                    using var soundPlayer = new SoundPlayer(Resources.success3);
-                    soundPlayer.Play();
-                }
-                CorruptButtonColorChanger.Start();
+                TraceLogger.Log("Attempted to restore ROM but ROM is null. This likely means no file is loaded into memory. Please load a file before attempting to restore.", StatusSeverityType.Error, true);
+                return;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error when restoring file: " + ex.ToString());
-            }
+            CorruptionCore.RestoreROM(SaveasTxt.Text, CorruptionCore.ROM);
         }
 
         private void TransferStash_Click(object sender, EventArgs e) //This saves the stash
@@ -602,6 +624,7 @@ namespace LunarROMCorruptor
             {
                 try
                 {
+                    TraceLogger.Log("Attempting to load stash file into stash editor");
                     frm1.AttemptStashLoad(Application.StartupPath + "\\CorruptionStashList\\" + StashFileList.SelectedItems[0]!.ToString());
                 }
                 catch { }
@@ -654,7 +677,7 @@ namespace LunarROMCorruptor
             //Check if a StashFile is selected before running code
             if (StashFileList.SelectedItems.Count == 0)
             {
-                MessageBox.Show("No StashFile selected!", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Attempted to corrupt using stash file but no stash file is selected. Please select a stash file before attempting to corrupt.", StatusSeverityType.Error, true);
                 return;
             }
             CorruptUsingStashFile(Application.StartupPath + "\\CorruptionStashList\\" + StashFileList.GetItemText(StashFileList.SelectedItem));
@@ -668,12 +691,12 @@ namespace LunarROMCorruptor
             //Check if ROM isn't null before running code
             if (CorruptionCore.ROM == null)
             {
-                MessageBox.Show("No ROM loaded!" + Environment.NewLine + "Please load a ROM first.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Attempted to corrupt using stash file but ROM is null. This likely means no file is loaded into memory. Please load a file before attempting to corrupt using a stash file.", StatusSeverityType.Error, true);
                 return;
             }
             if (CorruptionCore.ROM.Clone() is not byte[] FinROM)
             {
-                MessageBox.Show("Unexpected error: ROM clone failed and returned null when corrupting using stash file.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Unexpected error: ROM clone failed and returned null when corrupting using stash file. This indicates a critical issue with the ROM data in memory. Corruption process has been aborted.", StatusSeverityType.Fatal, true);
                 return;
             }
             foreach (var line in File.ReadAllLines(StashFileLocation))
@@ -687,7 +710,7 @@ namespace LunarROMCorruptor
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Split error in line: {line} {Environment.NewLine} Error: {ex.Message}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Error splitting line from stash file: {line}. Exception: {ex}", StatusSeverityType.Error, true);
                     return;
                 }
                 Object i; //Location of byte to be changed
@@ -698,7 +721,7 @@ namespace LunarROMCorruptor
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Location error in line: {line} {Environment.NewLine} Error: {ex.Message}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Error parsing byte location from line: {line}. Exception: {ex}", StatusSeverityType.Error, true);
                     return;
                 }
                 try
@@ -707,20 +730,20 @@ namespace LunarROMCorruptor
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"Corruption error in line: {line} {Environment.NewLine} Error: {ex.Message}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Error parsing byte value from line: {line}. Exception: {ex}", StatusSeverityType.Error, true);
                     return;
                 }
                 //Check if the byte location is within the correct margins. If not, throw an error.
                 if (Convert.ToInt32(i) > FinROM.Length)
                 {
-                    MessageBox.Show($"Byte location is out of bounds! {Environment.NewLine}Byte location that is invalid: {i}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Byte location is out of bounds for line: {line}. Byte location: {i}, ROM size: {FinROM.Length}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
                     return;
                 }
                 //Check if byte value is out of bounds
                 bool isByteValid = byte.TryParse(result.ToString(), out byte output);
                 if (isByteValid == false)
                 {
-                    MessageBox.Show($"Byte value is out of bounds! {Environment.NewLine}Invalid byte value: {result}", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Byte value is out of bounds for line: {line}. Byte value: {result}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
                     return;
                 }
                 try
@@ -731,8 +754,7 @@ namespace LunarROMCorruptor
 
                     if (string.IsNullOrEmpty(iString) || string.IsNullOrEmpty(resultString))
                     {
-                        MessageBox.Show("Invalid stash item data - null values found!",
-                            $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        TraceLogger.Log($"Invalid stash item data - null or empty values found for line: {line}. i: {i}, result: {result}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
                         return;
                     }
 
@@ -740,34 +762,42 @@ namespace LunarROMCorruptor
                 }
                 catch (IndexOutOfRangeException ex1)
                 {
-                    MessageBox.Show($"Stash item location index is invalid! {Environment.NewLine} Error: {ex1}",
-                        $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Stash item location index is out of bounds for line: {line}. Byte location: {i}, ROM size: {FinROM.Length}. Exception: {ex1}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
                     return;
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show($"ROM byte stash corruption failed! Corruption cannot continue. {Environment.NewLine} Error: {ex}",
-                        $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    TraceLogger.Log($"Unexpected error applying stash item from line: {line}. i: {i}, result: {result}. Exception: {ex}. This indicates a critical issue with the data in the stash file or the ROM data in memory. Corruption process has been aborted.", StatusSeverityType.Fatal, true);
                     return;
                 }
             }
-            File.WriteAllBytes(SaveasTxt.Text, FinROM);
-            CorruptButton.BackColor = Color.Green;
-            if (!SilentCorruptionchbox.Checked)
+            TraceLogger.Log($"Finished applying stash file: {StashFileLocation}. Attempting to save the corrupted ROM with stash changes applied. Total stash items applied: {StashBytesList.Items.Count}");
+            try
             {
-                using var soundPlayer = new SoundPlayer(Resources.success3);
-                soundPlayer.Play();
+                CorruptionCore.SaveROM(FinROM, SaveasTxt.Text);
+                TraceLogger.Log($"Corrupted file with stash file successfully saved: {SaveasTxt.Text}");
+
+                CorruptButton.BackColor = Color.Green;
+                if (!SilentCorruptionchbox.Checked)
+                {
+                    using var soundPlayer = new SoundPlayer(Resources.success3);
+                    soundPlayer.Play();
+                }
+                CorruptButtonColorChanger.Start();
+                if (Runemulatorchbox.Checked && string.IsNullOrEmpty(EmulatorLocationtxt.Text))
+                {
+                    CorruptionCore.StartEmulator(ReopenChbox.Checked, EmulatorLocationtxt.Text, SaveasTxt.Text, OverrideArgumentschbox.Checked, OverrideArguments.Text);
+                }
+                //Set StashByteList to the files contents, each line is each item on the list
+                StashBytesList.Items.Clear();
+                foreach (var item in File.ReadAllLines(StashFileLocation))
+                {
+                    StashBytesList.Items.Add(item);
+                }
             }
-            CorruptButtonColorChanger.Start();
-            if (Runemulatorchbox.Checked && string.IsNullOrEmpty(EmulatorLocationtxt.Text))
+            catch (Exception ex)
             {
-                CorruptionCore.StartEmulator(ReopenChbox.Checked, EmulatorLocationtxt.Text, SaveasTxt.Text, OverrideArgumentschbox.Checked, OverrideArguments.Text);
-            }
-            //Set StashByteList to the files contents, each line is each item on the list
-            StashBytesList.Items.Clear();
-            foreach (var item in File.ReadAllLines(StashFileLocation))
-            {
-                StashBytesList.Items.Add(item);
+                TraceLogger.Log($"Failed to save corrupted file with stash changes applied: {SaveasTxt.Text}. Exception: {ex}", StatusSeverityType.Error, true);
             }
         }
 
@@ -962,17 +992,17 @@ namespace LunarROMCorruptor
                         if (CorruptionEngineComboBox?.Items != null && CorruptionEngineComboBox.Items.Count > 0)
                         {
                             var selectedItem = CorruptionEngineComboBox.Items[rnd.Next(0, CorruptionEngineComboBox.Items.Count)];
-                            CorruptionEngineComboBox.Text = selectedItem?.ToString() ?? EngineEnums.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
+                            CorruptionEngineComboBox.Text = selectedItem?.ToString() ?? EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
                         }
                         else
                         {
-                            MessageBox.Show("Corruption Engine ComboBox is empty or null! Cannot randomize corruption engine.", $"Error - {nameof(LunarROMCorruptor)}", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            TraceLogger.Log("Corruption Engine ComboBox is empty or null when attempting to randomize corruption engine. Aborting automation process.", StatusSeverityType.Fatal, true);
                             AutomationTimer.Stop();
                             return;
                         }
-                        if (CorruptionEngineComboBox.Text == EngineEnums.GetEngineDisplayName(CorruptionEngineType.MergeEngine) && Program.Form.CorruptionEngineFrame.MergeFileLocationTxt.Text == null) // Prevents corruption from halting if there is no file in the Merge Engine while in Automation mode.
+                        if (CorruptionEngineComboBox.Text == EngineParser.GetEngineDisplayName(CorruptionEngineType.MergeEngine) && Program.Form.CorruptionEngineFrame.MergeFileLocationTxt.Text == null) // Prevents corruption from halting if there is no file in the Merge Engine while in Automation mode.
                         {
-                            CorruptionEngineComboBox.Text = EngineEnums.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
+                            CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
                         }
                         break;
                 }
@@ -1061,6 +1091,7 @@ namespace LunarROMCorruptor
 
         private void UnloadROMFromMemory()
         {
+            TraceLogger.Log("Unloading ROM from memory to free up resources for process memory corruption.");
             CorruptionCore.ROM = null;
             GC.Collect();
             CorruptionCore.MaxByte = 1000; //Set back to default values
@@ -1076,6 +1107,7 @@ namespace LunarROMCorruptor
             SaveasTxt.Text = "No save location set.";
             MainSaveFileDialog.FileName = Path.GetDirectoryName(SaveasTxt.Text);
             CorruptButton.Text = "Corrupt File";
+            TraceLogger.Log("ROM successfully unloaded from memory. Main corruption form has been reset to default state for process memory corruption.");
         }
 
         private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -1119,7 +1151,7 @@ namespace LunarROMCorruptor
         {
             if (CorruptionCore.ROM == null)
             {
-                MessageBox.Show("No file loaded! Please load a file to use ByteView.", $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                TraceLogger.Log("Attempted to refresh ByteView but ROM is null. This likely means no file is loaded into memory. Please load a file before attempting to use ByteView.", StatusSeverityType.Error, true);
                 return;
             }
             ByteViewPictureBox.Image = ByteView.ConvertByteToImage(CorruptionCore.ROM, byteViewColourChkbox.Checked);
@@ -1130,7 +1162,7 @@ namespace LunarROMCorruptor
             GC.Collect(); //Forces Garbage collection
         }
 
-        private void byteViewColourChkbox_CheckedChanged(object sender, EventArgs e)
+        private void ByteViewColourChkbox_CheckedChanged(object sender, EventArgs e)
         {
             Settings.Default.ByteViewColourMode = byteViewColourChkbox.Checked;
             Settings.Default.Save();
@@ -1148,11 +1180,27 @@ namespace LunarROMCorruptor
             {
                 if (MessageBox.Show("WARNING: You are about to enable ownership override. This action can potentially allow corruption of critical protected system files if you select the wrong file(s). Ensure you understand the implications before proceeding.\nDo you wish to enable this?", "WARNING - Critical Action", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
                 {
+                    TraceLogger.Log("User declined to enable protected file override after warning prompt. Protected file override will remain disabled.");
                     AttemptProtectedFileOverrideChkBox.Checked = false;
                 }
             }
             Settings.Default.AttemptProtectedFileOverride = AttemptProtectedFileOverrideChkBox.Checked;
             Settings.Default.Save();
+        }
+
+        private void SaveLogBtn_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //write to working directory of the program
+                string logFilePath = Path.Combine(Application.StartupPath, $"LRC_Log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+                File.WriteAllText(logFilePath, TraceLoggerTxtBox.Text);
+                MessageBox.Show($"Log saved successfully to {logFilePath}", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to save log: {ex.Message}", $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }

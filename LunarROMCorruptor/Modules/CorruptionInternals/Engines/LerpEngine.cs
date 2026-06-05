@@ -33,7 +33,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         {
             byte byteminus;
             byte byteplus;
-            double interpolateVal = Convert.ToDouble(Program.Form.CorruptionEngineFrame.LerpValueTxt.Text);
+            double interpolateVal = Convert.ToDouble(Program.Form.LerpEngineFrame.LerpValueTxt.Text);
             //Check if the Bytes selected in i are in range.
             try
             {
@@ -63,6 +63,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             //Calculate the new value
             ROM[i] = (byte)LinearInterpolationCalculation(byteminus, byteplus, interpolateVal);
             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+            //Trace log the bytes selected and the interpolate value, then the result, e.g. byte 1 = 0 byte 2 = 255, interpolate value = 0.5, result = 128
+            //TraceLogger.Log("[x] Lerp Engine trigger: byte 1 = " + byteminus + " byte 2 = " + byteplus + " interpolate value = " + interpolateVal + " result = " + ROM[i]);
             return ROM;
         }
     }

@@ -28,9 +28,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 
         public static byte[] CorruptByte(byte[] ROM, byte[] ROMMerge, CorruptionOptions CorruptionOption, long i)
         {
-            if (Program.Form.CorruptionEngineFrame.ReplaceByteWithSamePos.Checked)
+            if (Program.Form.MergeEngineFrame.ReplaceByteWithSamePos.Checked)
             {
-                if (Program.Form.CorruptionEngineFrame.Mod256MergeEnginechkbox.Checked)
+                if (Program.Form.MergeEngineFrame.Mod256MergeEnginechkbox.Checked)
                 {
                     switch (CorruptionOption)
                     {
@@ -77,7 +77,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             }
             else
             {
-                if (Program.Form.CorruptionEngineFrame.Mod256MergeEnginechkbox.Checked)
+                if (Program.Form.MergeEngineFrame.Mod256MergeEnginechkbox.Checked)
                 {
                     switch (CorruptionOption)
                     {

@@ -12,8 +12,23 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Update="Forms\CorruptionEngineOptions.cs">
-      <SubType>Form</SubType>
+    <Compile Update="EngineControls\LerpEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="EngineControls\LogicEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="EngineControls\ManualEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="EngineControls\MergeEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="EngineControls\NightmareEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="EngineControls\VectorEngineControl.cs">
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="Forms\CorruptionQueueForm.cs">
       <SubType>Form</SubType>

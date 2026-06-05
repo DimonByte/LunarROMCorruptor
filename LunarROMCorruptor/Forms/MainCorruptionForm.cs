@@ -28,6 +28,7 @@
 //You may get banned if this corruptor is used in online games or games with anti-cheat software.
 //Don't use this on system32 or any other system files...
 
+using LunarROMCorruptor.EngineControls;
 using LunarROMCorruptor.Modules;
 using LunarROMCorruptor.Modules.CorruptionInternals;
 using LunarROMCorruptor.Properties;
@@ -41,10 +42,12 @@ namespace LunarROMCorruptor
         private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; //"v1.0.4 - Build Number: " + 
         public List<string> InternalStashItems = []; //Adding to this list will make corruptions faster as it's not in the GUI so it doesn't have to render every item update.
         readonly CorruptionQueueForm CorruptionQueueFormSettings = new(); //Creates the corruption queue form and then it will be read later by the main form.
-        public readonly CorruptionEngineOptions CorruptionEngineFrame = new() //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
-        {
-            TopLevel = false
-        };
+        public readonly NightmareEngineControl NightmareEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly LerpEngineControl LerpEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly LogicEngineControl LogicEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly MergeEngineControl MergeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly VectorEngineControl VectorEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly ManualEngineControl ManualEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public int MainSelectedProcessID = 999999;
         public MainCorruptionForm()
         {
@@ -91,10 +94,6 @@ namespace LunarROMCorruptor
             IOManager.RefreshCorruptionStashList(StashFileList);
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
-            CorruptionEngineFrame.TopLevel = false;
-            CorruptionEngineTab.Controls.Add(CorruptionEngineFrame); //Adds the CorruptionEngineFrame to the CorruptionEngineTab.
-            CorruptionEngineFrame.Dock = DockStyle.Fill;
-            CorruptionEngineFrame.Show();
             AttentionPictureBox.BringToFront();
             //This code under this comment fixes a .net bug where the trackbar allocates a huge amount of memory if the trackbar maximum value is set to a large amount.
             EndByteTrackbar.TickStyle = TickStyle.None;
@@ -229,23 +228,62 @@ namespace LunarROMCorruptor
 
         private void CorruptionEngineComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
-            // Main Form - Change what the CorruptionEngineFrame displays.
+            // UserControl approach - Change the UserControl that is displayed in the CorruptionEngineFrame
+            // based on the selected engine.
             var selectedEngine = EngineParser.ParseEngineType(CorruptionEngineComboBox.Text);
-            CorruptionEngineFrame.MergeEnginePanel.Visible = selectedEngine == CorruptionEngineType.MergeEngine;
-            CorruptionEngineFrame.LogicEnginePanel.Visible = selectedEngine == CorruptionEngineType.LogicEngine;
-            CorruptionEngineFrame.NightmareEnginePanel.Visible = selectedEngine == CorruptionEngineType.NightmareEngine;
-            CorruptionEngineFrame.LerpEnginePanel.Visible = selectedEngine == CorruptionEngineType.LerpEngine;
-            CorruptionEngineFrame.Vector2EnginePanel.Visible = selectedEngine == CorruptionEngineType.Vector2Engine;
-
-            if (selectedEngine == CorruptionEngineType.ManualEngine) // Assuming "Manual" was meant to be Vector2Engine
+            // Hide all existing engine controls first
+            foreach (Control control in CorruptionEngineTab.Controls)
             {
-                CorruptionEngineFrame.Hide();
-                ManualEnginePanel.Show();
+                if (control is UserControl && control.Name.EndsWith("EngineControl"))
+                {
+                    control.Visible = false; //DO NOT dispose of the user controls. Hide them since the data in those controls are used throughout the corruption process and disposing them will cause issues.
+                }
             }
-            else
+
+            // Create new control based on selected engine
+            UserControl? newControl = null;
+            switch (selectedEngine)
             {
-                ManualEnginePanel.Hide();
-                CorruptionEngineFrame.Show();
+                case CorruptionEngineType.MergeEngine:
+                    newControl = MergeEngineFrame; // This is your declared UserControl
+                    newControl.Name = "MergeEngineControl";
+                    break;
+
+                case CorruptionEngineType.LogicEngine:
+                    newControl = LogicEngineFrame;
+                    newControl.Name = "LogicEngineControl";
+                    break;
+
+                case CorruptionEngineType.NightmareEngine:
+                    newControl = NightmareEngineFrame;
+                    newControl.Name = "NightmareEngineControl";
+                    TraceLogger.Log("Nightmare Engine selected.", StatusSeverityType.Debug);
+                    break;
+
+                case CorruptionEngineType.LerpEngine:
+                    newControl = LerpEngineFrame;
+                    newControl.Name = "LerpEngineControl";
+                    break;
+
+                case CorruptionEngineType.VectorEngine:
+                    newControl = VectorEngineFrame;
+                    newControl.Name = "VectorEngineControl";
+                    break;
+
+                case CorruptionEngineType.ManualEngine:
+                    newControl = ManualEngineFrame;
+                    newControl.Name = "ManualEngineControl";
+                    break;
+            }
+
+            if (newControl != null)
+            {
+                newControl.Dock = DockStyle.Fill;
+                newControl.Visible = true;
+                if (!CorruptionEngineTab.Controls.Contains(newControl))
+                {
+                    CorruptionEngineTab.Controls.Add(newControl);
+                }
             }
         }
 
@@ -1000,7 +1038,7 @@ namespace LunarROMCorruptor
                             AutomationTimer.Stop();
                             return;
                         }
-                        if (CorruptionEngineComboBox.Text == EngineParser.GetEngineDisplayName(CorruptionEngineType.MergeEngine) && Program.Form.CorruptionEngineFrame.MergeFileLocationTxt.Text == null) // Prevents corruption from halting if there is no file in the Merge Engine while in Automation mode.
+                        if (CorruptionEngineComboBox.Text == EngineParser.GetEngineDisplayName(CorruptionEngineType.MergeEngine) && Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text == null) // Prevents corruption from halting if there is no file in the Merge Engine while in Automation mode.
                         {
                             CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
                         }
@@ -1201,6 +1239,18 @@ namespace LunarROMCorruptor
             {
                 MessageBox.Show($"Failed to save log: {ex.Message}", $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void OpenOriginalFolderLocationBtn_Click(object sender, EventArgs e)
+        {
+            //Open the folder of the FileSelectiontxt
+            CommandRunner.OpenFolderInExplorer(FileSelectiontxt.Text);
+        }
+
+        private void OpenSaveFolderLocationBtn_Click(object sender, EventArgs e)
+        {
+            //Open SaveasTxt folder location in explorer
+            CommandRunner.OpenFolderInExplorer(SaveasTxt.Text);
         }
     }
 }

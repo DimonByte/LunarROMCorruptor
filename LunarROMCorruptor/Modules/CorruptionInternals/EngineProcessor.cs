@@ -1,4 +1,26 @@
-﻿using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
+﻿//MIT License
+
+//Copyright (c) 2026 DimonByte
+
+//Permission is hereby granted, free of charge, to any person obtaining a copy
+//of this software and associated documentation files (the "Software"), to deal
+//in the Software without restriction, including without limitation the rights
+//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+//copies of the Software, and to permit persons to whom the Software is
+//furnished to do so, subject to the following conditions:
+
+//The above copyright notice and this permission notice shall be included in all
+//copies or substantial portions of the Software.
+
+//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+//SOFTWARE.
+
+using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
 
 namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
@@ -7,7 +29,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         private static readonly Random rnd = new();
         public static byte[]? ProcessNightmareEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
         {
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.CorruptionEngineFrame.NightmareComboBox.Text);
+            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.NightmareEngineFrame.NightmareComboBox.Text);
             if (corruptionType == null) return null;
 
             if (CorruptNthByte)
@@ -52,15 +74,15 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
         public static byte[]? ProcessMergeEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
         {
-            if (string.IsNullOrEmpty(Program.Form.CorruptionEngineFrame.MergeFileLocationTxt.Text))
+            if (string.IsNullOrEmpty(Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text))
             {
                 TraceLogger.Log("Merge file location is empty. Please select a merge file. Aborting merge corruption.", StatusSeverityType.Error, true);
                 return null;
             }
 
-            byte[] ROMmerge = File.ReadAllBytes(Program.Form.CorruptionEngineFrame.MergeFileLocationTxt.Text);
+            byte[] ROMmerge = File.ReadAllBytes(Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text);
 
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.CorruptionEngineFrame.CorrTypeMerge.Text);
+            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.MergeEngineFrame.CorrTypeMerge.Text);
             if (corruptionType == null) return null;
 
             if (CorruptNthByte)
@@ -84,7 +106,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
         public static byte[]? ProcessLogicEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
         {
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.CorruptionEngineFrame.BitwiseComboBox.Text);
+            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.LogicEngineFrame.BitwiseComboBox.Text);
             if (corruptionType == null) return null;
 
             if (CorruptNthByte)
@@ -92,7 +114,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 for (int i = StartByte; i <= EndByte; i += Intensity)
                 {
                     UpdateLogicControls();
-                    LogicEngine.CorruptByte(ROM, corruptionType.Value, i, (int)Program.Form.CorruptionEngineFrame.ValueBitwise.Value);
+                    LogicEngine.CorruptByte(ROM, corruptionType.Value, i, (int)Program.Form.LogicEngineFrame.ValueBitwise.Value);
                 }
             }
             else
@@ -101,7 +123,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 {
                     UpdateLogicControls();
                     int randomIndex = rnd.Next(StartByte, EndByte);
-                    LogicEngine.CorruptByte(ROM, corruptionType.Value, randomIndex, (int)Program.Form.CorruptionEngineFrame.ValueBitwise.Value);
+                    LogicEngine.CorruptByte(ROM, corruptionType.Value, randomIndex, (int)Program.Form.LogicEngineFrame.ValueBitwise.Value);
                 }
             }
 
@@ -152,16 +174,16 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
         private static void UpdateLogicControls()
         {
-            if (Program.Form.CorruptionEngineFrame.LogicRandomizeTypeCheckbox.Checked)
+            if (Program.Form.LogicEngineFrame.LogicRandomizeTypeCheckbox.Checked)
             {
-                int randomIndex = rnd.Next(1, Program.Form.CorruptionEngineFrame.BitwiseComboBox.Items.Count - 1);
-                Program.Form.CorruptionEngineFrame.BitwiseComboBox.SelectedIndex = randomIndex;
+                int randomIndex = rnd.Next(1, Program.Form.LogicEngineFrame.BitwiseComboBox.Items.Count - 1);
+                Program.Form.LogicEngineFrame.BitwiseComboBox.SelectedIndex = randomIndex;
             }
 
-            if (Program.Form.CorruptionEngineFrame.LogicRandomizeValueCheckBox.Checked)
+            if (Program.Form.LogicEngineFrame.LogicRandomizeValueCheckBox.Checked)
             {
-                int randomValue = rnd.Next((int)Program.Form.CorruptionEngineFrame.ValueBitwise.Minimum, (int)Program.Form.CorruptionEngineFrame.ValueBitwise.Maximum);
-                Program.Form.CorruptionEngineFrame.ValueBitwise.Value = randomValue;
+                int randomValue = rnd.Next((int)Program.Form.LogicEngineFrame.ValueBitwise.Minimum, (int)Program.Form.LogicEngineFrame.ValueBitwise.Maximum);
+                Program.Form.LogicEngineFrame.ValueBitwise.Value = randomValue;
             }
         }
     }

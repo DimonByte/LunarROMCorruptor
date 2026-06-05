@@ -20,8 +20,6 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
-using LunarROMCorruptor.Modules.CorruptionInternals;
-
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
     internal class ManualEngine
@@ -30,43 +28,44 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         private static readonly List<byte> list = [];
         public static byte[] CorruptByte(byte[] ROM, long i, int StartByte, int EndByte)
         {
-            if (Program.Form.IncrementCHECK.Checked)
+            if (Program.Form.ManualEngineFrame.IncrementCHECK.Checked)
             {
-                ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.CorruptionEngineFrame.IncreDecrenumbnightmare.Value);
+                ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.ManualEngineFrame.IncrementNumericUpDown.Value);
                 Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
             }
-            if (Program.Form.SHIFTBYTECHECK.Checked)
+            if (Program.Form.ManualEngineFrame.SHIFTBYTECHECK.Checked)
             {
-                long j = (long)(i + Program.Form.ShiftNumericUpDown.Value);
+                long j = (long)(i + Program.Form.ManualEngineFrame.ShiftNumericUpDown.Value);
                 if (j >= StartByte && j <= EndByte)
                 {
                     ROM[j] = ROM[i];
                     Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                 }
             }
-            if (Program.Form.MakeBitEqualCHECK.Checked)
+            if (Program.Form.ManualEngineFrame.MakeBitEqualCHECK.Checked)
             {
-                ROM[i] = (byte)Program.Form.ByteEqualNumericUpDown.Value;
+                ROM[i] = (byte)Program.Form.ManualEngineFrame.ByteEqualNumericUpDown.Value;
                 Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
             }
-            if (Program.Form.ReplaceCHECK.Checked)
+            if (Program.Form.ManualEngineFrame.ReplaceCHECK.Checked)
             {
-                if (ROM[i] == (byte)Program.Form.ReplaceNumericUpDown1.Value)
+                //FIXME: Overflow possible.
+                if (ROM[i] == (byte)Program.Form.ManualEngineFrame.ReplaceNumericUpDown1.Value)
                 {
-                    ROM[i] = (byte)Program.Form.ReplaceNumericUpDown2.Value;
+                    ROM[i] = (byte)Program.Form.ManualEngineFrame.ReplaceNumericUpDown2.Value;
                     Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                 }
             }
-            if (Program.Form.PasterandombitCHECK.Checked)
+            if (Program.Form.ManualEngineFrame.PasterandombitCHECK.Checked)
             {
                 byte copy = ROM[rnd.Next(StartByte, EndByte)];
                 ROM[i] = copy;
                 Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + copy + ")");
             }
-            if (Program.Form.RepeatRandomBitCHECK.Checked)
+            if (Program.Form.ManualEngineFrame.RepeatRandomBitCHECK.Checked)
             {
                 list.Clear();
-                for (int i2 = 0; i2 <= Program.Form.RepeatNumericUpDown.Value - 1; i2++)
+                for (int i2 = 0; i2 <= Program.Form.ManualEngineFrame.RepeatNumericUpDown.Value - 1; i2++)
                     list.Add(ROM[i + i2]);
                 // ListBox3.Items.Add(String.Join(" ", list))
                 foreach (var itemcon in list)
@@ -76,21 +75,21 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     Program.Form.InternalStashItems.Add("[x] File(" + final + ").SET(" + itemcon + ")");
                 }
             }
-            if (Program.Form.MULTIORDIVIDECHeck.Checked)
+            if (Program.Form.ManualEngineFrame.MULTIORDIVIDECHeck.Checked)
             {
-                if (Program.Form.MultiRadio.Checked)
+                if (Program.Form.ManualEngineFrame.MultiRadio.Checked)
                 {
-                    ROM[i] = CorruptionCore.ClampByte(ROM[i] * (int)Program.Form.MathOperationNumericUpDown.Value);
+                    ROM[i] = CorruptionCore.ClampByte(ROM[i] * (int)Program.Form.ManualEngineFrame.MathOperationNumericUpDown.Value);
                     Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                 }
-                if (Program.Form.DivideRadio.Checked)
+                if (Program.Form.ManualEngineFrame.DivideRadio.Checked)
                 {
-                    ROM[i] = CorruptionCore.ClampByte(ROM[i] / (int)Program.Form.MathOperationNumericUpDown.Value);
+                    ROM[i] = CorruptionCore.ClampByte(ROM[i] / (int)Program.Form.ManualEngineFrame.MathOperationNumericUpDown.Value);
                     Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                 }
-                if (Program.Form.DoubleCheck.Checked)
+                if (Program.Form.ManualEngineFrame.DoubleCheck.Checked)
                 {
-                    ROM[i] = (byte)((byte)Math.Pow(ROM[i], (double)Program.Form.MathOperationNumericUpDown.Value) % (byte.MaxValue + 1));
+                    ROM[i] = (byte)((byte)Math.Pow(ROM[i], (double)Program.Form.ManualEngineFrame.MathOperationNumericUpDown.Value) % (byte.MaxValue + 1));
                     Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                 }
             }

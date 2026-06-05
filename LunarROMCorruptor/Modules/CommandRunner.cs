@@ -27,6 +27,93 @@ namespace LunarROMCorruptor.Modules
 {
     internal class CommandRunner
     {
+        public static void OpenFolderInExplorer(string folderPath)
+        {
+            try
+            {
+                TraceLogger.Log($"Attempting to open folder in Explorer: {folderPath}");
+                // Validate input
+                if (string.IsNullOrEmpty(folderPath))
+                {
+                    TraceLogger.Log("Folder path is null or empty.", StatusSeverityType.Error);
+                    return;
+                }
+
+
+
+                // Get the full path to normalize it
+                string normalizedPath = Path.GetFullPath(folderPath);
+                TraceLogger.Log($"Normalized folder path: {normalizedPath}");
+                // Check if the path represents a file
+                if (File.Exists(normalizedPath))
+                {
+                    // If it's a file, get its directory and open that instead
+                    string directoryPath = Path.GetDirectoryName(normalizedPath);
+                    TraceLogger.Log($"The specified path is a file. Attempting to open its directory: {directoryPath}");
+
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"{directoryPath}",
+                        UseShellExecute = true,
+                        CreateNoWindow = true
+                    };
+                    using Process? process = Process.Start(startInfo);
+                    if (process == null)
+                    {
+                        TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error);
+                    }
+                }
+                else if (Directory.Exists(normalizedPath))
+                {
+                    TraceLogger.Log("The specified path is a directory. Attempting to open it directly in Explorer.");
+                    // If it's a directory, open it directly
+                    ProcessStartInfo startInfo = new()
+                    {
+                        FileName = "explorer.exe",
+                        Arguments = $"{normalizedPath}",
+                        UseShellExecute = true,
+                        CreateNoWindow = true
+                    };
+                    using Process? process = Process.Start(startInfo);
+                    if (process == null)
+                    {
+                        TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error);
+                    }
+                }
+                else
+                {
+                    TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Warning);
+                    // Try to get the directory of the file path first
+                    string directoryPath = Path.GetDirectoryName(normalizedPath);
+                    if (Directory.Exists(directoryPath))
+                    {
+
+
+                        ProcessStartInfo startInfo = new()
+                        {
+                            FileName = "explorer.exe",
+                            Arguments = $"{directoryPath}",
+                            UseShellExecute = true,
+                            CreateNoWindow = true
+                        };
+                        using Process? process = Process.Start(startInfo);
+                        if (process == null)
+                        {
+                            TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error);
+                        }
+                    }
+                    else
+                    {
+                        TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Error opening folder in Explorer: {ex}", StatusSeverityType.Error);
+            }
+        }
         public static string RunCommand(string command)
         {
             try

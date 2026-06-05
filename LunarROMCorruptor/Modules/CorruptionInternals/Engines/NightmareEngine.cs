@@ -50,12 +50,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                             break;
 
                         case 1:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.CorruptionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
 
                         case 2:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.CorruptionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
 
@@ -72,12 +72,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     switch (rnd.Next(0, 2))
                     {
                         case 0:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.CorruptionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
 
                         case 1:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.CorruptionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
                     }

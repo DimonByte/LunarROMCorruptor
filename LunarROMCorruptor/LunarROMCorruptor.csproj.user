@@ -12,6 +12,9 @@
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Update="EngineControls\ExclusionEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="EngineControls\LerpEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -33,16 +36,13 @@
     <Compile Update="Forms\CorruptionQueueForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\InputBox.cs">
+    <Compile Update="Forms\Helpers\InputBox.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\MainCorruptionForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Forms\SelectProcess.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Update="Forms\StashEditor.cs">
+    <Compile Update="Forms\Editors\StashEditor.cs">
       <SubType>Form</SubType>
     </Compile>
   </ItemGroup>

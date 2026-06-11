@@ -20,7 +20,7 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
-namespace LunarROMCorruptor.Modules
+namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
     public enum CorruptionEngineType
     {
@@ -29,7 +29,9 @@ namespace LunarROMCorruptor.Modules
         NightmareEngine,
         LerpEngine,
         VectorEngine,
-        ManualEngine
+        ManualEngine,
+        ExclusionEngine,
+        INVALID
     }
     internal class EngineParser
     {
@@ -44,6 +46,7 @@ namespace LunarROMCorruptor.Modules
                 CorruptionEngineType.LerpEngine => "Lerp Engine",
                 CorruptionEngineType.VectorEngine => "Vector2 Engine",
                 CorruptionEngineType.ManualEngine => "Manual Engine",
+                CorruptionEngineType.ExclusionEngine => "Exclusion Engine",
                 _ => engineType.ToString()
             };
         }
@@ -59,7 +62,8 @@ namespace LunarROMCorruptor.Modules
                 "Lerp Engine" => CorruptionEngineType.LerpEngine,
                 "Vector2 Engine" => CorruptionEngineType.VectorEngine,
                 "Manual Engine" => CorruptionEngineType.ManualEngine,
-                _ => CorruptionEngineType.NightmareEngine // default fallback
+                "Exclusion Engine" => CorruptionEngineType.ExclusionEngine,
+                _ => CorruptionEngineType.INVALID // default fallback
             };
         }
 

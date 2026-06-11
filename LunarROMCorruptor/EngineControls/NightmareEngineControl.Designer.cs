@@ -28,15 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(NightmareEngineControl));
             OpenFileDialog1 = new OpenFileDialog();
             label5 = new Label();
             Label1 = new Label();
-            label2 = new Label();
             NightmareComboBox = new ComboBox();
-            comboBox1 = new ComboBox();
             IncreDecrenumbnightmare = new NumericUpDown();
             Label23 = new Label();
             NightmareEnginePanel = new Panel();
+            HelpAboutEngineLbl = new Label();
             ((System.ComponentModel.ISupportInitialize)IncreDecrenumbnightmare).BeginInit();
             NightmareEnginePanel.SuspendLayout();
             SuspendLayout();
@@ -67,18 +67,6 @@
             Label1.TabIndex = 20;
             Label1.Text = "Increment/Decrement number";
             // 
-            // label2
-            // 
-            label2.AutoSize = true;
-            label2.Font = new Font("Segoe UI", 9.75F);
-            label2.ForeColor = Color.White;
-            label2.Location = new Point(125, 85);
-            label2.Name = "label2";
-            label2.Size = new Size(81, 17);
-            label2.TabIndex = 20;
-            label2.Text = "Bit Precision:";
-            label2.Visible = false;
-            // 
             // NightmareComboBox
             // 
             NightmareComboBox.BackColor = Color.FromArgb(45, 45, 64);
@@ -91,20 +79,6 @@
             NightmareComboBox.Size = new Size(191, 21);
             NightmareComboBox.TabIndex = 90;
             NightmareComboBox.Text = "RANDOM";
-            // 
-            // comboBox1
-            // 
-            comboBox1.BackColor = Color.FromArgb(45, 45, 64);
-            comboBox1.FlatStyle = FlatStyle.Flat;
-            comboBox1.ForeColor = Color.White;
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Items.AddRange(new object[] { "8-bit", "16-bit", "32-bit", "64-bit" });
-            comboBox1.Location = new Point(212, 85);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(191, 21);
-            comboBox1.TabIndex = 90;
-            comboBox1.Text = "8-bit";
-            comboBox1.Visible = false;
             // 
             // IncreDecrenumbnightmare
             // 
@@ -133,11 +107,10 @@
             // NightmareEnginePanel
             // 
             NightmareEnginePanel.BackColor = Color.FromArgb(40, 40, 60);
+            NightmareEnginePanel.Controls.Add(HelpAboutEngineLbl);
             NightmareEnginePanel.Controls.Add(Label23);
             NightmareEnginePanel.Controls.Add(IncreDecrenumbnightmare);
-            NightmareEnginePanel.Controls.Add(comboBox1);
             NightmareEnginePanel.Controls.Add(NightmareComboBox);
-            NightmareEnginePanel.Controls.Add(label2);
             NightmareEnginePanel.Controls.Add(Label1);
             NightmareEnginePanel.Controls.Add(label5);
             NightmareEnginePanel.Dock = DockStyle.Fill;
@@ -146,6 +119,15 @@
             NightmareEnginePanel.Size = new Size(642, 268);
             NightmareEnginePanel.TabIndex = 156;
             NightmareEnginePanel.Tag = "color:normal";
+            // 
+            // HelpAboutEngineLbl
+            // 
+            HelpAboutEngineLbl.ForeColor = Color.White;
+            HelpAboutEngineLbl.Location = new Point(24, 84);
+            HelpAboutEngineLbl.Name = "HelpAboutEngineLbl";
+            HelpAboutEngineLbl.Size = new Size(571, 52);
+            HelpAboutEngineLbl.TabIndex = 94;
+            HelpAboutEngineLbl.Text = resources.GetString("HelpAboutEngineLbl.Text");
             // 
             // NightmareEngineControl
             // 
@@ -168,11 +150,10 @@
         internal System.Windows.Forms.OpenFileDialog OpenFileDialog1;
         private Label label5;
         private Label Label1;
-        private Label label2;
         internal ComboBox NightmareComboBox;
-        internal ComboBox comboBox1;
         internal NumericUpDown IncreDecrenumbnightmare;
         private Label Label23;
         public Panel NightmareEnginePanel;
+        private Label HelpAboutEngineLbl;
     }
 }

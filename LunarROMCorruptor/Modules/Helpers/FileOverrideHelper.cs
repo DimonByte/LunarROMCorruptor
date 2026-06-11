@@ -22,7 +22,7 @@
 
 using System.Diagnostics;
 
-namespace LunarROMCorruptor.Modules
+namespace LunarROMCorruptor.Modules.Helpers
 {
     internal class FileOverrideHelper
     {

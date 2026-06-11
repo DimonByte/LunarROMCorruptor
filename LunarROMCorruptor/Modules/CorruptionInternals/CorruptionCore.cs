@@ -121,20 +121,20 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 return null;
             }
 
-            switch (CorruptionEngine)
+            switch (EngineParser.ParseEngineType(CorruptionEngine))
             {
-                case "Nightmare Engine":
+                case CorruptionEngineType.NightmareEngine:
                     return EngineProcessor.ProcessNightmareEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity);
-                case "Lerp Engine":
+                case CorruptionEngineType.LerpEngine:
                     return EngineProcessor.ProcessLerpEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity);
-                case "Merge Engine":
+                case CorruptionEngineType.MergeEngine:
                     return EngineProcessor.ProcessMergeEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity);
-                case "Logic Engine":
+                case CorruptionEngineType.LogicEngine:
                     return EngineProcessor.ProcessLogicEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity);
-                case "Fractal Engine":
-                    return EngineProcessor.ProcessFractalEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity);
-                case "Manual Engine":
+                case CorruptionEngineType.ManualEngine:
                     return EngineProcessor.ProcessManualEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity);
+                case CorruptionEngineType.ExclusionEngine:
+                    return EngineProcessor.ProcessExclusionEngine(ROM, StartByte, EndByte, CorruptNthByte, Intensity, Program.Form.ExclusionEngineFrame.ExclusionTypeComboBox.Text);
                 default:
                     TraceLogger.Log("Invalid corruption engine selected. This should never happen. Aborting corruption.", StatusSeverityType.Fatal, true);
                     if (MessageBox.Show(

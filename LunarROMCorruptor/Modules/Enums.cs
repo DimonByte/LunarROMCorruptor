@@ -17,6 +17,6 @@
         NAND,
         NOR,
         SWAP,
-        SHIFT
+        SHIFT,
     }
 }

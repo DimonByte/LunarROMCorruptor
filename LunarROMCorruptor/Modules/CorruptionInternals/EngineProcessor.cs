@@ -72,6 +72,67 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             return ROM;
         }
 
+        public static byte[]? ProcessExclusionEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity, string Profile)
+        {
+            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.ExclusionEngineFrame.NightmareComboBox.Text);
+            if (corruptionType == null) return null;
+            var safeLocations = ExclusionEngine.SafeLocations.GetValueOrDefault(Profile, []);
+            if (CorruptNthByte)
+            {
+                bool corrupted = false;
+                for (int i = StartByte; i <= EndByte; i += Intensity)
+                {
+                    // Check if this byte is in a safe location, if so skip it
+                    if (!ExclusionEngine.IsSafeLocation(i, safeLocations))
+                    {
+                        corrupted = true;
+                        ExclusionEngine.CorruptByte(ROM, corruptionType.Value, Profile, i);
+                    }
+                    //else
+                    //{
+                    //    TraceLogger.Log($"{i} is not safe! Ignoring that address.");
+                    //}
+                }
+                if (!corrupted)
+                {
+                    TraceLogger.Log($"CorruptNthByte reached end of file with profile {Profile} but did not find any safe locations to corrupt.", StatusSeverityType.Warning);
+                }
+            }
+            else
+            {
+                for (int i = 0; i < Intensity; i++)
+                {
+                    // Keep trying to get a random index that's not in a safe location
+                    int tries = 0;
+                    int maxTries = 1000; // Prevent infinite loop
+
+                    do
+                    {
+                        int randomIndex = new Random().Next(StartByte, EndByte);
+                        // If index is safe, try again unless we've exceeded max attempts
+                        if (ExclusionEngine.IsSafeLocation(randomIndex, safeLocations))
+                        {
+                            tries++;
+                            //TraceLogger.Log($"{i} is not safe! Ignoring that address.");
+                            continue;
+                        }
+
+                        // We found a valid index for the selected profile - corrupt it! AA
+                        ExclusionEngine.CorruptByte(ROM, corruptionType.Value, Profile, randomIndex);
+                        break;
+                    } while (tries < maxTries);
+
+                    // If we've reached max tries, show an error since we don't want infinity here.
+                    if (tries >= maxTries)
+                    {
+                        TraceLogger.Log("Max tries (" + maxTries + ") reached for random selection in ExclusionEngine with profile " + Profile, StatusSeverityType.Warning);
+                    }
+                }
+            }
+
+            return ROM;
+        }
+
         public static byte[]? ProcessMergeEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
         {
             if (string.IsNullOrEmpty(Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text))
@@ -124,27 +185,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     UpdateLogicControls();
                     int randomIndex = rnd.Next(StartByte, EndByte);
                     LogicEngine.CorruptByte(ROM, corruptionType.Value, randomIndex, (int)Program.Form.LogicEngineFrame.ValueBitwise.Value);
-                }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessFractalEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
-        {
-            if (CorruptNthByte)
-            {
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    FractalEngine.CorruptByte(ROM, i);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    int randomIndex = rnd.Next(StartByte, EndByte);
-                    FractalEngine.CorruptByte(ROM, randomIndex);
                 }
             }
 

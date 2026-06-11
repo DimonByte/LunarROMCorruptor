@@ -23,7 +23,7 @@
 using System.Diagnostics;
 using System.Security.Principal;
 
-namespace LunarROMCorruptor.Modules
+namespace LunarROMCorruptor.Modules.Helpers
 {
     internal class CommandRunner
     {
@@ -48,7 +48,12 @@ namespace LunarROMCorruptor.Modules
                 if (File.Exists(normalizedPath))
                 {
                     // If it's a file, get its directory and open that instead
-                    string directoryPath = Path.GetDirectoryName(normalizedPath);
+                    string? directoryPath = Path.GetDirectoryName(normalizedPath);
+                    if (string.IsNullOrEmpty(directoryPath))
+                    {
+                        TraceLogger.Log("Null path before opening, aborting.");
+                        return;
+                    }
                     TraceLogger.Log($"The specified path is a file. Attempting to open its directory: {directoryPath}");
 
                     ProcessStartInfo startInfo = new()

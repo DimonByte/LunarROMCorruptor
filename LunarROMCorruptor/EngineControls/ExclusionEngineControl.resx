@@ -117,12 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="OpenFileDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>17, 17</value>
-  </metadata>
   <data name="HelpAboutEngineLbl.Text" xml:space="preserve">
     <value>RANDOM: Sets selected bytes to a random value (0-255).
 RANDOMTILT: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
-TILT: Adds or subtracts a fixed mathematical shift (e.g., Value + 10).</value>
+TILT: Adds or subtracts a fixed mathematical shift (e.g., Value + 10).
+Exclusion Type: Tells the engine via the exclusion type what byte locations to ignore when corrupting to get more creative corruptions with less crashes.</value>
   </data>
 </root>

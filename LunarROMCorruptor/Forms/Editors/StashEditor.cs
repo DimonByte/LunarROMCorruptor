@@ -127,10 +127,6 @@ namespace LunarROMCorruptor
             {
                 RemovedItemslstbx.Items.Remove(RemovedItemslstbx.SelectedItems[0]);
             }
-            //foreach (var item in RemovedItemslstbx.SelectedItems)
-            //    stashListbox.Items.Add(item);
-            //for (int i = 0; i <= RemovedItemslstbx.SelectedItems.Count - 1; i++)
-            //    RemovedItemslstbx.Items.RemoveAt(RemovedItemslstbx.SelectedIndex);
         }
 
         private void Removeitembtn_Click(object sender, EventArgs e)

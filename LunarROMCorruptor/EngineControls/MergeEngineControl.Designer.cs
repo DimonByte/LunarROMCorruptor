@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MergeEngineControl));
             MergeEnginePanel = new Panel();
             CorrTypeMerge = new ComboBox();
             Mod256MergeEnginechkbox = new CheckBox();
@@ -38,12 +39,14 @@
             MergeFileLocationTxt = new TextBox();
             Label9 = new Label();
             openFileDialog1 = new OpenFileDialog();
+            HelpAboutEngineLbl = new Label();
             MergeEnginePanel.SuspendLayout();
             SuspendLayout();
             // 
             // MergeEnginePanel
             // 
             MergeEnginePanel.BackColor = Color.Teal;
+            MergeEnginePanel.Controls.Add(HelpAboutEngineLbl);
             MergeEnginePanel.Controls.Add(CorrTypeMerge);
             MergeEnginePanel.Controls.Add(Mod256MergeEnginechkbox);
             MergeEnginePanel.Controls.Add(ReplaceByteWithSamePos);
@@ -166,6 +169,15 @@
             // 
             openFileDialog1.FileName = "openFileDialog1";
             // 
+            // HelpAboutEngineLbl
+            // 
+            HelpAboutEngineLbl.ForeColor = Color.White;
+            HelpAboutEngineLbl.Location = new Point(19, 149);
+            HelpAboutEngineLbl.Name = "HelpAboutEngineLbl";
+            HelpAboutEngineLbl.Size = new Size(571, 100);
+            HelpAboutEngineLbl.TabIndex = 100;
+            HelpAboutEngineLbl.Text = resources.GetString("HelpAboutEngineLbl.Text");
+            // 
             // MergeEngineControl
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
@@ -190,5 +202,6 @@
         public TextBox MergeFileLocationTxt;
         private Label Label9;
         private OpenFileDialog openFileDialog1;
+        private Label HelpAboutEngineLbl;
     }
 }

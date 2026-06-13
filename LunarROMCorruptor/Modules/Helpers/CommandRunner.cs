@@ -32,22 +32,24 @@ namespace LunarROMCorruptor.Modules.Helpers
             try
             {
                 TraceLogger.Log($"Attempting to open folder in Explorer: {folderPath}");
-                // Validate input
                 if (string.IsNullOrEmpty(folderPath))
                 {
                     TraceLogger.Log("Folder path is null or empty.", StatusSeverityType.Error);
                     return;
                 }
 
-
-
-                // Get the full path to normalize it
                 string normalizedPath = Path.GetFullPath(folderPath);
                 TraceLogger.Log($"Normalized folder path: {normalizedPath}");
-                // Check if the path represents a file
+
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = "explorer.exe",
+                    UseShellExecute = true,
+                    CreateNoWindow = true
+                };
+
                 if (File.Exists(normalizedPath))
                 {
-                    // If it's a file, get its directory and open that instead
                     string? directoryPath = Path.GetDirectoryName(normalizedPath);
                     if (string.IsNullOrEmpty(directoryPath))
                     {
@@ -55,63 +57,33 @@ namespace LunarROMCorruptor.Modules.Helpers
                         return;
                     }
                     TraceLogger.Log($"The specified path is a file. Attempting to open its directory: {directoryPath}");
-
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = "explorer.exe",
-                        Arguments = $"{directoryPath}",
-                        UseShellExecute = true,
-                        CreateNoWindow = true
-                    };
-                    using Process? process = Process.Start(startInfo);
-                    if (process == null)
-                    {
-                        TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error);
-                    }
+                    startInfo.Arguments = $"{directoryPath}";
                 }
                 else if (Directory.Exists(normalizedPath))
                 {
                     TraceLogger.Log("The specified path is a directory. Attempting to open it directly in Explorer.");
-                    // If it's a directory, open it directly
-                    ProcessStartInfo startInfo = new()
-                    {
-                        FileName = "explorer.exe",
-                        Arguments = $"{normalizedPath}",
-                        UseShellExecute = true,
-                        CreateNoWindow = true
-                    };
-                    using Process? process = Process.Start(startInfo);
-                    if (process == null)
-                    {
-                        TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error);
-                    }
+                    startInfo.Arguments = $"{normalizedPath}";
                 }
                 else
                 {
                     TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Warning);
-                    // Try to get the directory of the file path first
                     string directoryPath = Path.GetDirectoryName(normalizedPath);
                     if (Directory.Exists(directoryPath))
                     {
-
-
-                        ProcessStartInfo startInfo = new()
-                        {
-                            FileName = "explorer.exe",
-                            Arguments = $"{directoryPath}",
-                            UseShellExecute = true,
-                            CreateNoWindow = true
-                        };
-                        using Process? process = Process.Start(startInfo);
-                        if (process == null)
-                        {
-                            TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error);
-                        }
+                        TraceLogger.Log($"Attempting to open parent directory: {directoryPath}");
+                        startInfo.Arguments = $"{directoryPath}";
                     }
                     else
                     {
-                        TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Error);
+                        TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Error, true);
+                        return;
                     }
+                }
+
+                using Process? process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    TraceLogger.Log("Failed to start process to open folder in Explorer.", StatusSeverityType.Error, true);
                 }
             }
             catch (Exception ex)
@@ -119,35 +91,7 @@ namespace LunarROMCorruptor.Modules.Helpers
                 TraceLogger.Log($"Error opening folder in Explorer: {ex}", StatusSeverityType.Error);
             }
         }
-        public static string RunCommand(string command)
-        {
-            try
-            {
-                TraceLogger.Log($"Running command: {command}");
-                var processInfo = new ProcessStartInfo("cmd.exe", "/c " + command)
-                {
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
-                using Process process = Process.Start(processInfo) ?? throw new InvalidOperationException("Failed to start process for command execution.");
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-                TraceLogger.Log("Waiting for command to exit...");
-                process.WaitForExit();
-                TraceLogger.Log($"Command exited with code: {process.ExitCode}");
-                if (process.ExitCode != 0)
-                    throw new InvalidOperationException($"Command execution failed with exit code {process.ExitCode}: {error}");
-                TraceLogger.Log($"Command output: {output}");
-                return output;
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Error running command '{command}': {ex}", StatusSeverityType.Error);
-                return string.Empty;
-            }
-        }
+
         public static bool IsRunAsAdmin()
         {
             try
@@ -163,54 +107,6 @@ namespace LunarROMCorruptor.Modules.Helpers
                 return false;
             }
         }
-
-        public static bool RunElevatedCommands(string[] commands)
-        {
-            try
-            {
-                string allCommands = string.Join(";", commands);
-                TraceLogger.Log($"Attempting to run elevated commands: {allCommands}");
-                ProcessStartInfo startInfo = new()
-                {
-                    FileName = "powershell.exe",
-                    Arguments = $"-NoProfile -WindowStyle Hidden -Command \"{allCommands}\"",
-                    Verb = "runas",
-                    UseShellExecute = true,
-                    CreateNoWindow = true
-                };
-
-                using Process? process = Process.Start(startInfo);
-                if (process == null)
-                {
-                    TraceLogger.Log("Failed to start process for elevated commands.", StatusSeverityType.Error);
-                    return false;
-                }
-                TraceLogger.Log("Waiting for elevated commands to complete...");
-                process.WaitForExit();
-
-                if (process.ExitCode != 0)
-                {
-                    TraceLogger.Log($"Command failure! Elevated commands exited with exit code: {process.ExitCode}", StatusSeverityType.Error);
-                    return false;
-                }
-                else
-                {
-                    TraceLogger.Log("Elevated commands executed successfully. Returned exit code 0.");
-                    return true;
-                }
-            }
-            catch (OperationCanceledException ex1)
-            {
-                TraceLogger.Log($"The elevated command was cancelled by the user. Command run failed! {ex1.Message}", StatusSeverityType.Error);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Failed to run elevated commands: {ex}", StatusSeverityType.Error);
-                return false;
-            }
-        }
-
         public static bool RunElevatedCommand(string command, string arguments = "")
         {
             try
@@ -249,28 +145,54 @@ namespace LunarROMCorruptor.Modules.Helpers
             }
         }
 
-        public static bool SaveToFileWithElevation(string filePath, string content)
+        public static void TerminateEmulator(string EmulatorLocation)
         {
             try
             {
-                string tempFilePath = Path.GetTempFileName();
-                File.WriteAllText(tempFilePath, content);
-                TraceLogger.Log($"Temporary file created at {tempFilePath} for saving content with elevation.");
-                bool success = RunElevatedCommand("cmd.exe", $"/c move /Y \"{tempFilePath}\" \"{filePath}\"");
-                if (success)
+                if (string.IsNullOrEmpty(EmulatorLocation))
                 {
-                    TraceLogger.Log($"Content saved to {filePath} successfully with elevation.");
+                    TraceLogger.Log("Emulator string passed was null.", StatusSeverityType.Error);
+                    return;
                 }
-                else
-                {
-                    TraceLogger.Log($"Failed to save content to {filePath} with elevation.", StatusSeverityType.Error);
-                }
-                return success;
+                var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(EmulatorLocation));
+                if (processes.Length > 0)
+                    processes[0].Kill();
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Error saving to file with elevation: {ex}", StatusSeverityType.Error);
-                return false;
+                TraceLogger.Log($"Failure to terminate running emulator. {ex}", StatusSeverityType.Error);
+            }
+        }
+
+        public static void StartEmulator(bool ReopenProgram, string EmulatorLocation, string FileLocation, bool OverrideArgumentsChk, string OverrideArguments)
+        {
+            TraceLogger.Log($"Starting emulator with the following settings:\nReopen Program: {ReopenProgram}\nEmulator Location: {EmulatorLocation}\nFile Location: {FileLocation}\nOverride Arguments: {OverrideArgumentsChk}\nArguments: {OverrideArguments}");
+            try
+            {
+                if (ReopenProgram)
+                {
+                    TerminateEmulator(EmulatorLocation);
+                }
+
+                ProcessStartInfo startInfo = new()
+                {
+                    FileName = EmulatorLocation,
+                    UseShellExecute = false,
+                    Arguments = OverrideArgumentsChk ? OverrideArguments : $"\"{FileLocation}\""
+                };
+
+                Process p = new()
+                {
+                    StartInfo = startInfo
+                };
+
+                p.Start();
+
+                TraceLogger.Log("Emulator started successfully.");
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Error when starting emulator: {ex}", StatusSeverityType.Error, true);
             }
         }
     }

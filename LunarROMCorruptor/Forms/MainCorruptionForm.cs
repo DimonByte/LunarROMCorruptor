@@ -506,7 +506,7 @@ namespace LunarROMCorruptor
             {
                 if (File.Exists(EmulatorLocationtxt.Text))
                 {
-                    CorruptionCore.StartEmulator(
+                    CommandRunner.StartEmulator(
                         ReopenChbox.Checked,
                         EmulatorLocationtxt.Text,
                         SaveasTxt.Text,
@@ -668,7 +668,6 @@ namespace LunarROMCorruptor
             if (files.Length > 1)
             {
                 CorruptionQueueChkbox.Checked = true;
-                // Add files to the listbox in the CorruptionQueue
                 foreach (var item in files)
                 {
                     TraceLogger.Log($"File added to corruption queue via drag and drop: {item}");
@@ -682,6 +681,23 @@ namespace LunarROMCorruptor
             {
                 foreach (var path in files)
                 {
+                    if (Path.GetExtension(path).ToLower() == ".exe")
+                    {
+                        var result = MessageBox.Show(
+                            "This file is an executable. Do you want to use it as an emulator?",
+                            "Executable File Detected",
+                            MessageBoxButtons.YesNo,
+                            MessageBoxIcon.Question);
+
+                        if (result == DialogResult.Yes)
+                        {
+                            EmulatorLocationtxt.Text = path;
+                            Settings.Default.EmulatorPath = path;
+                            Settings.Default.Save();
+                            return;
+                        }
+                    }
+
                     TraceLogger.Log($"File dropped onto main form: {path}. Attempting to load this file.");
                     LoadFile(path);
                 }
@@ -882,7 +898,7 @@ namespace LunarROMCorruptor
                 CorruptButtonColorChanger.Start();
                 if (Runemulatorchbox.Checked && !string.IsNullOrEmpty(EmulatorLocationtxt.Text))
                 {
-                    CorruptionCore.StartEmulator(ReopenChbox.Checked, EmulatorLocationtxt.Text, SaveasTxt.Text, OverrideArgumentschbox.Checked, OverrideArguments.Text);
+                    CommandRunner.StartEmulator(ReopenChbox.Checked, EmulatorLocationtxt.Text, SaveasTxt.Text, OverrideArgumentschbox.Checked, OverrideArguments.Text);
                 }
                 //Set StashByteList to the files contents, each line is each item on the list
                 StashBytesList.Items.Clear();
@@ -980,7 +996,7 @@ namespace LunarROMCorruptor
 
         private void FileSaveOpenLocationBtn_Click(object sender, EventArgs e)
         {
-            System.Diagnostics.Process.Start("explorer.exe", Application.StartupPath + @"\Saves\");
+            CommandRunner.OpenFolderInExplorer(Application.StartupPath + @"\Saves\");
         }
 
         private void StartAutomationBtn_Click(object sender, EventArgs e)
@@ -1255,14 +1271,22 @@ namespace LunarROMCorruptor
 
         private void OpenOriginalFolderLocationBtn_Click(object sender, EventArgs e)
         {
-            //Open the folder of the FileSelectiontxt
             CommandRunner.OpenFolderInExplorer(FileSelectiontxt.Text);
         }
 
         private void OpenSaveFolderLocationBtn_Click(object sender, EventArgs e)
         {
-            //Open SaveasTxt folder location in explorer
             CommandRunner.OpenFolderInExplorer(SaveasTxt.Text);
+        }
+
+        private void OpenEmulatorFolderLocationBtn_Click(object sender, EventArgs e)
+        {
+            CommandRunner.OpenFolderInExplorer(EmulatorLocationtxt.Text);
+        }
+
+        private void TerminateEmulatorBtn_Click(object sender, EventArgs e)
+        {
+            CommandRunner.TerminateEmulator(EmulatorLocationtxt.Text);
         }
     }
 }

@@ -25,118 +25,80 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
     internal class ExclusionEngine
     {
         private static readonly Random rnd = new();
-        // Safe byte locations for each console/profile - these are ranges (start, end)
-        // Note: these maaaaay be wrong but I tried. From what I can gather these are at least some of the locations that are indeed critical.
         public static readonly Dictionary<string, List<(long start, long end)>> SafeLocations = new()
         {
             ["NES"] =
             [
-                (0x0000, 0x07FF),   // RAM
-                (0x2000, 0x2007),   // PPU registers
-                (0x4000, 0x4017),   // APU and I/O registers
-                (0x4018, 0x401F),   // Expansion RAM and control registers
+                (0x0000, 0x0017),   // iNES header - critical for loading
+                (0x0018, 0x001B),   // PRG-ROM size, CHR-ROM size
+                (0x001C, 0x001F),   // Mapper, Mirroring, Trainer info
             ],
             ["N64"] =
             [
-                (0x00000000, 0x00000FFF), // RDRAM
-                (0x04000000, 0x040000FF), // PI registers
-                (0x04000100, 0x040001FF), // SI registers
-                (0x04000200, 0x040002FF), // AI registers
-                (0x04000300, 0x040003FF), // VI registers
-                (0x04000400, 0x040004FF), // PI registers - repeated but important
-                (0x04000500, 0x040005FF), // RI registers
-                (0x04000600, 0x040006FF), // AI registers - repeated
-                (0x04001000, 0x04001FFF), // SP registers 
-                (0x04002000, 0x04002FFF), // DP registers
-                (0x08000000, 0x08000FFF), // Cartridge ROM (critical)
-                (0x10000000, 0x1000003F), // Boot code
+                (0x00000000, 0x00000013),   // ROM header - critical for loading
+                (0x00000014, 0x00000017),   // Bus speed, IPL ID
+                (0x00000018, 0x00000023),   // ROM name and manufacturer data
+                (0x00000024, 0x0000002B),   // Checksums - vital for integrity
             ],
             ["SNES"] =
             [
-                (0x000000, 0x001FFF),   // WRAM
-                (0x002000, 0x003FFF),   // WRAM mirror
-                (0x004000, 0x007FFF),   // WRAM
-                (0x008000, 0x00FFFF),   // WRAM mirror
-                (0x4000, 0x401F),       // CPU registers
-                (0x00200000, 0x003FFFFF), // High WRAM
-                (0xFF00, 0xFFFF),       // CPU internal registers  
+                (0x000000, 0x000007),   // SNES header - absolutely critical 
+                (0x000008, 0x00000F),   // ROM size and hardware info
+                (0x000010, 0x000013),   // SRAM size and version
             ],
             ["EXE"] =
             [
-                (0x00000000, 0x0000003F),   // DOS header
-                (0x00000040, 0x000001FF),   // PE header
-                (0x00000200, 0x000003FF),   // Optional header
-                (0x00000400, 0x000004FF),   // Section headers
-                (0x00000500, 0x000005FF),   // Import table
+                (0x00000000, 0x0000003F),   // DOS header - critical for Windows loading
+                (0x00000040, 0x000001FF),   // PE header structure 
+                (0x00000200, 0x000003FF),   // Optional header - contains execution info
             ],
             ["GAMECUBE"] =
             [
-                (0x00000000, 0x0000FFFF), // System RAM
-                (0x01000000, 0x01FFFFFF), // Game RAM
-                (0x03000000, 0x04000000), // I/O Registers
-                (0x05000000, 0x05000FFF), // Hardware registers 
+                (0x00000000, 0x00000040),   // IOS header - critical for launch
+                (0x00000040, 0x00000043),   // Entry point address - vital
+                (0x00000080, 0x000000BF),   // Disc header and metadata
             ],
             ["PS2"] =
             [
-                (0x00000000, 0x0000FFFF), // RAM
-                (0x10000000, 0x100003FF), // SPU registers
-                (0x10001000, 0x100013FF), // GPU registers
-                (0x10002000, 0x100023FF), // I/O registers
-                (0x10003000, 0x100033FF), // Timer register
-                (0x10004000, 0x100043FF), // DMA registers
+                (0x00000000, 0x0000003F),   // PS2 disc header - vital for loading
+                (0x00000040, 0x0000007F),   // ELF header structure 
+                (0x00000080, 0x000000FF),   // Program header info
             ],
             ["PS1"] =
             [
-                (0x00000000, 0x0000FFFF), // RAM
-                (0x1F800000, 0x1F8003FF), // Control registers
-                (0x1F801000, 0x1F8013FF), // Display registers
-                (0x1F801400, 0x1F8017FF), // SPU registers
-                (0x1F802000, 0x1F8023FF), // CD-ROM registers
+                (0x00000000, 0x0000000F),   // CD-ROM header - critical
+                (0x00000010, 0x0000001B),   // Boot sector information
+                (0x00000020, 0x0000003F),   // Disc ID and system parameters
             ],
             ["SEGA"] =
             [
-                (0x00000000, 0x0000FFFF), // RAM
-                (0x00002000, 0x000027FF), // VDP registers 
-                (0x00004000, 0x000043FF), // I/O registers
-                (0x00008000, 0x00008001), // Video RAM address
+                (0x00000000, 0x0000003F),   // Sega header information - critical  
+                (0x00000040, 0x00000047),   // ROM size and hardware info
             ],
             ["GAMEBOY"] =
             [
-                (0x00000000, 0x00007FFF), // RAM
-                (0x00008000, 0x00009FFF), // Video RAM
-                (0x0000A000, 0x0000BFFF), // External RAM
-                (0x0000C000, 0x0000DFFF), // Work RAM
-                (0x0000E000, 0x0000FDFF), // Echo RAM
-                (0x0000FE00, 0x0000FE9F), // OAM
-                (0x0000FF00, 0x0000FFFF), // I/O registers
-                (0x00010000, 0x00011FFF), // Video RAM (second bank)
+                (0x00000000, 0x0000000F),   // GB header - critical for loading
+                (0x00000010, 0x00000013),   // Entry point address and parameters
             ],
             ["WII"] =
             [
-                (0x00000000, 0x01FFFFFF), // System RAM
-                (0x03000000, 0x04000000), // I/O registers
-                (0x06000000, 0x06FFFFFF), // Game RAM
-                (0x10000000, 0x10FF0000), // Boot ROM
+                (0x00000000, 0x0000003F),   // Wii boot header - critical for launch  
+                (0x00000040, 0x0000007F),   // Entry point and system configuration
             ],
             ["DREAMCAST"] =
             [
-                (0x00000000, 0x007FFFFF), // RAM
-                (0x00800000, 0x00803FFF), // VDP registers
-                (0x00804000, 0x00807FFF), // I/O registers
-                (0x00A00000, 0x00A0FFFF), // BIOS ROM
-                (0x00C00000, 0x00DFFFFF), // Expansion RAM
+                (0x00000000, 0x0000003F),   // Dreamcast disc header - critical for loading
+                (0x00000040, 0x0000007F),   // Boot code information and entry points
             ],
             ["BIOS"] =
             [
-                (0x00000000, 0x00000FFF), // Bootstrap code
-                (0x00001000, 0x00001FFF), // Configuration data
-                (0x00002000, 0x00003FFF), // System registers
-                (0x00004000, 0x00005FFF), // Initialization routines
+                (0x00000000, 0x000001FF),   // BIOS header - critical for boot process
+                (0x00000200, 0x000003FF),   // Boot code and startup info 
             ],
         };
 
         /// <summary>
-        /// Corrupts a byte at given position with intelligent value selection
+        /// Corrupts a byte at given position with safe location checks
         /// </summary>
         public static byte[] CorruptByte(byte[] ROM, CorruptionOptions CorruptOption, string Profile, long i)
         {
@@ -145,15 +107,16 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 
             var safeLocations = SafeLocations.GetValueOrDefault(Profile, new List<(long, long)>());
 
-            byte originalValue = ROM[i];
+            if (IsSafeLocation(i, safeLocations))
+            {
+                return ROM;
+            }
 
             switch (CorruptOption)
             {
                 case CorruptionOptions.RANDOM:
-                    // Improved random corruption with intelligent value selection
                     byte newValue = (byte)new Random().Next(0, 256);
 
-                    // Avoid values that commonly cause crashes or invalid states
                     if (ShouldAvoidValue(newValue))
                         newValue = GetAlternativeValue(newValue);
 
@@ -162,7 +125,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     break;
 
                 case CorruptionOptions.RANDOMTILT:
-                    // Random tilt with better handling of edge cases
                     switch (new Random().Next(0, 3))
                     {
                         case 0:
@@ -170,11 +132,11 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
                         case 1:
-                            ROM[i] = ClampByte(ROM[i] + (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
                         case 2:
-                            ROM[i] = ClampByte(ROM[i] - (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
                         default:
@@ -183,15 +145,14 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     break;
 
                 case CorruptionOptions.TILT:
-                    // Improved tilt functionality with more interesting effects
                     switch (new Random().Next(0, 2))
                     {
                         case 0:
-                            ROM[i] = ClampByte(ROM[i] + (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
                         case 1:
-                            ROM[i] = ClampByte(ROM[i] - (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
+                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.ExclusionEngineFrame.IncreDecrenumbnightmare.Value);
                             Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
                             break;
                     }
@@ -211,7 +172,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         {
             foreach (var (start, end) in safeLocations)
             {
-                // Validate that range makes sense before checking
                 if (start <= end && position >= start && position <= end)
                     return true;
             }
@@ -223,7 +183,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         /// </summary>
         private static bool ShouldAvoidValue(byte value)
         {
-            // Avoid common crash-inducing values
             return value == 0x00 || value == 0xFF ||
                  (value >= 0xF0 && value <= 0xFF); // High crash potential bytes
         }
@@ -233,23 +192,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         /// </summary>
         private static byte GetAlternativeValue(byte currentValue)
         {
-            byte[] alternativeValues = {
+            byte[] alternativeValues = [
                 0x7F, 0x80, 0x42, 0x69, 0xA5, 0xCD, 0x13, 0x88,
                 0x2A, 0x76, 0x65, 0x8C, 0x7F, 0x7F
-            };
+            ];
 
-            // Simple approach: return a random alternative from our list
             return alternativeValues[new Random().Next(alternativeValues.Length)];
-        }
-
-        /// <summary>
-        /// Ensures byte value stays within valid range (0-255)
-        /// </summary>
-        private static byte ClampByte(int value)
-        {
-            if (value < 0) return 0;
-            if (value > 255) return 255;
-            return (byte)value;
         }
     }
 }

@@ -137,6 +137,9 @@
             OverrideArgumentschbox = new CheckBox();
             StartEmulatorlbl = new Label();
             StartEmulatorPanel = new Panel();
+            pictureBox1 = new PictureBox();
+            TerminateEmulatorBtn = new Button();
+            OpenEmulatorFolderLocationBtn = new Button();
             BrowseEmulatorbutton = new Button();
             FileSaveTab.SuspendLayout();
             FileCorruptionTab.SuspendLayout();
@@ -172,6 +175,7 @@
             CheckBoxUpperPanel.SuspendLayout();
             contextStripStash.SuspendLayout();
             StartEmulatorPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             SuspendLayout();
             // 
             // FilesaveReloadbtn
@@ -181,6 +185,8 @@
             FilesaveReloadbtn.FlatAppearance.BorderSize = 0;
             FilesaveReloadbtn.FlatStyle = FlatStyle.Flat;
             FilesaveReloadbtn.ForeColor = Color.FromArgb(213, 216, 216);
+            FilesaveReloadbtn.Image = Properties.Resources.refresh;
+            FilesaveReloadbtn.ImageAlign = ContentAlignment.MiddleLeft;
             FilesaveReloadbtn.Location = new Point(578, 202);
             FilesaveReloadbtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveReloadbtn.Name = "FilesaveReloadbtn";
@@ -197,12 +203,15 @@
             FilesaveRenameBtn.FlatAppearance.BorderSize = 0;
             FilesaveRenameBtn.FlatStyle = FlatStyle.Flat;
             FilesaveRenameBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            FilesaveRenameBtn.Image = Properties.Resources.input_field;
+            FilesaveRenameBtn.ImageAlign = ContentAlignment.MiddleLeft;
             FilesaveRenameBtn.Location = new Point(578, 230);
             FilesaveRenameBtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveRenameBtn.Name = "FilesaveRenameBtn";
             FilesaveRenameBtn.Size = new Size(79, 27);
             FilesaveRenameBtn.TabIndex = 157;
             FilesaveRenameBtn.Text = "Rename";
+            FilesaveRenameBtn.TextAlign = ContentAlignment.MiddleRight;
             FilesaveRenameBtn.UseVisualStyleBackColor = false;
             FilesaveRenameBtn.Click += FilesaveRenameBtn_Click;
             // 
@@ -246,6 +255,8 @@
             FileSaveOpenLocationBtn.FlatStyle = FlatStyle.Flat;
             FileSaveOpenLocationBtn.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
             FileSaveOpenLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            FileSaveOpenLocationBtn.Image = Properties.Resources.hyperlink;
+            FileSaveOpenLocationBtn.ImageAlign = ContentAlignment.MiddleLeft;
             FileSaveOpenLocationBtn.Location = new Point(578, 258);
             FileSaveOpenLocationBtn.Margin = new Padding(2, 3, 2, 3);
             FileSaveOpenLocationBtn.Name = "FileSaveOpenLocationBtn";
@@ -262,12 +273,14 @@
             FilesaveDelete.FlatAppearance.BorderSize = 0;
             FilesaveDelete.FlatStyle = FlatStyle.Flat;
             FilesaveDelete.ForeColor = Color.FromArgb(213, 216, 216);
+            FilesaveDelete.Image = Properties.Resources.trash;
+            FilesaveDelete.ImageAlign = ContentAlignment.MiddleLeft;
             FilesaveDelete.Location = new Point(658, 230);
             FilesaveDelete.Margin = new Padding(2, 3, 2, 3);
             FilesaveDelete.Name = "FilesaveDelete";
             FilesaveDelete.Size = new Size(83, 27);
             FilesaveDelete.TabIndex = 156;
-            FilesaveDelete.Text = "Delete";
+            FilesaveDelete.Text = "    Delete";
             FilesaveDelete.UseVisualStyleBackColor = false;
             FilesaveDelete.Click += FilesaveDelete_Click;
             // 
@@ -426,7 +439,9 @@
             RenameStashBtn.Dock = DockStyle.Fill;
             RenameStashBtn.FlatAppearance.BorderSize = 0;
             RenameStashBtn.FlatStyle = FlatStyle.Flat;
+            RenameStashBtn.Font = new Font("Segoe UI", 6F);
             RenameStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RenameStashBtn.Image = Properties.Resources.input_field;
             RenameStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
             RenameStashBtn.Location = new Point(0, 1);
             RenameStashBtn.Margin = new Padding(0, 1, 1, 1);
@@ -434,6 +449,7 @@
             RenameStashBtn.Size = new Size(66, 30);
             RenameStashBtn.TabIndex = 0;
             RenameStashBtn.Text = "Rename";
+            RenameStashBtn.TextAlign = ContentAlignment.MiddleRight;
             RenameStashBtn.UseVisualStyleBackColor = false;
             RenameStashBtn.Click += RenameStash_Click;
             // 
@@ -443,14 +459,17 @@
             DeleteStashBtn.Dock = DockStyle.Fill;
             DeleteStashBtn.FlatAppearance.BorderSize = 0;
             DeleteStashBtn.FlatStyle = FlatStyle.Flat;
+            DeleteStashBtn.Font = new Font("Segoe UI", 7F);
             DeleteStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            DeleteStashBtn.ImageAlign = ContentAlignment.TopCenter;
+            DeleteStashBtn.Image = Properties.Resources.trash;
+            DeleteStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
             DeleteStashBtn.Location = new Point(135, 1);
             DeleteStashBtn.Margin = new Padding(1, 1, 0, 1);
             DeleteStashBtn.Name = "DeleteStashBtn";
             DeleteStashBtn.Size = new Size(67, 30);
             DeleteStashBtn.TabIndex = 0;
-            DeleteStashBtn.Text = "Delete";
+            DeleteStashBtn.Text = "Delete ";
+            DeleteStashBtn.TextAlign = ContentAlignment.MiddleRight;
             DeleteStashBtn.UseVisualStyleBackColor = false;
             DeleteStashBtn.Click += DeleteStash_Click;
             // 
@@ -460,7 +479,9 @@
             RefreshStashBtn.Dock = DockStyle.Fill;
             RefreshStashBtn.FlatAppearance.BorderSize = 0;
             RefreshStashBtn.FlatStyle = FlatStyle.Flat;
+            RefreshStashBtn.Font = new Font("Segoe UI", 7F);
             RefreshStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RefreshStashBtn.Image = Properties.Resources.refresh;
             RefreshStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
             RefreshStashBtn.Location = new Point(68, 1);
             RefreshStashBtn.Margin = new Padding(1);
@@ -468,6 +489,7 @@
             RefreshStashBtn.Size = new Size(65, 30);
             RefreshStashBtn.TabIndex = 0;
             RefreshStashBtn.Text = "Refresh";
+            RefreshStashBtn.TextAlign = ContentAlignment.MiddleRight;
             RefreshStashBtn.UseVisualStyleBackColor = false;
             RefreshStashBtn.Click += RefreshStash_Click;
             // 
@@ -1653,7 +1675,7 @@
             EmulatorLocationtxt.Margin = new Padding(2, 3, 2, 3);
             EmulatorLocationtxt.Name = "EmulatorLocationtxt";
             EmulatorLocationtxt.ReadOnly = true;
-            EmulatorLocationtxt.Size = new Size(561, 23);
+            EmulatorLocationtxt.Size = new Size(530, 23);
             EmulatorLocationtxt.TabIndex = 74;
             // 
             // OverrideArguments
@@ -1677,7 +1699,7 @@
             ReopenChbox.CheckState = CheckState.Checked;
             ReopenChbox.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             ReopenChbox.ForeColor = Color.FromArgb(213, 216, 216);
-            ReopenChbox.Location = new Point(375, 10);
+            ReopenChbox.Location = new Point(372, 10);
             ReopenChbox.Margin = new Padding(2, 3, 2, 3);
             ReopenChbox.Name = "ReopenChbox";
             ReopenChbox.Size = new Size(176, 17);
@@ -1705,7 +1727,7 @@
             StartEmulatorlbl.AutoSize = true;
             StartEmulatorlbl.Font = new Font("Segoe UI Semibold", 10F, FontStyle.Bold);
             StartEmulatorlbl.ForeColor = Color.FromArgb(213, 216, 216);
-            StartEmulatorlbl.Location = new Point(23, 8);
+            StartEmulatorlbl.Location = new Point(31, 8);
             StartEmulatorlbl.Margin = new Padding(2, 0, 2, 0);
             StartEmulatorlbl.Name = "StartEmulatorlbl";
             StartEmulatorlbl.Size = new Size(151, 19);
@@ -1715,7 +1737,10 @@
             // StartEmulatorPanel
             // 
             StartEmulatorPanel.BackColor = Color.FromArgb(28, 27, 55);
+            StartEmulatorPanel.Controls.Add(pictureBox1);
             StartEmulatorPanel.Controls.Add(StartEmulatorlbl);
+            StartEmulatorPanel.Controls.Add(TerminateEmulatorBtn);
+            StartEmulatorPanel.Controls.Add(OpenEmulatorFolderLocationBtn);
             StartEmulatorPanel.Controls.Add(OverrideArgumentschbox);
             StartEmulatorPanel.Controls.Add(ReopenChbox);
             StartEmulatorPanel.Controls.Add(OverrideArguments);
@@ -1728,6 +1753,54 @@
             StartEmulatorPanel.Name = "StartEmulatorPanel";
             StartEmulatorPanel.Size = new Size(758, 91);
             StartEmulatorPanel.TabIndex = 142;
+            // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = Properties.Resources.arcade;
+            pictureBox1.Location = new Point(10, 8);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new Size(20, 20);
+            pictureBox1.SizeMode = PictureBoxSizeMode.AutoSize;
+            pictureBox1.TabIndex = 169;
+            pictureBox1.TabStop = false;
+            // 
+            // TerminateEmulatorBtn
+            // 
+            TerminateEmulatorBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            TerminateEmulatorBtn.BackColor = Color.FromArgb(52, 60, 111);
+            TerminateEmulatorBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            TerminateEmulatorBtn.FlatAppearance.BorderSize = 0;
+            TerminateEmulatorBtn.FlatStyle = FlatStyle.Flat;
+            TerminateEmulatorBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            TerminateEmulatorBtn.Image = Properties.Resources.xmark_circle_solid;
+            TerminateEmulatorBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            TerminateEmulatorBtn.Location = new Point(566, 5);
+            TerminateEmulatorBtn.Margin = new Padding(2, 3, 2, 3);
+            TerminateEmulatorBtn.Name = "TerminateEmulatorBtn";
+            TerminateEmulatorBtn.Size = new Size(187, 24);
+            TerminateEmulatorBtn.TabIndex = 168;
+            TerminateEmulatorBtn.Text = "Terminate Running Emulator";
+            TerminateEmulatorBtn.TextAlign = ContentAlignment.MiddleRight;
+            TerminateEmulatorBtn.UseVisualStyleBackColor = false;
+            TerminateEmulatorBtn.Click += TerminateEmulatorBtn_Click;
+            // 
+            // OpenEmulatorFolderLocationBtn
+            // 
+            OpenEmulatorFolderLocationBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            OpenEmulatorFolderLocationBtn.BackColor = Color.FromArgb(52, 60, 111);
+            OpenEmulatorFolderLocationBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            OpenEmulatorFolderLocationBtn.FlatAppearance.BorderSize = 0;
+            OpenEmulatorFolderLocationBtn.FlatStyle = FlatStyle.Flat;
+            OpenEmulatorFolderLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            OpenEmulatorFolderLocationBtn.Image = Properties.Resources.hyperlink;
+            OpenEmulatorFolderLocationBtn.ImageAlign = ContentAlignment.MiddleRight;
+            OpenEmulatorFolderLocationBtn.Location = new Point(726, 32);
+            OpenEmulatorFolderLocationBtn.Margin = new Padding(2, 3, 2, 3);
+            OpenEmulatorFolderLocationBtn.Name = "OpenEmulatorFolderLocationBtn";
+            OpenEmulatorFolderLocationBtn.Size = new Size(27, 24);
+            OpenEmulatorFolderLocationBtn.TabIndex = 168;
+            OpenEmulatorFolderLocationBtn.UseVisualStyleBackColor = false;
+            OpenEmulatorFolderLocationBtn.Click += OpenEmulatorFolderLocationBtn_Click;
             // 
             // BrowseEmulatorbutton
             // 
@@ -1811,6 +1884,7 @@
             contextStripStash.ResumeLayout(false);
             StartEmulatorPanel.ResumeLayout(false);
             StartEmulatorPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ResumeLayout(false);
 
         }
@@ -1924,6 +1998,9 @@
         internal Button OpenSaveFolderLocationBtn;
         private TableLayoutPanel StashBtnTableLayoutPanel;
         internal Button DeleteStashBtn;
+        internal Button OpenEmulatorFolderLocationBtn;
+        internal Button TerminateEmulatorBtn;
+        private PictureBox pictureBox1;
     }
 }
 

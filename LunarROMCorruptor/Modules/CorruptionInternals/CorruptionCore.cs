@@ -20,8 +20,6 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
-using System.Diagnostics;
-
 namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
     public class CorruptionCore
@@ -178,39 +176,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             catch (Exception ex)
             {
                 TraceLogger.Log($"Error when restoring ROM: {ex}", StatusSeverityType.Error, true);
-            }
-        }
-
-        public static void StartEmulator(bool ReopenProgram, string EmulatorLocation, string FileLocation, bool OverrideArgumentsChk, string OverrideArguments)
-        {
-            TraceLogger.Log($"Starting emulator with the following settings:\nReopen Program: {ReopenProgram}\nEmulator Location: {EmulatorLocation}\nFile Location: {FileLocation}\nOverride Arguments: {OverrideArgumentsChk}\nArguments: {OverrideArguments}");
-            try
-            {
-                if (ReopenProgram)
-                {
-                    var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(EmulatorLocation));
-                    if (processes.Length > 0)
-                        processes[0].Kill();
-                }
-
-                ProcessStartInfo startInfo = new()
-                {
-                    FileName = EmulatorLocation,
-                    UseShellExecute = false, // Start process directly without going to windows shell
-                    Arguments = OverrideArgumentsChk ? OverrideArguments : $"\"{FileLocation}\""
-                };
-
-                Process p = new()
-                {
-                    StartInfo = startInfo
-                };
-
-                p.Start();
-                TraceLogger.Log("Emulator started successfully.");
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Error when starting emulator: {ex}", StatusSeverityType.Error, true);
             }
         }
     }

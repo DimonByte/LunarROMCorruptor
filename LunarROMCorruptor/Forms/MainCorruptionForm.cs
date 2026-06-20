@@ -253,7 +253,6 @@ namespace LunarROMCorruptor
                 case CorruptionEngineType.NightmareEngine:
                     newControl = NightmareEngineFrame;
                     newControl.Name = "NightmareEngineControl";
-                    TraceLogger.Log("Nightmare Engine selected.", StatusSeverityType.Debug);
                     break;
 
                 case CorruptionEngineType.LerpEngine:

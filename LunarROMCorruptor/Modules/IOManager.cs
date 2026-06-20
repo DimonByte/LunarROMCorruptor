@@ -283,7 +283,7 @@ namespace LunarROMCorruptor.Modules
             {
                 if (listBox?.SelectedItems?.Count == 0)
                 {
-                    TraceLogger.Log("No items selected for deletion. Aborting delete operation.", StatusSeverityType.Warning, true);
+                    TraceLogger.Log("No items selected for deletion. Aborting delete operation.", StatusSeverityType.Error, true);
                     return;
                 }
 

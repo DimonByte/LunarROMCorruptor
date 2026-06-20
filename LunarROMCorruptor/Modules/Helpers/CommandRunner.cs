@@ -166,7 +166,7 @@ namespace LunarROMCorruptor.Modules.Helpers
 
         public static void StartEmulator(bool ReopenProgram, string EmulatorLocation, string FileLocation, bool OverrideArgumentsChk, string OverrideArguments)
         {
-            TraceLogger.Log($"Starting emulator with the following settings:\nReopen Program: {ReopenProgram}\nEmulator Location: {EmulatorLocation}\nFile Location: {FileLocation}\nOverride Arguments: {OverrideArgumentsChk}\nArguments: {OverrideArguments}");
+            TraceLogger.Log($"Starting emulator with the following settings: Reopen Program: {ReopenProgram} | Emulator Location: {EmulatorLocation} | File Location: {FileLocation} | Override Arguments: {OverrideArgumentsChk} | Arguments: {OverrideArguments}");
             try
             {
                 if (ReopenProgram)

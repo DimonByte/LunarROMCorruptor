@@ -358,10 +358,10 @@
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
             CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine" });
-            CorruptionEngineComboBox.Location = new Point(134, 239);
+            CorruptionEngineComboBox.Location = new Point(407, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
-            CorruptionEngineComboBox.Size = new Size(157, 21);
+            CorruptionEngineComboBox.Size = new Size(160, 21);
             CorruptionEngineComboBox.TabIndex = 166;
             CorruptionEngineComboBox.Text = "Manual Engine";
             CorruptionEngineComboBox.SelectedIndexChanged += CorruptionEngineComboBox_SelectedIndexChanged;
@@ -372,7 +372,7 @@
             CorruptionEnginelbl.AutoSize = true;
             CorruptionEnginelbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline);
             CorruptionEnginelbl.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionEnginelbl.Location = new Point(13, 239);
+            CorruptionEnginelbl.Location = new Point(286, 4);
             CorruptionEnginelbl.Margin = new Padding(2, 0, 2, 0);
             CorruptionEnginelbl.Name = "CorruptionEnginelbl";
             CorruptionEnginelbl.Size = new Size(117, 17);
@@ -383,12 +383,12 @@
             // 
             CorruptionQueueChkbox.AutoSize = true;
             CorruptionQueueChkbox.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionQueueChkbox.Location = new Point(0, 3);
+            CorruptionQueueChkbox.Location = new Point(0, 5);
             CorruptionQueueChkbox.Margin = new Padding(2, 3, 2, 3);
             CorruptionQueueChkbox.Name = "CorruptionQueueChkbox";
-            CorruptionQueueChkbox.Size = new Size(122, 19);
+            CorruptionQueueChkbox.Size = new Size(77, 19);
             CorruptionQueueChkbox.TabIndex = 89;
-            CorruptionQueueChkbox.Text = "Corruption Queue";
+            CorruptionQueueChkbox.Text = "Multi-File";
             CorruptionQueueChkbox.UseVisualStyleBackColor = true;
             CorruptionQueueChkbox.CheckedChanged += CorruptionQueueChkbox_CheckedChanged;
             // 
@@ -528,8 +528,6 @@
             CorruptionParametersPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             CorruptionParametersPanel.BackColor = Color.FromArgb(39, 43, 83);
             CorruptionParametersPanel.Controls.Add(ByteModeHelp);
-            CorruptionParametersPanel.Controls.Add(CorruptionEnginelbl);
-            CorruptionParametersPanel.Controls.Add(CorruptionEngineComboBox);
             CorruptionParametersPanel.Controls.Add(AllowLargeIntensity);
             CorruptionParametersPanel.Controls.Add(UseHexchbox);
             CorruptionParametersPanel.Controls.Add(EndByteNumb);
@@ -581,7 +579,7 @@
             UseHexchbox.BackColor = Color.Transparent;
             UseHexchbox.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
             UseHexchbox.ForeColor = Color.FromArgb(213, 216, 216);
-            UseHexchbox.Location = new Point(301, 108);
+            UseHexchbox.Location = new Point(301, 113);
             UseHexchbox.Margin = new Padding(2, 3, 2, 3);
             UseHexchbox.Name = "UseHexchbox";
             UseHexchbox.Size = new Size(48, 17);
@@ -595,7 +593,7 @@
             EndByteNumb.BackColor = Color.FromArgb(29, 32, 32);
             EndByteNumb.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             EndByteNumb.ForeColor = Color.FromArgb(213, 216, 216);
-            EndByteNumb.Location = new Point(79, 166);
+            EndByteNumb.Location = new Point(79, 182);
             EndByteNumb.Margin = new Padding(2, 3, 2, 3);
             EndByteNumb.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             EndByteNumb.Name = "EndByteNumb";
@@ -607,7 +605,7 @@
             // 
             EndByteTrackbar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             EndByteTrackbar.AutoSize = false;
-            EndByteTrackbar.Location = new Point(12, 198);
+            EndByteTrackbar.Location = new Point(12, 214);
             EndByteTrackbar.Margin = new Padding(2, 3, 2, 3);
             EndByteTrackbar.Maximum = 1000;
             EndByteTrackbar.Name = "EndByteTrackbar";
@@ -623,7 +621,7 @@
             Endbytelbl.AutoSize = true;
             Endbytelbl.Font = new Font("Segoe UI", 9.75F);
             Endbytelbl.ForeColor = Color.FromArgb(213, 216, 216);
-            Endbytelbl.Location = new Point(13, 167);
+            Endbytelbl.Location = new Point(14, 182);
             Endbytelbl.Margin = new Padding(2, 0, 2, 0);
             Endbytelbl.Name = "Endbytelbl";
             Endbytelbl.Size = new Size(62, 17);
@@ -635,7 +633,7 @@
             StartByteNumb.BackColor = Color.FromArgb(29, 32, 32);
             StartByteNumb.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             StartByteNumb.ForeColor = Color.FromArgb(213, 216, 216);
-            StartByteNumb.Location = new Point(79, 106);
+            StartByteNumb.Location = new Point(79, 111);
             StartByteNumb.Margin = new Padding(2, 3, 2, 3);
             StartByteNumb.Maximum = new decimal(new int[] { 1000, 0, 0, 0 });
             StartByteNumb.Name = "StartByteNumb";
@@ -647,7 +645,7 @@
             // 
             StartByteTrackBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             StartByteTrackBar.AutoSize = false;
-            StartByteTrackBar.Location = new Point(12, 136);
+            StartByteTrackBar.Location = new Point(12, 141);
             StartByteTrackBar.Margin = new Padding(2, 3, 2, 3);
             StartByteTrackBar.Maximum = 1000;
             StartByteTrackBar.Name = "StartByteTrackBar";
@@ -663,7 +661,7 @@
             StartBytelbl.AutoSize = true;
             StartBytelbl.Font = new Font("Segoe UI", 9.75F);
             StartBytelbl.ForeColor = Color.FromArgb(213, 216, 216);
-            StartBytelbl.Location = new Point(8, 108);
+            StartBytelbl.Location = new Point(9, 111);
             StartBytelbl.Margin = new Padding(2, 0, 2, 0);
             StartBytelbl.Name = "StartBytelbl";
             StartBytelbl.Size = new Size(67, 17);
@@ -708,7 +706,7 @@
             CorrupteverynthbyteTrackbar.Maximum = 1000;
             CorrupteverynthbyteTrackbar.Minimum = 1;
             CorrupteverynthbyteTrackbar.Name = "CorrupteverynthbyteTrackbar";
-            CorrupteverynthbyteTrackbar.Size = new Size(349, 45);
+            CorrupteverynthbyteTrackbar.Size = new Size(346, 45);
             CorrupteverynthbyteTrackbar.TabIndex = 17;
             CorrupteverynthbyteTrackbar.TabStop = false;
             CorrupteverynthbyteTrackbar.TickFrequency = 0;
@@ -776,7 +774,7 @@
             IntensityTrackbar.Maximum = 1000;
             IntensityTrackbar.Minimum = 1;
             IntensityTrackbar.Name = "IntensityTrackbar";
-            IntensityTrackbar.Size = new Size(349, 45);
+            IntensityTrackbar.Size = new Size(346, 45);
             IntensityTrackbar.TabIndex = 17;
             IntensityTrackbar.TabStop = false;
             IntensityTrackbar.TickFrequency = 0;
@@ -905,12 +903,12 @@
             SilentCorruptionchbox.AutoSize = true;
             SilentCorruptionchbox.BackColor = Color.Transparent;
             SilentCorruptionchbox.ForeColor = Color.FromArgb(213, 216, 216);
-            SilentCorruptionchbox.Location = new Point(257, 3);
+            SilentCorruptionchbox.Location = new Point(216, 5);
             SilentCorruptionchbox.Margin = new Padding(2, 3, 2, 3);
             SilentCorruptionchbox.Name = "SilentCorruptionchbox";
-            SilentCorruptionchbox.Size = new Size(103, 19);
+            SilentCorruptionchbox.Size = new Size(66, 19);
             SilentCorruptionchbox.TabIndex = 172;
-            SilentCorruptionchbox.Text = "🔇Mute Sound";
+            SilentCorruptionchbox.Text = "🔇Mute";
             SilentCorruptionchbox.UseVisualStyleBackColor = false;
             SilentCorruptionchbox.CheckedChanged += SilentCorruptionchbox_CheckedChanged;
             // 
@@ -919,7 +917,7 @@
             AttemptProtectedFileOverrideChkBox.AutoSize = true;
             AttemptProtectedFileOverrideChkBox.BackColor = Color.Transparent;
             AttemptProtectedFileOverrideChkBox.ForeColor = Color.FromArgb(213, 216, 216);
-            AttemptProtectedFileOverrideChkBox.Location = new Point(126, 3);
+            AttemptProtectedFileOverrideChkBox.Location = new Point(81, 5);
             AttemptProtectedFileOverrideChkBox.Margin = new Padding(2, 3, 2, 3);
             AttemptProtectedFileOverrideChkBox.Name = "AttemptProtectedFileOverrideChkBox";
             AttemptProtectedFileOverrideChkBox.Size = new Size(131, 19);
@@ -954,7 +952,7 @@
             CorruptionEngineTab.Padding = new Padding(2, 3, 2, 3);
             CorruptionEngineTab.Size = new Size(750, 294);
             CorruptionEngineTab.TabIndex = 1;
-            CorruptionEngineTab.Text = "⚙️ Corruption Engine";
+            CorruptionEngineTab.Text = "🛠️ Corruption Engine";
             // 
             // ByteViewTab
             // 
@@ -1406,6 +1404,7 @@
             TraceLoggerTxtBox.Size = new Size(750, 267);
             TraceLoggerTxtBox.TabIndex = 3;
             TraceLoggerTxtBox.Text = "";
+            TraceLoggerTxtBox.WordWrap = false;
             // 
             // SaveLogBtn
             // 
@@ -1533,7 +1532,9 @@
             CheckBoxUpperPanel.BackColor = Color.FromArgb(28, 27, 55);
             CheckBoxUpperPanel.Controls.Add(CorruptionQueueChkbox);
             CheckBoxUpperPanel.Controls.Add(AttemptProtectedFileOverrideChkBox);
+            CheckBoxUpperPanel.Controls.Add(CorruptionEnginelbl);
             CheckBoxUpperPanel.Controls.Add(SilentCorruptionchbox);
+            CheckBoxUpperPanel.Controls.Add(CorruptionEngineComboBox);
             CheckBoxUpperPanel.Location = new Point(186, 54);
             CheckBoxUpperPanel.Margin = new Padding(4, 3, 4, 3);
             CheckBoxUpperPanel.Name = "CheckBoxUpperPanel";

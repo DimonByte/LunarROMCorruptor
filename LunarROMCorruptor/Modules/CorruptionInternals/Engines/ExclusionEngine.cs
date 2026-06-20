@@ -118,7 +118,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     byte newValue = (byte)new Random().Next(0, 256);
 
                     if (ShouldAvoidValue(newValue))
-                        newValue = GetAlternativeValue(newValue);
+                        newValue = GetAlternativeValue();
 
                     ROM[i] = newValue;
                     Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
@@ -190,7 +190,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         /// <summary>
         /// Returns an alternative value when avoiding problematic ones
         /// </summary>
-        private static byte GetAlternativeValue(byte currentValue)
+        private static byte GetAlternativeValue()
         {
             byte[] alternativeValues = [
                 0x7F, 0x80, 0x42, 0x69, 0xA5, 0xCD, 0x13, 0x88,

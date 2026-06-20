@@ -21,6 +21,10 @@
 //SOFTWARE.
 
 using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
+using Microsoft.VisualBasic.ApplicationServices;
+using System.Text;
+using System.Threading.Channels;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
@@ -45,6 +49,34 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 {
                     int randomIndex = rnd.Next(StartByte, EndByte);
                     NightmareEngine.CorruptByte(ROM, corruptionType.Value, randomIndex);
+                }
+            }
+
+            return ROM;
+        }
+
+        public static byte[]? ProcessSourceCodeEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
+        {
+            //Now this will work differently; the problem is that with the engines I have so far they select either a random byte location or every nth byte, but with source code corruption, instead it will need to do this instead:
+            //If Intensity is chosen, and the intensity is set to 200, we need to find 200 random values that the user enabled. Say 200 booleans, and set those to random values.
+            //If corruptnthbyte is enabled, and the value is 2, then every other value is changed.
+            string readableROM = Encoding.UTF8.GetString(ROM);
+
+            if (CorruptNthByte)
+            {
+                TraceLogger.Log("NOT IMPLEMENTED",StatusSeverityType.Debug);
+                //for (int i = StartByte; i <= EndByte; i += Intensity)
+                //{
+                //    NightmareEngine.CorruptByte(ROM, corruptionType.Value, i);
+                //}
+            }
+            else
+            {
+                for (int i = 0; i < Intensity; i++)
+                {
+                    //int randomIndex = rnd.Next(StartByte, EndByte);
+                    //NightmareEngine.CorruptByte(ROM, corruptionType.Value, randomIndex);
+
                 }
             }
 

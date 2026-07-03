@@ -21,10 +21,7 @@
 //SOFTWARE.
 
 using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
-using Microsoft.VisualBasic.ApplicationServices;
 using System.Text;
-using System.Threading.Channels;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
@@ -64,7 +61,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
             if (CorruptNthByte)
             {
-                TraceLogger.Log("NOT IMPLEMENTED",StatusSeverityType.Debug);
+                TraceLogger.Log("NOT IMPLEMENTED", StatusSeverityType.Debug);
                 //for (int i = StartByte; i <= EndByte; i += Intensity)
                 //{
                 //    NightmareEngine.CorruptByte(ROM, corruptionType.Value, i);

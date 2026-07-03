@@ -40,7 +40,7 @@ namespace LunarROMCorruptor
     public partial class MainCorruptionForm : Form
     {
         private readonly Random rnd = new(); //Used for random number generation
-        private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; //"v1.0.4 - Build Number: " + 
+        private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} beta"; //"v1.0.4 - Build Number: " + 
         public List<string> InternalStashItems = []; //Adding to this list will make corruptions faster as it's not in the GUI so it doesn't have to render every item update.
         readonly CorruptionQueueForm CorruptionQueueFormSettings = new(); //Creates the corruption queue form and then it will be read later by the main form.
         public readonly NightmareEngineControl NightmareEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.

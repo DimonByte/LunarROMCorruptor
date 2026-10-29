@@ -42,6 +42,7 @@ namespace LunarROMCorruptor
         private readonly Random rnd = new(); //Used for random number generation
         private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} beta"; //"v1.0.4 - Build Number: " + 
         readonly CorruptionQueueForm CorruptionQueueFormSettings = new(); //Creates the corruption queue form and then it will be read later by the main form.
+        #region Corruption Engine Frames
         public readonly NightmareEngineControl NightmareEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly LerpEngineControl LerpEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly LogicEngineControl LogicEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
@@ -52,7 +53,7 @@ namespace LunarROMCorruptor
         public readonly SourceCodeEngineControl SourceCodeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly DatamoshEngineControl DatamoshEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly BlocksEngineControl BlocksEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
-        public int MainSelectedProcessID = 999999;
+        #endregion
 
         private const int StashDisplayLimit = 50000; //More stash entries than this are not shown in the list (a "LargeStash" placeholder is shown instead)
         private const string MultipleFilesText = "---Multiple files selected---";
@@ -733,7 +734,7 @@ namespace LunarROMCorruptor
                     //The stash is always recorded so the corruption history works, the stash checkbox only controls the stash list/saving
                     var r = CorruptionCore.StartCorruption(settings, outputPath, true, token, progress);
                     if (r == CorruptionResult.Success)
-                        CorruptionHistory.Add(CorruptionCore.Stash, engineName, sourcePath);
+                        CorruptionHistory.Add(CorruptionCore.Stash, engineName, sourcePath, EnableStashSavesChkbox.Checked);
                     return r;
                 });
             }
@@ -980,7 +981,12 @@ namespace LunarROMCorruptor
             if (StashFileList.SelectedItems.Count > 0)
             {
                 TraceLogger.Log("Attempting to load stash file into stash editor");
-                _stashEditor.AttemptStashLoad(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)));
+                if (StashFileList.SelectedItem == null)
+                {
+                    TraceLogger.Log("No stash file selected to load into stash editor.", StatusSeverityType.Warning, true);
+                }
+                else
+                    _stashEditor.AttemptStashLoad(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)!));
             }
             _stashEditor.ShowDialog();
         }
@@ -1033,7 +1039,12 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("Attempted to corrupt using stash file but no stash file is selected. Please select a stash file before attempting to corrupt.", StatusSeverityType.Error, true);
                 return;
             }
-            CorruptUsingStashFile(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)));
+            if (StashFileList.SelectedItem == null)
+            {
+                TraceLogger.Log("No stash file selected to corrupt with.", StatusSeverityType.Warning, true);
+                return;
+            }
+            CorruptUsingStashFile(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)!));
         }
 
         /// <summary>

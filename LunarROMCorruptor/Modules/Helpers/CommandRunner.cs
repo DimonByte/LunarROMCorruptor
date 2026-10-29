@@ -67,7 +67,12 @@ namespace LunarROMCorruptor.Modules.Helpers
                 else
                 {
                     TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Warning);
-                    string directoryPath = Path.GetDirectoryName(normalizedPath);
+                    if (normalizedPath == null)
+                    {
+                        TraceLogger.Log("Normalized path is null, aborting.");
+                        return;
+                    }
+                    string directoryPath = Path.GetDirectoryName(normalizedPath)!;
                     if (Directory.Exists(directoryPath))
                     {
                         TraceLogger.Log($"Attempting to open parent directory: {directoryPath}");

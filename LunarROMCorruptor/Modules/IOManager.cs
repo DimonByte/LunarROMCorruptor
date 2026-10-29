@@ -416,7 +416,7 @@ namespace LunarROMCorruptor.Modules
         /// <summary>
         /// Saves the stash of a corruption that just finished. Safe to call from a background thread.
         /// </summary>
-        public static CorruptionHistoryEntry? Add(StashLog stash, string engineName, string sourcePath)
+        public static CorruptionHistoryEntry? Add(StashLog stash, string engineName, string sourcePath, bool stashEnabled)
         {
             if (stash.Count == 0) return null;
             if (stash.Count > MaxStashEntries || stash.Overflowed)
@@ -426,6 +426,12 @@ namespace LunarROMCorruptor.Modules
             }
             try
             {
+                //Check if stash is enabled before saving.
+                if (!stashEnabled)
+                {
+                    TraceLogger.Log("Stash is not enabled. Cannot save to corruption history.", StatusSeverityType.Warning);
+                    return null;
+                }
                 Directory.CreateDirectory(HistoryDirectory);
                 string path = Path.Combine(HistoryDirectory, $"history-{DateTime.Now:HHmmss}-{Guid.NewGuid():N}.stash");
                 stash.WriteTo(path);

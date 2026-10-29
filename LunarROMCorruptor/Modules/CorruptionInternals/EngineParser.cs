@@ -32,6 +32,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         ManualEngine,
         ExclusionEngine,
         SourceCodeEngine,
+        BlocksEngine,
         INVALID
     }
     internal class EngineParser
@@ -49,6 +50,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 CorruptionEngineType.ManualEngine => "Manual Engine",
                 CorruptionEngineType.ExclusionEngine => "Exclusion Engine",
                 CorruptionEngineType.SourceCodeEngine => "Source Code Engine",
+                CorruptionEngineType.BlocksEngine => "Blocks Engine",
                 _ => engineType.ToString()
             };
         }
@@ -66,6 +68,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 "Manual Engine" => CorruptionEngineType.ManualEngine,
                 "Exclusion Engine" => CorruptionEngineType.ExclusionEngine,
                 "Source Code Engine" => CorruptionEngineType.SourceCodeEngine,
+                "Blocks Engine" => CorruptionEngineType.BlocksEngine,
                 _ => CorruptionEngineType.INVALID // default fallback
             };
         }

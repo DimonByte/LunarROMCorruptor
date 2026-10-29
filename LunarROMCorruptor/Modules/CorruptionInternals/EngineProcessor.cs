@@ -45,6 +45,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public ExclusionEngine.Settings? Exclusion;
         public VectorEngine.Settings? Vector;
         public SourceCodeEngine.Settings? SourceCode;
+        public BlocksEngine.Settings? Blocks;
 
         /// <summary>
         /// Returns a copy with the byte range clamped to a file of the given length (used by the corruption queue where every file has a different size).
@@ -157,6 +158,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     break;
                 case CorruptionEngineType.VectorEngine:
                     VectorEngine.Run(ctx, settings.Vector ?? throw new InvalidOperationException("Vector2 Engine settings missing."));
+                    break;
+                case CorruptionEngineType.BlocksEngine:
+                    BlocksEngine.Run(ctx, settings.Blocks ?? throw new InvalidOperationException("Blocks Engine settings missing."));
                     break;
                 case CorruptionEngineType.SourceCodeEngine:
                     throw new InvalidOperationException("The Source Code Engine is a text engine and can't be run by the byte engine processor.");

@@ -50,6 +50,7 @@ namespace LunarROMCorruptor
         public readonly ManualEngineControl ManualEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly ExclusionEngineControl ExclusionEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly SourceCodeEngineControl SourceCodeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly BlocksEngineControl BlocksEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public int MainSelectedProcessID = 999999;
 
         private const int StashDisplayLimit = 50000; //More stash entries than this are not shown in the list (a "LargeStash" placeholder is shown instead)
@@ -65,11 +66,24 @@ namespace LunarROMCorruptor
         private string _corruptButtonIdleText = "Corrupt File";
         private StashEditor? _stashEditor;
         private readonly Dictionary<Control, bool> _enabledBeforeBusy = [];
+        private ByteViewImage? _byteViewInfo; //The image currently shown in ByteView and how its pixels map to file offsets
+        private bool _byteViewDragging;
+        private long _byteViewDragStart;
+        private long _byteViewDragEnd;
+        private int _byteViewRenderVersion;
 
         public MainCorruptionForm()
         {
             InitializeComponent();
             FormClosing += MainCorruptionForm_FormClosing;
+            //ByteView targeting: drag on the image to set the start/end byte
+            ByteViewPictureBox.Cursor = Cursors.Cross;
+            ByteViewPictureBox.MouseDown += ByteViewPictureBox_MouseDown;
+            ByteViewPictureBox.MouseMove += ByteViewPictureBox_MouseMove;
+            ByteViewPictureBox.MouseUp += ByteViewPictureBox_MouseUp;
+            ByteViewPictureBox.Paint += ByteViewPictureBox_Paint;
+            ByteViewPictureBox.Resize += (_, _) => ByteViewPictureBox.Invalidate();
+            ByteViewModeComboBox.SelectedIndexChanged += (_, _) => { if (CorruptionCore.IsLoaded && _byteViewInfo != null) UpdateByteView(); };
             FormClosed += (_, _) =>
             {
                 TraceLogger.OnLogEntryAdded -= OnTraceLogEntryAdded;
@@ -186,6 +200,7 @@ namespace LunarROMCorruptor
                 CorruptButton.Text = _corruptButtonIdleText;
                 StashBytesList.Items.Clear();
                 _inPlaceWarningShown = false;
+                ClearByteView();
                 if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
                 TraceLogger.Log($"File loaded successfully and UI updated for file: {FileLocation}");
             }
@@ -256,11 +271,13 @@ namespace LunarROMCorruptor
         private void StartByteNumb_ValueChanged(object sender, EventArgs e)
         {
             StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
+            ByteViewPictureBox.Invalidate(); //Redraw the range overlay
         }
 
         private void EndByteNumb_ValueChanged(object sender, EventArgs e)
         {
             EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
+            ByteViewPictureBox.Invalidate();
         }
 
         private void CorrupteverynthbyteTrackbar_Scroll(object sender, EventArgs e)
@@ -367,6 +384,11 @@ namespace LunarROMCorruptor
                     ExclusionEngineFrame.LoadAddresses(); //The loaded file may have changed since the profile was last shown
                     break;
 
+                case CorruptionEngineType.BlocksEngine:
+                    newControl = BlocksEngineFrame;
+                    newControl.Name = "BlocksEngineControl";
+                    break;
+
                 case CorruptionEngineType.SourceCodeEngine:
                     newControl = SourceCodeEngineFrame;
                     newControl.Name = "SourceCodeEngineControl";
@@ -423,6 +445,7 @@ namespace LunarROMCorruptor
                     case CorruptionEngineType.ExclusionEngine: settings.Exclusion = ExclusionEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.VectorEngine: settings.Vector = VectorEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.SourceCodeEngine: settings.SourceCode = SourceCodeEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.BlocksEngine: settings.Blocks = BlocksEngineFrame.GetSettings(); break;
                 }
             }
             catch (InvalidOperationException ex)
@@ -1195,7 +1218,7 @@ namespace LunarROMCorruptor
                         case "Randomize Corruption Engine":
                             {
                                 //Only byte engines are randomized. Merge needs a merge file and the Source Code Engine only makes sense for text files.
-                                var engines = new List<CorruptionEngineType> { CorruptionEngineType.NightmareEngine, CorruptionEngineType.LerpEngine, CorruptionEngineType.LogicEngine, CorruptionEngineType.ManualEngine, CorruptionEngineType.ExclusionEngine, CorruptionEngineType.VectorEngine };
+                                var engines = new List<CorruptionEngineType> { CorruptionEngineType.NightmareEngine, CorruptionEngineType.LerpEngine, CorruptionEngineType.LogicEngine, CorruptionEngineType.ManualEngine, CorruptionEngineType.ExclusionEngine, CorruptionEngineType.VectorEngine, CorruptionEngineType.BlocksEngine };
                                 if (File.Exists(MergeEngineFrame.MergeFileLocationTxt.Text))
                                     engines.Add(CorruptionEngineType.MergeEngine);
                                 CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engines[rnd.Next(engines.Count)]);
@@ -1265,7 +1288,10 @@ namespace LunarROMCorruptor
 
         private void ByteViewHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            MessageBox.Show($"ByteView is a utility that offers users a visual representation of binary content. ByteView allows users to see their corruptions to the byte data, ByteView is particularly useful for those seeking a non-intrusive approach to examining the underlying byte information within files. Covert/Update will convert the latest corrupted file (or the loaded file if nothing has been corrupted yet) to grayscale or colour bytes that you can see. Large files are downsampled.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            MessageBox.Show($"ByteView shows the bytes of a file as an image. Convert/Update shows the latest corrupted file (or the loaded file if nothing has been corrupted yet). Large files are downsampled.{Environment.NewLine}{Environment.NewLine}" +
+                $"Modes:{Environment.NewLine}- Normal: every 3 bytes are one pixel (colour or greyscale).{Environment.NewLine}- Diff: the file in grey with every byte changed by the last corruption in red.{Environment.NewLine}- Entropy: how random each part of the file is. Dark = empty/padding, blue/green = tables and text, yellow = code, red = compressed or encrypted data.{Environment.NewLine}{Environment.NewLine}" +
+                $"Targeting: drag over the image to set the Start/End byte to that area (e.g. drag over the graphics you see in Normal mode or a blue area in Entropy mode). The current range is highlighted in yellow. Right-click to reset the range to the whole file. Hover to see the offset under the mouse.",
+                $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteViewSaveImageBtn_Click(object sender, EventArgs e)
@@ -1316,36 +1342,202 @@ namespace LunarROMCorruptor
             string? path = CorruptionCore.LastOutputPath != null && File.Exists(CorruptionCore.LastOutputPath) ? CorruptionCore.LastOutputPath : CorruptionCore.SourcePath;
             if (path == null) return;
             bool colour = byteViewColourChkbox.Checked, flipH = flipHorizontalChkbox.Checked, flipV = flipVerticalChkbox.Checked;
+            var mode = ByteViewModeComboBox.SelectedIndex switch { 1 => ByteViewMode.Diff, 2 => ByteViewMode.Entropy, _ => ByteViewMode.Normal };
+            string? original = CorruptionCore.SourcePath;
+            //For in-place corruption the original isn't on disk anymore, so the Diff uses the stash instead
+            long[]? stashOffsets = mode == ByteViewMode.Diff && CorruptionCore.PathsEqual(path, original) && CorruptionCore.Stash.Count > 0 ? [.. CorruptionCore.Stash.ByteOffsets] : null;
+            int version = ++_byteViewRenderVersion;
             ByteViewRefreshBtn.Enabled = false;
+            ByteViewInfoLbl.Text = "Rendering...";
             try
             {
-                var img = await Task.Run(() =>
+                var rendered = await Task.Run(() => ByteView.Render(path, mode, colour, flipH, flipV, original, stashOffsets));
+                if (version != _byteViewRenderVersion || rendered == null)
                 {
-                    var image = ByteView.ConvertFileToImage(path, colour);
-                    if (image != null && (flipH || flipV))
-                    {
-                        var flipped = ByteView.FlipImage(image, flipH, flipV);
-                        image.Dispose();
-                        image = flipped;
-                    }
-                    return image;
-                });
-                if (img == null)
-                {
-                    TraceLogger.Log("ByteView conversion failed: no image produced.", StatusSeverityType.Error);
+                    rendered?.Dispose(); //A newer render was started (or this one failed)
+                    if (rendered == null) TraceLogger.Log("ByteView conversion failed: no image produced.", StatusSeverityType.Error);
                     return;
                 }
-                var old = ByteViewPictureBox.Image;
-                ByteViewPictureBox.Image = img;
+                var old = _byteViewInfo;
+                _byteViewInfo = rendered;
+                ByteViewPictureBox.Image = rendered.Image;
                 old?.Dispose();
+                ByteViewInfoLbl.Text = DescribeByteView(rendered);
             }
             catch (Exception ex)
             {
                 TraceLogger.Log($"ByteView failed: {ex.Message}", StatusSeverityType.Error);
+                ByteViewInfoLbl.Text = "ByteView failed, see the log.";
             }
             finally
             {
                 ByteViewRefreshBtn.Enabled = !_busy;
+            }
+        }
+
+        private static string DescribeByteView(ByteViewImage view)
+        {
+            string scale = $"1 px = {view.BytesPerPixel:N0} bytes";
+            return view.Mode switch
+            {
+                ByteViewMode.Diff when view.ChangedBytes >= 0 => $"{view.ChangedBytes:N0} changed bytes (red). {scale}",
+                ByteViewMode.Entropy => $"Dark = empty, blue/green = text/tables, yellow = code, red = compressed. {scale}",
+                _ => $"Drag to set the byte range, right-click to reset. {scale}"
+            };
+        }
+
+        private void ClearByteView()
+        {
+            _byteViewRenderVersion++;
+            ByteViewPictureBox.Image = null;
+            _byteViewInfo?.Dispose();
+            _byteViewInfo = null;
+            ByteViewInfoLbl.Text = "Drag on the image to set the byte range.";
+        }
+
+        /// <summary>
+        /// Where the image is drawn inside the picture box (SizeMode = Zoom keeps the aspect ratio and centres it).
+        /// </summary>
+        private RectangleF GetByteViewImageRectangle(ByteViewImage view)
+        {
+            var client = ByteViewPictureBox.ClientSize;
+            float scale = Math.Min((float)client.Width / view.Width, (float)client.Height / view.Height);
+            float w = view.Width * scale, h = view.Height * scale;
+            return new RectangleF((client.Width - w) / 2f, (client.Height - h) / 2f, w, h);
+        }
+
+        /// <summary>
+        /// Converts a mouse position on the picture box to a file offset. Returns -1 outside of the image.
+        /// </summary>
+        private long ByteViewOffsetAt(Point location, bool clampToImage)
+        {
+            var view = _byteViewInfo;
+            if (view == null) return -1;
+            var rect = GetByteViewImageRectangle(view);
+            if (!clampToImage && !rect.Contains(location)) return -1;
+            int x = (int)Math.Clamp((location.X - rect.X) * view.Width / rect.Width, 0, view.Width - 1);
+            int y = (int)Math.Clamp((location.Y - rect.Y) * view.Height / rect.Height, 0, view.Height - 1);
+            long offset = view.OffsetOf(x, y);
+            if (offset < 0 && clampToImage) offset = view.FileLength - 1; //Past the end of the data on the last row
+            return offset;
+        }
+
+        private void ByteViewPictureBox_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (_byteViewInfo == null || !CorruptionCore.IsLoaded || CorruptionQueueChkbox.Checked || _busy) return;
+            if (e.Button == MouseButtons.Right)
+            {
+                //Right-click resets the range to the whole file
+                StartByteNumb.Value = 0;
+                EndByteNumb.Value = EndByteNumb.Maximum;
+                TraceLogger.Log("ByteView: byte range reset to the whole file.");
+                return;
+            }
+            if (e.Button != MouseButtons.Left) return;
+            long offset = ByteViewOffsetAt(e.Location, false);
+            if (offset < 0) return;
+            _byteViewDragging = true;
+            _byteViewDragStart = _byteViewDragEnd = offset;
+            ByteViewPictureBox.Invalidate();
+        }
+
+        private void ByteViewPictureBox_MouseMove(object? sender, MouseEventArgs e)
+        {
+            var view = _byteViewInfo;
+            if (view == null) return;
+            if (_byteViewDragging)
+            {
+                _byteViewDragEnd = ByteViewOffsetAt(e.Location, true);
+                long a = Math.Min(_byteViewDragStart, _byteViewDragEnd), b = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1;
+                ByteViewInfoLbl.Text = $"0x{a:X} - 0x{Math.Min(b, view.FileLength - 1):X}\n({FormatByteCount(Math.Min(b, view.FileLength - 1) - a + 1)})";
+                ByteViewPictureBox.Invalidate();
+                return;
+            }
+            long offset = ByteViewOffsetAt(e.Location, false);
+            ByteViewInfoLbl.Text = offset >= 0 ? $"Offset 0x{offset:X}\n({offset:N0})\n1 px = {view.BytesPerPixel:N0} bytes" : DescribeByteView(view);
+        }
+
+        private void ByteViewPictureBox_MouseUp(object? sender, MouseEventArgs e)
+        {
+            if (!_byteViewDragging || _byteViewInfo == null) return;
+            _byteViewDragging = false;
+            var view = _byteViewInfo;
+            long start = Math.Min(_byteViewDragStart, _byteViewDragEnd);
+            long end = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1; //Include every byte of the last pixel
+            if (_byteViewDragStart == _byteViewDragEnd)
+            {
+                //A single click just shows the offset, it doesn't change the range
+                ByteViewPictureBox.Invalidate();
+                return;
+            }
+            start = Math.Clamp(start, 0, (long)EndByteNumb.Maximum);
+            end = Math.Clamp(end, start, (long)EndByteNumb.Maximum);
+            //Set the end first if the new start is past the current end, so start <= end is kept
+            if (start > EndByteNumb.Value)
+            {
+                EndByteNumb.Value = end;
+                StartByteNumb.Value = start;
+            }
+            else
+            {
+                StartByteNumb.Value = start;
+                EndByteNumb.Value = end;
+            }
+            TraceLogger.Log($"ByteView: byte range set to 0x{start:X} - 0x{end:X} ({FormatByteCount(end - start + 1)}).");
+            ByteViewInfoLbl.Text = $"Range set:\n0x{start:X} - 0x{end:X}\n({FormatByteCount(end - start + 1)})";
+            ByteViewPictureBox.Invalidate();
+        }
+
+        private static string FormatByteCount(long bytes) => CorruptionCore.FormatSize(bytes, out _, out _);
+
+        /// <summary>
+        /// Draws the selected byte range (while dragging) or the current start/end range over the ByteView image.
+        /// </summary>
+        private void ByteViewPictureBox_Paint(object? sender, PaintEventArgs e)
+        {
+            var view = _byteViewInfo;
+            if (view == null || ByteViewPictureBox.Image == null) return;
+            long a, b;
+            if (_byteViewDragging)
+            {
+                a = Math.Min(_byteViewDragStart, _byteViewDragEnd);
+                b = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1;
+            }
+            else
+            {
+                if (!CorruptionCore.IsLoaded || CorruptionQueueChkbox.Checked) return;
+                a = (long)StartByteNumb.Value;
+                b = (long)EndByteNumb.Value;
+                if (a == 0 && b >= view.FileLength - 1) return; //Whole file selected, nothing to highlight
+            }
+
+            long pixels = (long)view.Width * view.Height;
+            long pa = Math.Clamp(a / view.BytesPerPixel, 0, pixels - 1);
+            long pb = Math.Clamp(b / view.BytesPerPixel, pa, pixels - 1);
+            long ra = pa / view.Width, rb = pb / view.Width;
+            var rects = new List<Rectangle>();
+            if (ra == rb)
+            {
+                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(pb - pa + 1), 1));
+            }
+            else
+            {
+                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(view.Width - pa % view.Width), 1));
+                if (rb - ra > 1) rects.Add(new Rectangle(0, (int)ra + 1, view.Width, (int)(rb - ra - 1)));
+                rects.Add(new Rectangle(0, (int)rb, (int)(pb % view.Width + 1), 1));
+            }
+
+            var area = GetByteViewImageRectangle(view);
+            float sx = area.Width / view.Width, sy = area.Height / view.Height;
+            using var fill = new SolidBrush(Color.FromArgb(_byteViewDragging ? 110 : 70, 255, 230, 0));
+            using var outline = new Pen(Color.FromArgb(220, 255, 230, 0));
+            foreach (var r in rects)
+            {
+                int x = view.FlipH ? view.Width - (r.X + r.Width) : r.X;
+                int y = view.FlipV ? view.Height - (r.Y + r.Height) : r.Y;
+                var rf = new RectangleF(area.X + x * sx, area.Y + y * sy, Math.Max(1f, r.Width * sx), Math.Max(1f, r.Height * sy));
+                e.Graphics.FillRectangle(fill, rf);
+                e.Graphics.DrawRectangle(outline, rf.X, rf.Y, rf.Width, rf.Height);
             }
         }
 

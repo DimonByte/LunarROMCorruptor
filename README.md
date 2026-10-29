@@ -36,7 +36,8 @@ LunarROMCorruptor is a advanced tool designed to corrupt binary data through var
 | **Precision Control** | Use "Every Nth Byte" or "Intensity Mode" for predictable or chaotic corruption. |
 | **Smart Saving** | Use **File Saves** for full copies or **Stash Saves** (address-only) to save massive amounts of space. |
 | **Stash Editor** | Fine-tune specific corrupted bytes without re-running the entire process. |
-| **ByteView** | Visualize binary data as RGB/Grayscale pixels to "see" the bytes change. |
+| **ByteView** | Visualize binary data as RGB/Grayscale pixels to "see" the bytes change. **Diff** mode highlights every changed byte, **Entropy** mode shows where text, tables, code and compressed data are. |
+| **ByteView Targeting** | Drag over the ByteView image to set the Start/End byte to exactly that area of the file. |
 | **Automation** | Automate randomization of intensity, byte ranges, and engine selection. |
 | **Batch Processing** | Drag-and-drop entire folders or multiple files for mass corruption. |
 
@@ -54,6 +55,7 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 | **Lerp** | Interpolation | Smooth, gradient-based transitions between byte values. |
 | **Manual** | User Defined | Complete manual control over every single operation. |
 | **Exclusion** | Header Protection | Nightmare-style corruption that never touches the headers/vectors of the selected platform or file format (NES, SNES, N64, GB, GBA, NDS, GameCube, Wii, PS1, PS2, Genesis, SMS/GG, Saturn, Dreamcast, PC Engine, Atari, EXE, ELF, BMP, WAV, JPEG and more). |
+| **Blocks** | Glitch Art | Sorts, reverses, shuffles, rotates, smears or echoes whole blocks of data (pixel sorting / data moshing). Element size keeps RGB pixels or audio samples intact. |
 | **Vector2** | Float Corruption | Finds 32-bit floats (positions, speeds, sizes) and nudges, negates, swaps or replaces them. |
 | **Source Code** | Text Literals | Corrupts values in source/text files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 

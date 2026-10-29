@@ -459,7 +459,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                             continue;
                         }
                     }
-                    string word = text.Substring(i, end - i);
+                    string word = text[i..end];
                     TokenKind kind = BoolWords.Contains(word) ? TokenKind.Boolean
                         : NullWords.Contains(word) ? TokenKind.Null
                         : Keywords.Contains(word) || Keywords.Contains(word.ToLowerInvariant()) && style == CommentStyle.BASIC ? TokenKind.Keyword

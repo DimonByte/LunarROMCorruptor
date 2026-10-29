@@ -1096,6 +1096,17 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public bool Overflowed { get; private set; }
         public long Count => _bytes.Count + _lines.Count;
 
+        /// <summary>
+        /// Offsets of every recorded byte change (used by the ByteView Diff mode for in-place corruption).
+        /// </summary>
+        public IEnumerable<long> ByteOffsets
+        {
+            get
+            {
+                foreach (var (offset, _) in _bytes) yield return offset;
+            }
+        }
+
         public void Add(long offset, byte value)
         {
             if (!Enabled) return;

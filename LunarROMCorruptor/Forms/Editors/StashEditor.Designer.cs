@@ -45,6 +45,22 @@
             this.remove50btn = new System.Windows.Forms.Button();
             this.removeselbtn = new System.Windows.Forms.Button();
             this.Panel1 = new System.Windows.Forms.Panel();
+            this.ToolsPanel = new System.Windows.Forms.Panel();
+            this.MutateTitleLbl = new System.Windows.Forms.Label();
+            this.MutatePercentLbl = new System.Windows.Forms.Label();
+            this.MutatePercentNumericUpDown = new System.Windows.Forms.NumericUpDown();
+            this.MutateModeLbl = new System.Windows.Forms.Label();
+            this.MutateModeComboBox = new System.Windows.Forms.ComboBox();
+            this.MutateAmountLbl = new System.Windows.Forms.Label();
+            this.MutateAmountNumericUpDown = new System.Windows.Forms.NumericUpDown();
+            this.MutateBtn = new System.Windows.Forms.Button();
+            this.MutateCorruptBtn = new System.Windows.Forms.Button();
+            this.MutateHelpLbl = new System.Windows.Forms.Label();
+            this.ListToolsLbl = new System.Windows.Forms.Label();
+            this.AppendStashBtn = new System.Windows.Forms.Button();
+            this.SortStashBtn = new System.Windows.Forms.Button();
+            this.DedupeStashBtn = new System.Windows.Forms.Button();
+            this.StashCountLbl = new System.Windows.Forms.Label();
             this.restorebtn = new System.Windows.Forms.Button();
             this.SaveAndCorruptbtn = new System.Windows.Forms.Button();
             this.Openfilebtn = new System.Windows.Forms.Button();
@@ -53,6 +69,9 @@
             ((System.ComponentModel.ISupportInitialize)(this.valueStashnum)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.LocationStash)).BeginInit();
             this.Panel1.SuspendLayout();
+            this.ToolsPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.MutatePercentNumericUpDown)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.MutateAmountNumericUpDown)).BeginInit();
             this.SuspendLayout();
             // 
             // stashListbox
@@ -115,12 +134,12 @@
             this.LocationStash.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
             this.LocationStash.Location = new System.Drawing.Point(70, 183);
             this.LocationStash.Maximum = new decimal(new int[] {
-            99999999,
-            0,
+            -727379969,
+            232,
             0,
             0});
             this.LocationStash.Minimum = new decimal(new int[] {
-            1,
+            0,
             0,
             0,
             0});
@@ -358,6 +377,214 @@
             this.RemoveAllbtn.UseVisualStyleBackColor = false;
             this.RemoveAllbtn.Click += new System.EventHandler(this.RemoveAllbtn_Click);
             // 
+            // ToolsPanel
+            // 
+            this.ToolsPanel.Controls.Add(this.MutateTitleLbl);
+            this.ToolsPanel.Controls.Add(this.MutatePercentLbl);
+            this.ToolsPanel.Controls.Add(this.MutatePercentNumericUpDown);
+            this.ToolsPanel.Controls.Add(this.MutateModeLbl);
+            this.ToolsPanel.Controls.Add(this.MutateModeComboBox);
+            this.ToolsPanel.Controls.Add(this.MutateAmountLbl);
+            this.ToolsPanel.Controls.Add(this.MutateAmountNumericUpDown);
+            this.ToolsPanel.Controls.Add(this.MutateBtn);
+            this.ToolsPanel.Controls.Add(this.MutateCorruptBtn);
+            this.ToolsPanel.Controls.Add(this.MutateHelpLbl);
+            this.ToolsPanel.Controls.Add(this.ListToolsLbl);
+            this.ToolsPanel.Controls.Add(this.AppendStashBtn);
+            this.ToolsPanel.Controls.Add(this.SortStashBtn);
+            this.ToolsPanel.Controls.Add(this.DedupeStashBtn);
+            this.ToolsPanel.Controls.Add(this.StashCountLbl);
+            this.ToolsPanel.Dock = System.Windows.Forms.DockStyle.Right;
+            this.ToolsPanel.Location = new System.Drawing.Point(469, 0);
+            this.ToolsPanel.Name = "ToolsPanel";
+            this.ToolsPanel.Size = new System.Drawing.Size(170, 529);
+            this.ToolsPanel.TabIndex = 162;
+            // 
+            // MutateTitleLbl
+            // 
+            this.MutateTitleLbl.AutoSize = true;
+            this.MutateTitleLbl.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.MutateTitleLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.MutateTitleLbl.Location = new System.Drawing.Point(10, 12);
+            this.MutateTitleLbl.Text = "Mutate stash";
+            this.MutateTitleLbl.Name = "MutateTitleLbl";
+            this.MutateTitleLbl.TabIndex = 200;
+            // 
+            // MutatePercentLbl
+            // 
+            this.MutatePercentLbl.AutoSize = true;
+            this.MutatePercentLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.MutatePercentLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.MutatePercentLbl.Location = new System.Drawing.Point(10, 36);
+            this.MutatePercentLbl.Text = "Mutate % of the items:";
+            this.MutatePercentLbl.Name = "MutatePercentLbl";
+            this.MutatePercentLbl.TabIndex = 201;
+            // 
+            // MutatePercentNumericUpDown
+            // 
+            this.MutatePercentNumericUpDown.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.MutatePercentNumericUpDown.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.MutatePercentNumericUpDown.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
+            this.MutatePercentNumericUpDown.Location = new System.Drawing.Point(12, 52);
+            this.MutatePercentNumericUpDown.Maximum = new decimal(new int[] { 100, 0, 0, 0 });
+            this.MutatePercentNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.MutatePercentNumericUpDown.Value = new decimal(new int[] { 10, 0, 0, 0 });
+            this.MutatePercentNumericUpDown.Size = new System.Drawing.Size(146, 22);
+            this.MutatePercentNumericUpDown.Name = "MutatePercentNumericUpDown";
+            this.MutatePercentNumericUpDown.TabIndex = 202;
+            // 
+            // MutateModeLbl
+            // 
+            this.MutateModeLbl.AutoSize = true;
+            this.MutateModeLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.MutateModeLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.MutateModeLbl.Location = new System.Drawing.Point(10, 80);
+            this.MutateModeLbl.Text = "Mutation:";
+            this.MutateModeLbl.Name = "MutateModeLbl";
+            this.MutateModeLbl.TabIndex = 203;
+            // 
+            // MutateModeComboBox
+            // 
+            this.MutateModeComboBox.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.MutateModeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.MutateModeComboBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.MutateModeComboBox.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
+            this.MutateModeComboBox.FormattingEnabled = true;
+            this.MutateModeComboBox.Items.AddRange(new object[] { "Random value", "Nudge value", "Move address" });
+            this.MutateModeComboBox.Location = new System.Drawing.Point(12, 96);
+            this.MutateModeComboBox.Size = new System.Drawing.Size(146, 21);
+            this.MutateModeComboBox.SelectedIndex = 0;
+            this.MutateModeComboBox.Name = "MutateModeComboBox";
+            this.MutateModeComboBox.TabIndex = 204;
+            // 
+            // MutateAmountLbl
+            // 
+            this.MutateAmountLbl.AutoSize = true;
+            this.MutateAmountLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.MutateAmountLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.MutateAmountLbl.Location = new System.Drawing.Point(10, 124);
+            this.MutateAmountLbl.Text = "Amount (nudge / move):";
+            this.MutateAmountLbl.Name = "MutateAmountLbl";
+            this.MutateAmountLbl.TabIndex = 205;
+            // 
+            // MutateAmountNumericUpDown
+            // 
+            this.MutateAmountNumericUpDown.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.MutateAmountNumericUpDown.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.MutateAmountNumericUpDown.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
+            this.MutateAmountNumericUpDown.Location = new System.Drawing.Point(12, 140);
+            this.MutateAmountNumericUpDown.Maximum = new decimal(new int[] { -727379969, 232, 0, 0 });
+            this.MutateAmountNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.MutateAmountNumericUpDown.Value = new decimal(new int[] { 1, 0, 0, 0 });
+            this.MutateAmountNumericUpDown.Size = new System.Drawing.Size(146, 22);
+            this.MutateAmountNumericUpDown.Name = "MutateAmountNumericUpDown";
+            this.MutateAmountNumericUpDown.TabIndex = 206;
+            // 
+            // MutateBtn
+            // 
+            this.MutateBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.MutateBtn.FlatAppearance.BorderSize = 0;
+            this.MutateBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.MutateBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.MutateBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
+            this.MutateBtn.Location = new System.Drawing.Point(12, 170);
+            this.MutateBtn.Size = new System.Drawing.Size(146, 23);
+            this.MutateBtn.Text = "Mutate list";
+            this.MutateBtn.UseVisualStyleBackColor = false;
+            this.MutateBtn.Name = "MutateBtn";
+            this.MutateBtn.TabIndex = 207;
+            this.MutateBtn.Click += new System.EventHandler(this.MutateBtn_Click);
+            // 
+            // MutateCorruptBtn
+            // 
+            this.MutateCorruptBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.MutateCorruptBtn.FlatAppearance.BorderSize = 0;
+            this.MutateCorruptBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.MutateCorruptBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.MutateCorruptBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
+            this.MutateCorruptBtn.Location = new System.Drawing.Point(12, 199);
+            this.MutateCorruptBtn.Size = new System.Drawing.Size(146, 23);
+            this.MutateCorruptBtn.Text = "Mutate, save new && corrupt";
+            this.MutateCorruptBtn.UseVisualStyleBackColor = false;
+            this.MutateCorruptBtn.Name = "MutateCorruptBtn";
+            this.MutateCorruptBtn.TabIndex = 208;
+            this.MutateCorruptBtn.Click += new System.EventHandler(this.MutateCorruptBtn_Click);
+            // 
+            // MutateHelpLbl
+            // 
+            this.MutateHelpLbl.Size = new System.Drawing.Size(146, 54);
+            this.MutateHelpLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.MutateHelpLbl.ForeColor = System.Drawing.Color.Silver;
+            this.MutateHelpLbl.Location = new System.Drawing.Point(10, 226);
+            this.MutateHelpLbl.Text = "Makes a variation of this corruption. Only byte entries are mutated, the stash file is not changed until you save.";
+            this.MutateHelpLbl.Name = "MutateHelpLbl";
+            this.MutateHelpLbl.TabIndex = 209;
+            // 
+            // ListToolsLbl
+            // 
+            this.ListToolsLbl.AutoSize = true;
+            this.ListToolsLbl.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
+            this.ListToolsLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
+            this.ListToolsLbl.Location = new System.Drawing.Point(10, 286);
+            this.ListToolsLbl.Text = "List tools";
+            this.ListToolsLbl.Name = "ListToolsLbl";
+            this.ListToolsLbl.TabIndex = 210;
+            // 
+            // AppendStashBtn
+            // 
+            this.AppendStashBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.AppendStashBtn.FlatAppearance.BorderSize = 0;
+            this.AppendStashBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.AppendStashBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.AppendStashBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
+            this.AppendStashBtn.Location = new System.Drawing.Point(12, 308);
+            this.AppendStashBtn.Size = new System.Drawing.Size(146, 23);
+            this.AppendStashBtn.Text = "Append stash file...";
+            this.AppendStashBtn.UseVisualStyleBackColor = false;
+            this.AppendStashBtn.Name = "AppendStashBtn";
+            this.AppendStashBtn.TabIndex = 211;
+            this.AppendStashBtn.Click += new System.EventHandler(this.AppendStashBtn_Click);
+            // 
+            // SortStashBtn
+            // 
+            this.SortStashBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.SortStashBtn.FlatAppearance.BorderSize = 0;
+            this.SortStashBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.SortStashBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.SortStashBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
+            this.SortStashBtn.Location = new System.Drawing.Point(12, 337);
+            this.SortStashBtn.Size = new System.Drawing.Size(146, 23);
+            this.SortStashBtn.Text = "Sort by address";
+            this.SortStashBtn.UseVisualStyleBackColor = false;
+            this.SortStashBtn.Name = "SortStashBtn";
+            this.SortStashBtn.TabIndex = 212;
+            this.SortStashBtn.Click += new System.EventHandler(this.SortStashBtn_Click);
+            // 
+            // DedupeStashBtn
+            // 
+            this.DedupeStashBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
+            this.DedupeStashBtn.FlatAppearance.BorderSize = 0;
+            this.DedupeStashBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.DedupeStashBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.DedupeStashBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
+            this.DedupeStashBtn.Location = new System.Drawing.Point(12, 366);
+            this.DedupeStashBtn.Size = new System.Drawing.Size(146, 23);
+            this.DedupeStashBtn.Text = "Remove duplicates";
+            this.DedupeStashBtn.UseVisualStyleBackColor = false;
+            this.DedupeStashBtn.Name = "DedupeStashBtn";
+            this.DedupeStashBtn.TabIndex = 213;
+            this.DedupeStashBtn.Click += new System.EventHandler(this.DedupeStashBtn_Click);
+            // 
+            // StashCountLbl
+            // 
+            this.StashCountLbl.AutoSize = true;
+            this.StashCountLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
+            this.StashCountLbl.ForeColor = System.Drawing.Color.Silver;
+            this.StashCountLbl.Location = new System.Drawing.Point(10, 396);
+            this.StashCountLbl.Text = "0 items";
+            this.StashCountLbl.Name = "StashCountLbl";
+            this.StashCountLbl.TabIndex = 214;
+            // 
             // SaveFileDialog
             // 
             this.SaveFileDialog.Filter = "All Files *.*|*.*";
@@ -367,12 +594,13 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(29)))), ((int)(((byte)(35)))));
-            this.ClientSize = new System.Drawing.Size(469, 529);
+            this.ClientSize = new System.Drawing.Size(639, 529);
             this.Controls.Add(this.stashListbox);
             this.Controls.Add(this.Panel1);
+            this.Controls.Add(this.ToolsPanel);
             this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MinimumSize = new System.Drawing.Size(368, 509);
+            this.MinimumSize = new System.Drawing.Size(560, 509);
             this.Name = "StashEditor";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Stash Editor";
@@ -381,6 +609,10 @@
             ((System.ComponentModel.ISupportInitialize)(this.LocationStash)).EndInit();
             this.Panel1.ResumeLayout(false);
             this.Panel1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.MutatePercentNumericUpDown)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.MutateAmountNumericUpDown)).EndInit();
+            this.ToolsPanel.ResumeLayout(false);
+            this.ToolsPanel.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -408,5 +640,21 @@
         internal System.Windows.Forms.SaveFileDialog SaveFileDialog;
         internal System.Windows.Forms.Button RemoveAllbtn;
         internal System.Windows.Forms.Button SaveAndCorruptbtn;
+        internal System.Windows.Forms.Panel ToolsPanel;
+        internal System.Windows.Forms.Label MutateTitleLbl;
+        internal System.Windows.Forms.Label MutatePercentLbl;
+        internal System.Windows.Forms.NumericUpDown MutatePercentNumericUpDown;
+        internal System.Windows.Forms.Label MutateModeLbl;
+        internal System.Windows.Forms.ComboBox MutateModeComboBox;
+        internal System.Windows.Forms.Label MutateAmountLbl;
+        internal System.Windows.Forms.NumericUpDown MutateAmountNumericUpDown;
+        internal System.Windows.Forms.Button MutateBtn;
+        internal System.Windows.Forms.Button MutateCorruptBtn;
+        internal System.Windows.Forms.Label MutateHelpLbl;
+        internal System.Windows.Forms.Label ListToolsLbl;
+        internal System.Windows.Forms.Button AppendStashBtn;
+        internal System.Windows.Forms.Button SortStashBtn;
+        internal System.Windows.Forms.Button DedupeStashBtn;
+        internal System.Windows.Forms.Label StashCountLbl;
     }
 }

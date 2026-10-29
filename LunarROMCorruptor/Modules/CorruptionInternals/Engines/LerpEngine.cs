@@ -20,52 +20,28 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
-    internal class LerpEngine
+    public class LerpEngine
     {
-        static private double LinearInterpolationCalculation(double v0, double v1, double t)
+        public sealed class Settings
+        {
+            public double InterpolateValue = 0.5; //Clamped between 0.0 and 1.0
+        }
+
+        private static double LinearInterpolationCalculation(double v0, double v1, double t)
         {
             return Math.Round(Math.Abs(v0 + (t * (v1 - v0))));
         }
 
-        public static byte[] CorruptByte(byte[] ROM, long i)
+        public static void CorruptByte(CorruptionContext ctx, Settings s, long i)
         {
-            byte byteminus;
-            byte byteplus;
-            double interpolateVal = Convert.ToDouble(Program.Form.LerpEngineFrame.LerpValueTxt.Text);
-            //Check if the Bytes selected in i are in range.
-            try
-            {
-                byteminus = ROM[i + 1];
-            }
-            catch (IndexOutOfRangeException)
-            {
-                byteminus = ROM[i];
-            }
-            try
-            {
-                byteplus = ROM[i - 1];
-            }
-            catch (IndexOutOfRangeException)
-            {
-                byteplus = ROM[i];
-            }
-            //Check if the interpolateVal is in range, cannot be higher than 1.0 and cannot be lower than 0.0
-            if (interpolateVal > 1.0)
-            {
-                interpolateVal = 1.0;
-            }
-            if (interpolateVal < 0.0)
-            {
-                interpolateVal = 0.0;
-            }
-            //Calculate the new value
-            ROM[i] = (byte)LinearInterpolationCalculation(byteminus, byteplus, interpolateVal);
-            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-            //Trace log the bytes selected and the interpolate value, then the result, e.g. byte 1 = 0 byte 2 = 255, interpolate value = 0.5, result = 128
-            //TraceLogger.Log("[x] Lerp Engine trigger: byte 1 = " + byteminus + " byte 2 = " + byteplus + " interpolate value = " + interpolateVal + " result = " + ROM[i]);
-            return ROM;
+            double t = Math.Clamp(s.InterpolateValue, 0.0, 1.0);
+            //Use the neighbouring bytes, falling back to the byte itself at the start/end of the file.
+            byte next = ctx.InFile(i + 1) ? ctx.Get(i + 1) : ctx.Get(i);
+            byte previous = ctx.InFile(i - 1) ? ctx.Get(i - 1) : ctx.Get(i);
+            ctx.Set(i, CorruptionCore.ClampByte((long)LinearInterpolationCalculation(next, previous, t)));
         }
     }
 }

@@ -67,6 +67,7 @@
             // ExcludedAddressesListbox
             // 
             ExcludedAddressesListbox.FormattingEnabled = true;
+            ExcludedAddressesListbox.HorizontalScrollbar = true;
             ExcludedAddressesListbox.IntegralHeight = false;
             ExcludedAddressesListbox.Location = new Point(408, 27);
             ExcludedAddressesListbox.Name = "ExcludedAddressesListbox";
@@ -101,7 +102,8 @@
             ExclusionTypeComboBox.FlatStyle = FlatStyle.Flat;
             ExclusionTypeComboBox.ForeColor = Color.White;
             ExclusionTypeComboBox.FormattingEnabled = true;
-            ExclusionTypeComboBox.Items.AddRange(new object[] { "NES", "SNES", "N64", "GAMECUBE", "PS1", "PS2", "EXE", "SEGA", "GAMEBOY", "WII", "DREAMCAST", "BIOS" });
+            ExclusionTypeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            ExclusionTypeComboBox.Items.AddRange(new object[] { "NES", "SNES", "N64", "N64 (STRICT CRC)", "GAMEBOY", "GBA", "NDS", "GAMECUBE", "WII", "PS1", "PS2", "SEGA", "SMS/GG", "SEGA CD/SATURN", "DREAMCAST", "PC ENGINE", "ATARI 2600", "ATARI 7800", "ATARI LYNX", "VIRTUAL BOY", "WONDERSWAN", "EXE", "ELF", "BIOS", "BMP", "WAV", "JPEG" });
             ExclusionTypeComboBox.Location = new Point(211, 82);
             ExclusionTypeComboBox.Name = "ExclusionTypeComboBox";
             ExclusionTypeComboBox.Size = new Size(191, 23);

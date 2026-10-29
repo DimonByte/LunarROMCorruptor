@@ -20,80 +20,85 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
+using System.Numerics;
+
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
-    internal class ManualEngine
+    public class ManualEngine
     {
-        private static readonly Random rnd = new();
-        private static readonly List<byte> list = [];
-        public static byte[] CorruptByte(byte[] ROM, long i, int StartByte, int EndByte)
+        public enum MathOperation { Multiply, Divide, Power }
+
+        public sealed class Settings
         {
-            if (Program.Form.ManualEngineFrame.IncrementCHECK.Checked)
+            public bool Increment; public int IncrementValue;
+            public bool Shift; public long ShiftValue;
+            public bool MakeEqual; public byte EqualValue;
+            public bool Replace; public byte ReplaceFrom; public byte ReplaceTo;
+            public bool PasteRandom;
+            public bool RepeatRandom; public int RepeatCount;
+            public bool MathEnabled; public MathOperation Operation; public long MathValue = 1;
+        }
+
+        public static void CorruptByte(CorruptionContext ctx, Settings s, long i)
+        {
+            if (s.Increment)
             {
-                ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.ManualEngineFrame.IncrementNumericUpDown.Value);
-                Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) + s.IncrementValue));
             }
-            if (Program.Form.ManualEngineFrame.SHIFTBYTECHECK.Checked)
+            if (s.Shift)
             {
-                long j = (long)(i + Program.Form.ManualEngineFrame.ShiftNumericUpDown.Value);
-                if (j >= StartByte && j <= EndByte)
+                //Copies this byte to <shift> bytes ahead, as long as the destination is still inside the selected range.
+                long j = i + s.ShiftValue;
+                if (j >= ctx.Start && j <= ctx.End)
                 {
-                    ROM[j] = ROM[i];
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                    ctx.Set(j, ctx.Get(i));
                 }
             }
-            if (Program.Form.ManualEngineFrame.MakeBitEqualCHECK.Checked)
+            if (s.MakeEqual)
             {
-                ROM[i] = (byte)Program.Form.ManualEngineFrame.ByteEqualNumericUpDown.Value;
-                Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                ctx.Set(i, s.EqualValue);
             }
-            if (Program.Form.ManualEngineFrame.ReplaceCHECK.Checked)
+            if (s.Replace)
             {
-                //FIXME: Overflow possible.
-                if (ROM[i] == (byte)Program.Form.ManualEngineFrame.ReplaceNumericUpDown1.Value)
+                if (ctx.Get(i) == s.ReplaceFrom)
                 {
-                    ROM[i] = (byte)Program.Form.ManualEngineFrame.ReplaceNumericUpDown2.Value;
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                    ctx.Set(i, s.ReplaceTo);
                 }
             }
-            if (Program.Form.ManualEngineFrame.PasterandombitCHECK.Checked)
+            if (s.PasteRandom)
             {
-                byte copy = ROM[rnd.Next(StartByte, EndByte)];
-                ROM[i] = copy;
-                Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + copy + ")");
+                ctx.Set(i, ctx.Get(ctx.RandomIndex()));
             }
-            if (Program.Form.ManualEngineFrame.RepeatRandomBitCHECK.Checked)
+            if (s.RepeatRandom && s.RepeatCount > 0)
             {
-                list.Clear();
-                for (int i2 = 0; i2 <= Program.Form.ManualEngineFrame.RepeatNumericUpDown.Value - 1; i2++)
-                    list.Add(ROM[i + i2]);
-                // ListBox3.Items.Add(String.Join(" ", list))
-                foreach (var itemcon in list)
+                //Copies <repeat> bytes starting at this byte to random locations in the range.
+                int count = (int)Math.Min(s.RepeatCount, ctx.Length - i);
+                Span<byte> copied = count <= 4096 ? stackalloc byte[count] : new byte[count];
+                for (int n = 0; n < count; n++)
+                    copied[n] = ctx.Get(i + n);
+                foreach (var b in copied)
                 {
-                    long final = rnd.Next(StartByte, EndByte);
-                    ROM[final] = itemcon;
-                    Program.Form.InternalStashItems.Add("[x] File(" + final + ").SET(" + itemcon + ")");
+                    ctx.Set(ctx.RandomIndex(), b);
                 }
             }
-            if (Program.Form.ManualEngineFrame.MULTIORDIVIDECHeck.Checked)
+            if (s.MathEnabled)
             {
-                if (Program.Form.ManualEngineFrame.MultiRadio.Checked)
+                long value = Math.Max(1, s.MathValue);
+                switch (s.Operation)
                 {
-                    ROM[i] = CorruptionCore.ClampByte(ROM[i] * (int)Program.Form.ManualEngineFrame.MathOperationNumericUpDown.Value);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                }
-                if (Program.Form.ManualEngineFrame.DivideRadio.Checked)
-                {
-                    ROM[i] = CorruptionCore.ClampByte(ROM[i] / (int)Program.Form.ManualEngineFrame.MathOperationNumericUpDown.Value);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                }
-                if (Program.Form.ManualEngineFrame.DoubleCheck.Checked)
-                {
-                    ROM[i] = (byte)((byte)Math.Pow(ROM[i], (double)Program.Form.ManualEngineFrame.MathOperationNumericUpDown.Value) % (byte.MaxValue + 1));
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                    case MathOperation.Multiply:
+                        ctx.Set(i, CorruptionCore.ClampByte(Math.Min((long)ctx.Get(i) * value, 255)));
+                        break;
+                    case MathOperation.Divide:
+                        ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) / value));
+                        break;
+                    case MathOperation.Power:
+                        //byte ^ value, wrapped to a byte (mod 256). The old code cast a huge double to a byte which gave garbage.
+                        ctx.Set(i, (byte)BigInteger.ModPow(ctx.Get(i), value, 256));
+                        break;
                 }
             }
-            return ROM;
         }
     }
 }

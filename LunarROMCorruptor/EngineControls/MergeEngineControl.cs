@@ -1,4 +1,7 @@
-﻿namespace LunarROMCorruptor.EngineControls
+﻿using LunarROMCorruptor.Modules.CorruptionInternals;
+using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
+
+namespace LunarROMCorruptor.EngineControls
 {
     public partial class MergeEngineControl : UserControl
     {
@@ -13,27 +16,38 @@
             {
                 try
                 {
-                    MergeFileLocationTxt.Text = openFileDialog1.FileName;
-                    FileInfo myFile = new(Program.Form.FileSelectiontxt.Text);
-                    long sizeInBytes = myFile.Length;
-                    FileInfo myFile2 = new(MergeFileLocationTxt.Text);
-                    long sizeInBytes2 = myFile2.Length;
-                    if (sizeInBytes2 < sizeInBytes)
+                    var mergeFile = new FileInfo(openFileDialog1.FileName);
+                    if (mergeFile.Length == 0)
                     {
-                        MessageBox.Show("This file must be the same/bigger size in order for this engine to work.");
-                        MergeFileLocationTxt.Text = "";
+                        MessageBox.Show("The selected merge file is empty.", "Merge Engine", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
-                }
-                catch (ArgumentException)
-                {
-                    MessageBox.Show("Please load a file into the corruptor first before loading in a file in the merge engine. (Argument Exception)");
+                    MergeFileLocationTxt.Text = mergeFile.FullName;
+                    if (CorruptionCore.IsLoaded && mergeFile.Length < CorruptionCore.SourceLength && ReplaceByteWithSamePos.Checked)
+                    {
+                        //Smaller merge files used to be rejected (and crashed the engine), now they wrap around.
+                        MessageBox.Show("The merge file is smaller than the loaded file. With 'same position' enabled the merge file will wrap around (repeat) past its end.", "Merge Engine", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.ToString());
+                    MessageBox.Show(ex.Message, "Merge Engine", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
+        }
+
+        public MergeEngine.Settings GetSettings()
+        {
+            if (string.IsNullOrWhiteSpace(MergeFileLocationTxt.Text) || !File.Exists(MergeFileLocationTxt.Text))
+                throw new InvalidOperationException("Merge file location is empty or the file doesn't exist. Please select a merge file.");
+            var option = EngineParser.ParseCorruptionOptions(CorrTypeMerge.Text) ?? throw new InvalidOperationException($"Invalid Merge Engine corruption type '{CorrTypeMerge.Text}'.");
+            return new MergeEngine.Settings
+            {
+                MergeFilePath = MergeFileLocationTxt.Text,
+                Option = option,
+                SamePosition = ReplaceByteWithSamePos.Checked,
+                Mod256 = Mod256MergeEnginechkbox.Checked
+            };
         }
     }
 }

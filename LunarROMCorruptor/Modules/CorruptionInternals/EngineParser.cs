@@ -31,6 +31,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         VectorEngine,
         ManualEngine,
         ExclusionEngine,
+        SourceCodeEngine,
+        BlocksEngine,
+        DatamoshEngine,
         INVALID
     }
     internal class EngineParser
@@ -47,6 +50,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 CorruptionEngineType.VectorEngine => "Vector2 Engine",
                 CorruptionEngineType.ManualEngine => "Manual Engine",
                 CorruptionEngineType.ExclusionEngine => "Exclusion Engine",
+                CorruptionEngineType.SourceCodeEngine => "Source Code Engine",
+                CorruptionEngineType.BlocksEngine => "Blocks Engine",
+                CorruptionEngineType.DatamoshEngine => "Datamosh Engine",
                 _ => engineType.ToString()
             };
         }
@@ -63,13 +69,16 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 "Vector2 Engine" => CorruptionEngineType.VectorEngine,
                 "Manual Engine" => CorruptionEngineType.ManualEngine,
                 "Exclusion Engine" => CorruptionEngineType.ExclusionEngine,
+                "Source Code Engine" => CorruptionEngineType.SourceCodeEngine,
+                "Blocks Engine" => CorruptionEngineType.BlocksEngine,
+                "Datamosh Engine" => CorruptionEngineType.DatamoshEngine,
                 _ => CorruptionEngineType.INVALID // default fallback
             };
         }
 
         public static CorruptionOptions? ParseCorruptionOptions(string comboBoxText)
         {
-            if (Enum.TryParse(comboBoxText, out CorruptionOptions corruptionType))
+            if (Enum.TryParse(comboBoxText, true, out CorruptionOptions corruptionType))
             {
                 return corruptionType;
             }

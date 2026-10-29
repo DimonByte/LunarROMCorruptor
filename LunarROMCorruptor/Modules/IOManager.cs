@@ -20,14 +20,14 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
-using System.Text;
+using LunarROMCorruptor.Modules.CorruptionInternals;
 
 namespace LunarROMCorruptor.Modules
 {
     public class IOManager
     {
         private static readonly string SavesDirectory = Path.Combine(Application.StartupPath, "Saves");
-        private static readonly string CorruptionStashDirectory = Path.Combine(Application.StartupPath, "CorruptionStashList");
+        public static readonly string CorruptionStashDirectory = Path.Combine(Application.StartupPath, "CorruptionStashList");
 
         // Common validation for file names
         private static readonly HashSet<string> ReservedNames = new(StringComparer.OrdinalIgnoreCase)
@@ -76,16 +76,27 @@ namespace LunarROMCorruptor.Modules
 
         public static void SaveCorruptedFileCopy(string saveAsTxt, ListBox filesaveList)
         {
+            string? newFileName = CopyToSaves(saveAsTxt);
+            if (newFileName != null)
+                filesaveList?.Items?.Add(newFileName);
+        }
+
+        /// <summary>
+        /// Copies the corrupted file into the Saves folder with a unique name. Doesn't touch the UI, so it can run on a background thread.
+        /// Returns the new file name, or null if it failed.
+        /// </summary>
+        public static string? CopyToSaves(string saveAsTxt)
+        {
             if (string.IsNullOrEmpty(saveAsTxt) || saveAsTxt == "No save location set.")
             {
                 TraceLogger.Log("No valid file path provided. Aborting save operation.", StatusSeverityType.Warning);
-                return;
+                return null;
             }
 
             if (!File.Exists(saveAsTxt))
             {
                 TraceLogger.Log($"File does not exist at path: {saveAsTxt}. Aborting save operation.", StatusSeverityType.Error);
-                return;
+                return null;
             }
 
             try
@@ -102,59 +113,49 @@ namespace LunarROMCorruptor.Modules
                     Directory.CreateDirectory(savesPath);
                 }
 
-                // Get file count to generate unique name
-                int fileCount = Directory.GetFiles(savesPath).Length;
-                string newFileName = $"{Path.GetFileNameWithoutExtension(fileName)}{fileCount + 1}{extension}";
+                // Generate a unique name (the old file count + 1 name could clash with an existing save and crash)
+                int number = Directory.GetFiles(savesPath).Length + 1;
+                string newFileName;
+                do
+                {
+                    newFileName = $"{Path.GetFileNameWithoutExtension(fileName)}{number++}{extension}";
+                } while (File.Exists(Path.Combine(savesPath, newFileName)));
 
                 File.Copy(saveAsTxt, Path.Combine(savesPath, newFileName));
-                filesaveList?.Items?.Add(newFileName);
                 TraceLogger.Log($"File copy saved successfully as: {newFileName}");
+                return newFileName;
             }
-            catch (ArgumentException)
+            catch (Exception ex)
             {
-                TraceLogger.Log("Argument error (FileSave). Did you select an item?", StatusSeverityType.Error, true);
+                TraceLogger.Log($"Unable to save a copy of the corrupted file: {ex.Message}", StatusSeverityType.Error, true);
+                return null;
             }
         }
 
-        public static void TransferStash(ListBox stashBytesList, ListBox stashFileList, List<string> internalStashItems, string fileSelectionTxt, Random rnd)
+        /// <summary>
+        /// Saves the stash recorded by the last corruption to a .stash file.
+        /// </summary>
+        public static void TransferStash(StashLog stash, ListBox stashFileList, string fileSelectionTxt, Random rnd)
         {
-            if (stashBytesList?.Items?.Count == 0)
+            if (stash == null || stash.Count == 0)
             {
                 TraceLogger.Log("No stash bytes to transfer. Aborting stash save operation.", StatusSeverityType.Warning);
                 return;
             }
 
-            var builder = new StringBuilder();
-
-            if (stashBytesList?.Items?.Count > 0 && stashBytesList.Items[0].ToString() == "LargeStash")
+            if (stash.Count > 50000)
             {
                 TraceLogger.Log("Large stash detected. Prompting user for confirmation before saving.", StatusSeverityType.Warning);
-                if (MessageBox.Show("This is a large stash which may take awhile to load in the future. Are you sure you want to save anyway?",
-                    $"Warning - {nameof(LunarROMCorruptor)}", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+                if (MessageBox.Show($"This is a large stash ({stash.Count:N0} entries) which may take a while to load in the future. Are you sure you want to save anyway?",
+                    $"Warning - {nameof(LunarROMCorruptor)}", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
                 {
-                    if (internalStashItems != null)
-                    {
-                        TraceLogger.Log("User confirmed saving large stash. Adding internal stash items to the file content.", StatusSeverityType.Information);
-                        foreach (var listItem in internalStashItems)
-                        {
-                            builder.Append(listItem);
-                            builder.AppendLine();
-                        }
-                    }
+                    TraceLogger.Log("User cancelled saving the large stash.");
                     return;
                 }
             }
-            else
+            if (stash.Overflowed)
             {
-                if (internalStashItems != null)
-                {
-                    TraceLogger.Log("Adding internal stash items to the file content.", StatusSeverityType.Information);
-                    foreach (var listItem in internalStashItems)
-                    {
-                        builder.Append(listItem);
-                        builder.AppendLine();
-                    }
-                }
+                TraceLogger.Log("Note: this stash reached its size limit during corruption, so it doesn't contain every change.", StatusSeverityType.Warning, true);
             }
 
             // Ensure directory exists
@@ -167,16 +168,20 @@ namespace LunarROMCorruptor.Modules
             // Generate stash file name
             string fileNameWithoutExtension = string.IsNullOrEmpty(fileSelectionTxt) ?
                 "unnamed" : Path.GetFileNameWithoutExtension(fileSelectionTxt);
-            string randomFileName = Path.Combine(CorruptionStashDirectory, $"{fileNameWithoutExtension}-{rnd.Next(1000, 999999999)}.stash");
+            string randomFileName;
+            do
+            {
+                randomFileName = Path.Combine(CorruptionStashDirectory, $"{fileNameWithoutExtension}-{rnd.Next(1000, 999999999)}.stash");
+            } while (File.Exists(randomFileName));
 
             TraceLogger.Log($"Saving stash to file: {randomFileName}", StatusSeverityType.Information);
             try
             {
-                File.WriteAllText(randomFileName, builder.ToString());
+                stash.WriteTo(randomFileName); //Streams the entries to disk instead of building one huge string
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Error writing stash to file: {randomFileName}. Exception: {ex.Message}", StatusSeverityType.Error);
+                TraceLogger.Log($"Error writing stash to file: {randomFileName}. Exception: {ex.Message}", StatusSeverityType.Error, true);
             }
             // Refresh stash file list
             RefreshFileList(stashFileList, CorruptionStashDirectory);
@@ -335,6 +340,13 @@ namespace LunarROMCorruptor.Modules
                 }
 
                 string sourcePath = Path.Combine(SavesDirectory, selectedItemText);
+                if (CorruptionInternals.CorruptionCore.IsInPlace(saveAsTxt) &&
+                    MessageBox.Show("The save location is the original file. Copying the file save over it will replace the original file (Restore will no longer be able to undo this). Continue?",
+                    $"Warning - {nameof(LunarROMCorruptor)}", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                {
+                    return;
+                }
+                CorruptionInternals.CorruptionCore.InvalidateOutput(saveAsTxt);
                 File.Copy(sourcePath, saveAsTxt, true);
                 TraceLogger.Log($"File copied successfully from: {sourcePath} to: {saveAsTxt}", StatusSeverityType.Information);
             }
@@ -345,6 +357,10 @@ namespace LunarROMCorruptor.Modules
             catch (DirectoryNotFoundException)
             {
                 TraceLogger.Log("Directory not found (FileSave). Check if the source directory exists.", StatusSeverityType.Error, true);
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to copy the file save: {ex.Message}", StatusSeverityType.Error, true);
             }
         }
 
@@ -363,6 +379,122 @@ namespace LunarROMCorruptor.Modules
 
             // Check for invalid characters
             return !fileName.Any(InvalidChars.Contains);
+        }
+    }
+
+    public sealed class CorruptionHistoryEntry
+    {
+        public required string StashPath;
+        public required string SourcePath;
+        public required string EngineName;
+        public DateTime Time;
+        public long Changes;
+
+        public override string ToString() => $"{Time:HH:mm:ss}  {EngineName} ({Changes:N0} changes) - {Path.GetFileName(SourcePath)}";
+    }
+
+    /// <summary>
+    /// Keeps the stash of the last few corruptions so a previous corruption can be re-applied or saved later.
+    /// History is only kept for the current session (the folder is cleared when LRC starts and closes).
+    /// </summary>
+    public static class CorruptionHistory
+    {
+        public const int MaxEntries = 3;
+        public const long MaxStashEntries = 2_000_000; //Bigger stashes aren't written to the history (they'd be hundreds of MB)
+        private static readonly Lock _lock = new();
+        private static readonly List<CorruptionHistoryEntry> _entries = []; //Newest first
+        public static string HistoryDirectory = Path.Combine(AppContext.BaseDirectory, "CorruptionHistory");
+
+        public static IReadOnlyList<CorruptionHistoryEntry> Entries
+        {
+            get
+            {
+                lock (_lock) return [.. _entries];
+            }
+        }
+
+        /// <summary>
+        /// Saves the stash of a corruption that just finished. Safe to call from a background thread.
+        /// </summary>
+        public static CorruptionHistoryEntry? Add(StashLog stash, string engineName, string sourcePath, bool stashEnabled)
+        {
+            if (stash.Count == 0) return null;
+            if (stash.Count > MaxStashEntries || stash.Overflowed)
+            {
+                TraceLogger.Log($"This corruption changed {stash.Count:N0} entries, which is too large to keep in the corruption history.", StatusSeverityType.Warning);
+                return null;
+            }
+            try
+            {
+                //Check if stash is enabled before saving.
+                if (!stashEnabled)
+                {
+                    TraceLogger.Log("Stash is not enabled. Cannot save to corruption history.", StatusSeverityType.Warning);
+                    return null;
+                }
+                Directory.CreateDirectory(HistoryDirectory);
+                string path = Path.Combine(HistoryDirectory, $"history-{DateTime.Now:HHmmss}-{Guid.NewGuid():N}.stash");
+                stash.WriteTo(path);
+                var entry = new CorruptionHistoryEntry { StashPath = path, SourcePath = sourcePath, EngineName = engineName, Time = DateTime.Now, Changes = stash.Count };
+                lock (_lock)
+                {
+                    _entries.Insert(0, entry);
+                    while (_entries.Count > MaxEntries)
+                    {
+                        var old = _entries[^1];
+                        _entries.RemoveAt(_entries.Count - 1);
+                        try { File.Delete(old.StashPath); } catch { }
+                    }
+                }
+                TraceLogger.Log($"Corruption saved to history: {entry}");
+                return entry;
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to save the corruption to the history: {ex.Message}", StatusSeverityType.Warning);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Copies a history entry into the stash list folder so it's kept permanently. Returns the new file path.
+        /// </summary>
+        public static string? SaveToStashList(CorruptionHistoryEntry entry)
+        {
+            try
+            {
+                Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+                string name = $"{Path.GetFileNameWithoutExtension(entry.SourcePath)}-history-{entry.Time:yyyyMMdd-HHmmss}.stash";
+                string path = Path.Combine(IOManager.CorruptionStashDirectory, name);
+                File.Copy(entry.StashPath, path, true);
+                TraceLogger.Log($"History entry saved to the stash list as {name}");
+                return path;
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to save the history entry: {ex.Message}", StatusSeverityType.Error, true);
+                return null;
+            }
+        }
+
+        public static void Clear()
+        {
+            lock (_lock)
+            {
+                _entries.Clear();
+                try
+                {
+                    if (Directory.Exists(HistoryDirectory))
+                    {
+                        foreach (var file in Directory.GetFiles(HistoryDirectory, "history-*.stash"))
+                            File.Delete(file);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Unable to clear the corruption history folder: {ex.Message}", StatusSeverityType.Warning);
+                }
+            }
         }
     }
 }

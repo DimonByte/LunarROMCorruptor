@@ -69,6 +69,7 @@
             Intensity = new NumericUpDown();
             IntensityTrackbar = new TrackBar();
             StashBytesList = new ListBox();
+            CorruptionHistoryBtn = new Button();
             EnableStashSavesChkbox = new CheckBox();
             StashFileList = new ListBox();
             StashEditorbtn = new Button();
@@ -89,6 +90,8 @@
             ByteViewHelp = new LinkLabel();
             byteViewColourChkbox = new CheckBox();
             ByteViewLbl = new Label();
+            ByteViewModeComboBox = new ComboBox();
+            ByteViewInfoLbl = new Label();
             ByteViewPictureBox = new PictureBox();
             AutomationPage = new TabPage();
             AutomationLbl = new Label();
@@ -113,6 +116,7 @@
             SaveLogBtn = new Button();
             CorruptButtonPanel = new Panel();
             CorruptButton = new Button();
+            CorruptionProgressBar = new ProgressBar();
             SaveasTxt = new TextBox();
             FileSelectPanel = new Panel();
             OpenSaveFolderLocationBtn = new Button();
@@ -357,7 +361,7 @@
             CorruptionEngineComboBox.Font = new Font("Tahoma", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
-            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine" });
+            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Datamosh Engine", "Source Code Engine" });
             CorruptionEngineComboBox.Location = new Point(407, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
@@ -400,6 +404,7 @@
             FileCorruptionTab.Controls.Add(RandomByteCorruptRadioBtn);
             FileCorruptionTab.Controls.Add(CorruptionParametersPanel);
             FileCorruptionTab.Controls.Add(StashBytesList);
+            FileCorruptionTab.Controls.Add(CorruptionHistoryBtn);
             FileCorruptionTab.Controls.Add(EnableStashSavesChkbox);
             FileCorruptionTab.Controls.Add(StashFileList);
             FileCorruptionTab.Controls.Add(StashEditorbtn);
@@ -424,7 +429,7 @@
             StashBtnTableLayoutPanel.Controls.Add(RenameStashBtn, 0, 0);
             StashBtnTableLayoutPanel.Controls.Add(DeleteStashBtn, 2, 0);
             StashBtnTableLayoutPanel.Controls.Add(RefreshStashBtn, 1, 0);
-            StashBtnTableLayoutPanel.Location = new Point(544, 252);
+            StashBtnTableLayoutPanel.Location = new Point(544, 253);
             StashBtnTableLayoutPanel.Margin = new Padding(0);
             StashBtnTableLayoutPanel.Name = "StashBtnTableLayoutPanel";
             StashBtnTableLayoutPanel.RowCount = 1;
@@ -794,8 +799,23 @@
             StashBytesList.Location = new Point(384, 25);
             StashBytesList.Margin = new Padding(2, 3, 2, 3);
             StashBytesList.Name = "StashBytesList";
-            StashBytesList.Size = new Size(134, 259);
+            StashBytesList.Size = new Size(134, 229);
             StashBytesList.TabIndex = 158;
+            // 
+            // CorruptionHistoryBtn
+            // 
+            CorruptionHistoryBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CorruptionHistoryBtn.BackColor = Color.FromArgb(52, 60, 111);
+            CorruptionHistoryBtn.FlatAppearance.BorderSize = 0;
+            CorruptionHistoryBtn.FlatStyle = FlatStyle.Flat;
+            CorruptionHistoryBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            CorruptionHistoryBtn.Location = new Point(384, 257);
+            CorruptionHistoryBtn.Margin = new Padding(2, 3, 2, 3);
+            CorruptionHistoryBtn.Name = "CorruptionHistoryBtn";
+            CorruptionHistoryBtn.Size = new Size(134, 27);
+            CorruptionHistoryBtn.TabIndex = 180;
+            CorruptionHistoryBtn.Text = "Corruption History ▾";
+            CorruptionHistoryBtn.UseVisualStyleBackColor = false;
             // 
             // EnableStashSavesChkbox
             // 
@@ -984,6 +1004,8 @@
             ByteViewContainer.Panel1.Controls.Add(ByteViewHelp);
             ByteViewContainer.Panel1.Controls.Add(byteViewColourChkbox);
             ByteViewContainer.Panel1.Controls.Add(ByteViewLbl);
+            ByteViewContainer.Panel1.Controls.Add(ByteViewModeComboBox);
+            ByteViewContainer.Panel1.Controls.Add(ByteViewInfoLbl);
             ByteViewContainer.Panel1MinSize = 100;
             // 
             // ByteViewContainer.Panel2
@@ -1104,6 +1126,29 @@
             ByteViewLbl.Size = new Size(85, 22);
             ByteViewLbl.TabIndex = 0;
             ByteViewLbl.Text = "ByteView";
+            // 
+            // ByteViewModeComboBox
+            // 
+            ByteViewModeComboBox.BackColor = Color.FromArgb(52, 60, 111);
+            ByteViewModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            ByteViewModeComboBox.FlatStyle = FlatStyle.Flat;
+            ByteViewModeComboBox.ForeColor = Color.FromArgb(213, 216, 216);
+            ByteViewModeComboBox.FormattingEnabled = true;
+            ByteViewModeComboBox.Items.AddRange(new object[] { "Normal", "Diff", "Entropy" });
+            ByteViewModeComboBox.Location = new Point(2, 222);
+            ByteViewModeComboBox.Name = "ByteViewModeComboBox";
+            ByteViewModeComboBox.Size = new Size(111, 23);
+            ByteViewModeComboBox.TabIndex = 9;
+            // 
+            // ByteViewInfoLbl
+            // 
+            ByteViewInfoLbl.Font = new Font("Segoe UI", 7.5F);
+            ByteViewInfoLbl.ForeColor = Color.Silver;
+            ByteViewInfoLbl.Location = new Point(2, 248);
+            ByteViewInfoLbl.Name = "ByteViewInfoLbl";
+            ByteViewInfoLbl.Size = new Size(112, 42);
+            ByteViewInfoLbl.TabIndex = 10;
+            ByteViewInfoLbl.Text = "Drag on the image to set the byte range.";
             // 
             // ByteViewPictureBox
             // 
@@ -1429,6 +1474,7 @@
             CorruptButtonPanel.BackColor = Color.FromArgb(70, 70, 120);
             CorruptButtonPanel.BorderStyle = BorderStyle.FixedSingle;
             CorruptButtonPanel.Controls.Add(CorruptButton);
+            CorruptButtonPanel.Controls.Add(CorruptionProgressBar);
             CorruptButtonPanel.Dock = DockStyle.Bottom;
             CorruptButtonPanel.Location = new Point(0, 495);
             CorruptButtonPanel.Margin = new Padding(2, 3, 2, 3);
@@ -1449,7 +1495,7 @@
             CorruptButton.Location = new Point(0, 0);
             CorruptButton.Margin = new Padding(2, 3, 2, 3);
             CorruptButton.Name = "CorruptButton";
-            CorruptButton.Size = new Size(756, 58);
+            CorruptButton.Size = new Size(756, 52);
             CorruptButton.TabIndex = 1;
             CorruptButton.TabStop = false;
             CorruptButton.Tag = "";
@@ -1457,6 +1503,17 @@
             CorruptButton.TextAlign = ContentAlignment.BottomCenter;
             CorruptButton.UseVisualStyleBackColor = false;
             CorruptButton.Click += CorruptButton_Click;
+            // 
+            // CorruptionProgressBar
+            // 
+            CorruptionProgressBar.Dock = DockStyle.Bottom;
+            CorruptionProgressBar.Location = new Point(0, 52);
+            CorruptionProgressBar.Maximum = 1000;
+            CorruptionProgressBar.Name = "CorruptionProgressBar";
+            CorruptionProgressBar.Size = new Size(756, 6);
+            CorruptionProgressBar.Style = ProgressBarStyle.Continuous;
+            CorruptionProgressBar.TabIndex = 2;
+            CorruptionProgressBar.Visible = false;
             // 
             // SaveasTxt
             // 
@@ -1903,6 +1960,7 @@
         private System.Windows.Forms.Label CorruptionEnginelbl;
         internal System.Windows.Forms.TabPage FileCorruptionTab;
         internal System.Windows.Forms.ListBox StashBytesList;
+        internal System.Windows.Forms.Button CorruptionHistoryBtn;
         internal System.Windows.Forms.Button StashEditorbtn;
         internal System.Windows.Forms.Button Corruptusingstashbtn;
         internal System.Windows.Forms.Button RefreshStashBtn;
@@ -1914,6 +1972,7 @@
         internal System.Windows.Forms.Button Changesaveasbtn;
         internal System.Windows.Forms.Panel CorruptButtonPanel;
         public System.Windows.Forms.Button CorruptButton;
+        internal System.Windows.Forms.ProgressBar CorruptionProgressBar;
         internal System.Windows.Forms.Button Openfilebtn;
         internal System.Windows.Forms.Panel FileSelectPanel;
         internal System.Windows.Forms.OpenFileDialog EmulatorFileDialog;
@@ -1974,6 +2033,8 @@
         private System.Windows.Forms.TabPage ByteViewTab;
         private System.Windows.Forms.SplitContainer ByteViewContainer;
         private System.Windows.Forms.PictureBox ByteViewPictureBox;
+        private System.Windows.Forms.ComboBox ByteViewModeComboBox;
+        private System.Windows.Forms.Label ByteViewInfoLbl;
         private System.Windows.Forms.Label ByteViewLbl;
         private System.Windows.Forms.CheckBox byteViewColourChkbox;
         private System.Windows.Forms.LinkLabel ByteViewHelp;

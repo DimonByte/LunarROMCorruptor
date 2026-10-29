@@ -20,239 +20,188 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
 using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
-using System.Text;
 
 namespace LunarROMCorruptor.Modules.CorruptionInternals
 {
+    /// <summary>
+    /// A snapshot of every setting needed for a corruption. It's created on the UI thread right before a corruption starts so the
+    /// engines never touch the UI controls (this is what allows corruption to run on a background thread, and it's much faster).
+    /// </summary>
+    public sealed class CorruptionSettings
+    {
+        public CorruptionEngineType Engine;
+        public long StartByte;
+        public long EndByte;
+        public bool EveryNth; //True = corrupt every Nth byte, False = intensity (random) mode
+        public long Intensity; //Step size in EveryNth mode, number of corruptions in intensity mode
+
+        public NightmareEngine.Settings? Nightmare;
+        public LerpEngine.Settings? Lerp;
+        public LogicEngine.Settings? Logic;
+        public MergeEngine.Settings? Merge;
+        public ManualEngine.Settings? Manual;
+        public ExclusionEngine.Settings? Exclusion;
+        public VectorEngine.Settings? Vector;
+        public SourceCodeEngine.Settings? SourceCode;
+        public BlocksEngine.Settings? Blocks;
+        public DatamoshEngine.Settings? Datamosh;
+
+        /// <summary>
+        /// Returns a copy with the byte range clamped to a file of the given length (used by the corruption queue where every file has a different size).
+        /// </summary>
+        public CorruptionSettings ClampTo(long length)
+        {
+            var copy = (CorruptionSettings)MemberwiseClone();
+            copy.EndByte = Math.Min(EndByte, length - 1);
+            copy.StartByte = Math.Min(StartByte, copy.EndByte);
+            return copy;
+        }
+    }
+
+    /// <summary>
+    /// Everything an engine needs while it's running: the file data, the byte range, the random generator, the stash and cancellation/progress.
+    /// </summary>
+    public sealed class CorruptionContext
+    {
+        public readonly FileBuffer? Data;
+        public readonly long Start;
+        public readonly long End;
+        public readonly bool EveryNth;
+        public readonly long Intensity;
+        public readonly Random Rnd;
+        public readonly StashLog? Stash;
+        public readonly CancellationToken Token;
+        public readonly IProgress<double>? Progress;
+
+        public CorruptionContext(FileBuffer? data, CorruptionSettings settings, Random rnd, StashLog? stash, CancellationToken token, IProgress<double>? progress)
+        {
+            Data = data;
+            long max = data != null ? data.Length - 1 : long.MaxValue;
+            End = Math.Clamp(settings.EndByte, 0, Math.Max(0, max));
+            Start = Math.Clamp(settings.StartByte, 0, End);
+            EveryNth = settings.EveryNth;
+            Intensity = Math.Max(1, settings.Intensity);
+            Rnd = rnd;
+            Stash = stash;
+            Token = token;
+            Progress = progress;
+        }
+
+        public long Length => Data!.Length;
+
+        public byte Get(long i) => Data![i];
+
+        /// <summary>
+        /// Sets a byte and records it in the stash.
+        /// </summary>
+        public void Set(long i, byte value)
+        {
+            Data![i] = value;
+            Stash?.Add(i, value);
+        }
+
+        public bool InFile(long i) => i >= 0 && i < Data!.Length;
+
+        /// <summary>
+        /// Random index between Start and End (both inclusive).
+        /// </summary>
+        public long RandomIndex() => Rnd.NextInt64(Start, End + 1);
+
+        /// <summary>
+        /// Call regularly from long loops: checks for cancellation and reports progress (0 to 1).
+        /// </summary>
+        public void Tick(long done, long total)
+        {
+            Token.ThrowIfCancellationRequested();
+            if (total > 0)
+                Progress?.Report(Math.Min(1.0, (double)done / total));
+        }
+    }
+
     internal class EngineProcessor
     {
-        private static readonly Random rnd = new();
-        public static byte[]? ProcessNightmareEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
+        private const long TickInterval = 1 << 16;
+
+        /// <summary>
+        /// Runs the selected byte engine over the context.
+        /// </summary>
+        public static void Run(CorruptionSettings settings, CorruptionContext ctx)
         {
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.NightmareEngineFrame.NightmareComboBox.Text);
-            if (corruptionType == null) return null;
-
-            if (CorruptNthByte)
+            switch (settings.Engine)
             {
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    NightmareEngine.CorruptByte(ROM, corruptionType.Value, i);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    int randomIndex = rnd.Next(StartByte, EndByte);
-                    NightmareEngine.CorruptByte(ROM, corruptionType.Value, randomIndex);
-                }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessSourceCodeEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
-        {
-            //Now this will work differently; the problem is that with the engines I have so far they select either a random byte location or every nth byte, but with source code corruption, instead it will need to do this instead:
-            //If Intensity is chosen, and the intensity is set to 200, we need to find 200 random values that the user enabled. Say 200 booleans, and set those to random values.
-            //If corruptnthbyte is enabled, and the value is 2, then every other value is changed.
-            string readableROM = Encoding.UTF8.GetString(ROM);
-
-            if (CorruptNthByte)
-            {
-                TraceLogger.Log("NOT IMPLEMENTED", StatusSeverityType.Debug);
-                //for (int i = StartByte; i <= EndByte; i += Intensity)
-                //{
-                //    NightmareEngine.CorruptByte(ROM, corruptionType.Value, i);
-                //}
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    //int randomIndex = rnd.Next(StartByte, EndByte);
-                    //NightmareEngine.CorruptByte(ROM, corruptionType.Value, randomIndex);
-
-                }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessLerpEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
-        {
-            if (CorruptNthByte)
-            {
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    LerpEngine.CorruptByte(ROM, i);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    int randomIndex = rnd.Next(StartByte, EndByte);
-                    LerpEngine.CorruptByte(ROM, randomIndex);
-                }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessExclusionEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity, string Profile)
-        {
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.ExclusionEngineFrame.NightmareComboBox.Text);
-            if (corruptionType == null) return null;
-            var safeLocations = ExclusionEngine.SafeLocations.GetValueOrDefault(Profile, []);
-            if (CorruptNthByte)
-            {
-                bool corrupted = false;
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    // Check if this byte is in a safe location, if so skip it
-                    if (!ExclusionEngine.IsSafeLocation(i, safeLocations))
+                case CorruptionEngineType.NightmareEngine:
+                    var nightmare = settings.Nightmare ?? throw new InvalidOperationException("Nightmare Engine settings missing.");
+                    Drive(ctx, i => NightmareEngine.CorruptByte(ctx, nightmare, i));
+                    break;
+                case CorruptionEngineType.LerpEngine:
+                    var lerp = settings.Lerp ?? throw new InvalidOperationException("Lerp Engine settings missing.");
+                    Drive(ctx, i => LerpEngine.CorruptByte(ctx, lerp, i));
+                    break;
+                case CorruptionEngineType.LogicEngine:
+                    var logic = settings.Logic ?? throw new InvalidOperationException("Logic Engine settings missing.");
+                    Drive(ctx, i => LogicEngine.CorruptByte(ctx, logic, i));
+                    break;
+                case CorruptionEngineType.ManualEngine:
+                    var manual = settings.Manual ?? throw new InvalidOperationException("Manual Engine settings missing.");
+                    Drive(ctx, i => ManualEngine.CorruptByte(ctx, manual, i));
+                    break;
+                case CorruptionEngineType.MergeEngine:
+                    var merge = settings.Merge ?? throw new InvalidOperationException("Merge Engine settings missing.");
+                    using (var mergeData = MergeEngine.OpenMergeFile(merge))
                     {
-                        corrupted = true;
-                        ExclusionEngine.CorruptByte(ROM, corruptionType.Value, Profile, i);
+                        Drive(ctx, i => MergeEngine.CorruptByte(ctx, merge, mergeData, i));
                     }
-                    //else
-                    //{
-                    //    TraceLogger.Log($"{i} is not safe! Ignoring that address.");
-                    //}
-                }
-                if (!corrupted)
+                    break;
+                case CorruptionEngineType.ExclusionEngine:
+                    ExclusionEngine.Run(ctx, settings.Exclusion ?? throw new InvalidOperationException("Exclusion Engine settings missing."));
+                    break;
+                case CorruptionEngineType.VectorEngine:
+                    VectorEngine.Run(ctx, settings.Vector ?? throw new InvalidOperationException("Vector2 Engine settings missing."));
+                    break;
+                case CorruptionEngineType.BlocksEngine:
+                    BlocksEngine.Run(ctx, settings.Blocks ?? throw new InvalidOperationException("Blocks Engine settings missing."));
+                    break;
+                case CorruptionEngineType.SourceCodeEngine:
+                case CorruptionEngineType.DatamoshEngine:
+                    throw new InvalidOperationException($"The {EngineParser.GetEngineDisplayName(settings.Engine)} rewrites the whole file and can't be run by the byte engine processor.");
+                default:
+                    throw new InvalidOperationException($"Corruption engine not found ({settings.Engine}). Corruption has been aborted to prevent unwanted corruption.");
+            }
+        }
+
+        /// <summary>
+        /// The standard byte selection loop used by most engines:
+        /// Every Nth byte mode walks from Start to End (inclusive) with a step of Intensity.
+        /// Intensity mode picks Intensity random addresses between Start and End (inclusive).
+        /// </summary>
+        public static void Drive(CorruptionContext ctx, Action<long> corrupt)
+        {
+            if (ctx.EveryNth)
+            {
+                long step = ctx.Intensity;
+                long total = (ctx.End - ctx.Start) / step + 1;
+                long done = 0;
+                for (long i = ctx.Start; i <= ctx.End; i += step)
                 {
-                    TraceLogger.Log($"CorruptNthByte reached end of file with profile {Profile} but did not find any safe locations to corrupt.", StatusSeverityType.Warning);
+                    corrupt(i);
+                    if (++done % TickInterval == 0)
+                        ctx.Tick(done, total);
+                    if (i > long.MaxValue - step) break;
                 }
+                ctx.Tick(total, total);
             }
             else
             {
-                for (int i = 0; i < Intensity; i++)
+                long total = ctx.Intensity;
+                for (long n = 0; n < total; n++)
                 {
-                    // Keep trying to get a random index that's not in a safe location
-                    int tries = 0;
-                    int maxTries = 1000; // Prevent infinite loop
-
-                    do
-                    {
-                        int randomIndex = new Random().Next(StartByte, EndByte);
-                        // If index is safe, try again unless we've exceeded max attempts
-                        if (ExclusionEngine.IsSafeLocation(randomIndex, safeLocations))
-                        {
-                            tries++;
-                            //TraceLogger.Log($"{i} is not safe! Ignoring that address.");
-                            continue;
-                        }
-
-                        // We found a valid index for the selected profile - corrupt it! AA
-                        ExclusionEngine.CorruptByte(ROM, corruptionType.Value, Profile, randomIndex);
-                        break;
-                    } while (tries < maxTries);
-
-                    // If we've reached max tries, show an error since we don't want infinity here.
-                    if (tries >= maxTries)
-                    {
-                        TraceLogger.Log("Max tries (" + maxTries + ") reached for random selection in ExclusionEngine with profile " + Profile, StatusSeverityType.Warning);
-                    }
+                    corrupt(ctx.RandomIndex());
+                    if ((n + 1) % TickInterval == 0)
+                        ctx.Tick(n + 1, total);
                 }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessMergeEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
-        {
-            if (string.IsNullOrEmpty(Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text))
-            {
-                TraceLogger.Log("Merge file location is empty. Please select a merge file. Aborting merge corruption.", StatusSeverityType.Error, true);
-                return null;
-            }
-
-            byte[] ROMmerge = File.ReadAllBytes(Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text);
-
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.MergeEngineFrame.CorrTypeMerge.Text);
-            if (corruptionType == null) return null;
-
-            if (CorruptNthByte)
-            {
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    MergeEngine.CorruptByte(ROM, ROMmerge, corruptionType.Value, i);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    int randomIndex = rnd.Next(StartByte, EndByte);
-                    MergeEngine.CorruptByte(ROM, ROMmerge, corruptionType.Value, randomIndex);
-                }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessLogicEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
-        {
-            var corruptionType = EngineParser.ParseCorruptionOptions(Program.Form.LogicEngineFrame.BitwiseComboBox.Text);
-            if (corruptionType == null) return null;
-
-            if (CorruptNthByte)
-            {
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    UpdateLogicControls();
-                    LogicEngine.CorruptByte(ROM, corruptionType.Value, i, (int)Program.Form.LogicEngineFrame.ValueBitwise.Value);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    UpdateLogicControls();
-                    int randomIndex = rnd.Next(StartByte, EndByte);
-                    LogicEngine.CorruptByte(ROM, corruptionType.Value, randomIndex, (int)Program.Form.LogicEngineFrame.ValueBitwise.Value);
-                }
-            }
-
-            return ROM;
-        }
-
-        public static byte[]? ProcessManualEngine(byte[] ROM, int StartByte, int EndByte, bool CorruptNthByte, int Intensity)
-        {
-            if (CorruptNthByte)
-            {
-                for (int i = StartByte; i <= EndByte; i += Intensity)
-                {
-                    ManualEngine.CorruptByte(ROM, i, StartByte, EndByte);
-                }
-            }
-            else
-            {
-                for (int i = 0; i < Intensity; i++)
-                {
-                    long randomIndex = rnd.Next(StartByte, EndByte);
-                    ManualEngine.CorruptByte(ROM, randomIndex, StartByte, EndByte);
-                }
-            }
-
-            return ROM;
-        }
-
-        private static void UpdateLogicControls()
-        {
-            if (Program.Form.LogicEngineFrame.LogicRandomizeTypeCheckbox.Checked)
-            {
-                int randomIndex = rnd.Next(1, Program.Form.LogicEngineFrame.BitwiseComboBox.Items.Count - 1);
-                Program.Form.LogicEngineFrame.BitwiseComboBox.SelectedIndex = randomIndex;
-            }
-
-            if (Program.Form.LogicEngineFrame.LogicRandomizeValueCheckBox.Checked)
-            {
-                int randomValue = rnd.Next((int)Program.Form.LogicEngineFrame.ValueBitwise.Minimum, (int)Program.Form.LogicEngineFrame.ValueBitwise.Maximum);
-                Program.Form.LogicEngineFrame.ValueBitwise.Value = randomValue;
+                ctx.Tick(total, total);
             }
         }
     }

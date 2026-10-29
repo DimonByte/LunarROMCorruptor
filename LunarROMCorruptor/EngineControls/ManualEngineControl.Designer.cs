@@ -286,7 +286,7 @@
             ReplaceNumericUpDown1.ForeColor = Color.FromArgb(213, 216, 216);
             ReplaceNumericUpDown1.Location = new Point(70, 22);
             ReplaceNumericUpDown1.Margin = new Padding(2, 3, 2, 3);
-            ReplaceNumericUpDown1.Maximum = new decimal(new int[] { 9999999, 0, 0, 0 });
+            ReplaceNumericUpDown1.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
             ReplaceNumericUpDown1.Name = "ReplaceNumericUpDown1";
             ReplaceNumericUpDown1.Size = new Size(93, 22);
             ReplaceNumericUpDown1.TabIndex = 63;
@@ -299,7 +299,7 @@
             ReplaceNumericUpDown2.ForeColor = Color.FromArgb(213, 216, 216);
             ReplaceNumericUpDown2.Location = new Point(209, 22);
             ReplaceNumericUpDown2.Margin = new Padding(2, 3, 2, 3);
-            ReplaceNumericUpDown2.Maximum = new decimal(new int[] { 9999999, 0, 0, 0 });
+            ReplaceNumericUpDown2.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
             ReplaceNumericUpDown2.Name = "ReplaceNumericUpDown2";
             ReplaceNumericUpDown2.Size = new Size(93, 22);
             ReplaceNumericUpDown2.TabIndex = 63;
@@ -472,7 +472,7 @@
             RepeatNumericUpDown.ForeColor = Color.FromArgb(213, 216, 216);
             RepeatNumericUpDown.Location = new Point(131, 23);
             RepeatNumericUpDown.Margin = new Padding(2, 3, 2, 3);
-            RepeatNumericUpDown.Minimum = new decimal(new int[] { 100, 0, 0, int.MinValue });
+            RepeatNumericUpDown.Minimum = new decimal(new int[] { 0, 0, 0, 0 });
             RepeatNumericUpDown.Name = "RepeatNumericUpDown";
             RepeatNumericUpDown.Size = new Size(48, 22);
             RepeatNumericUpDown.TabIndex = 63;

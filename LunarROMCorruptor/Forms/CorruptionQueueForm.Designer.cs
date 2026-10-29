@@ -181,9 +181,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(173, 104);
             this.label1.TabIndex = 20;
-            this.label1.Text = "Be aware:\r\nThe restore function is disabled,\r\nmeaning the corrupted file\r\nwon\'t b" +
-    "e restored before\r\nanother corruption.\r\n\r\nReplace each file after each\r\ncorrupti" +
-    "on blast.";
+            this.label1.Text = "Each file is restored to its\r\noriginal before every corruption,\r\nso blasts don\'t stack.\r\n\r\nUse Restore File on the main\r\nwindow to put every file back\r\n(while LRC stays open).";
             // 
             // Openfilebtn
             // 

@@ -20,74 +20,216 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Security.Principal;
 
 namespace LunarROMCorruptor.Modules.Helpers
 {
     internal class FileOverrideHelper
     {
-        public static void AttemptProtectedFileOverride(string targetFilePath)
+        /// <summary>
+        /// Checks if a file can be opened with the given access. Returns a human readable reason if it can't.
+        /// </summary>
+        public static bool CanOpen(string path, FileAccess access, out string? reason)
         {
-            TraceLogger.Log($"Attempting protected file override for file: {targetFilePath}");
-            if (string.IsNullOrEmpty(targetFilePath))
-            {
-                TraceLogger.Log("LRC - Corruption Core: Target file path is null or empty.", StatusSeverityType.Error);
-                return;
-            }
+            reason = null;
             try
             {
-                bool isAdmin = CommandRunner.IsRunAsAdmin();
-
-                // Check if file exists and is protected
-                if (!File.Exists(targetFilePath))
-                {
-                    TraceLogger.Log($"LRC - Corruption Core: Target file does not exist: {targetFilePath}", StatusSeverityType.Error);
-                    return;
-                }
-
-                if (!isAdmin)
-                {
-                    // Run the entire override process elevated
-                    TraceLogger.Log("LRC - Corruption Core: Not running as admin. Attempting to elevate for file ownership override.", StatusSeverityType.Warning);
-
-                    string takeOwnCommand = $"takeown /F \"{targetFilePath}\"";
-                    string icaclsCommand = $"icacls \"{targetFilePath}\" /grant {Environment.UserDomainName}\\{Environment.UserName}:(OI)(CI)F /T";
-
-                    // Create a PowerShell command that will execute both commands
-                    string fullCommand = $"{takeOwnCommand} ; {icaclsCommand}";
-
-                    bool elevatedSuccess = CommandRunner.RunElevatedCommand("cmd.exe", $"/c \"{fullCommand}\"");
-
-                    if (elevatedSuccess)
-                    {
-                        TraceLogger.Log("LRC - Corruption Core: File ownership and permission override completed successfully with elevated permissions.", StatusSeverityType.Information);
-                    }
-                    else
-                    {
-                        TraceLogger.Log("LRC - Corruption Core: Failed to complete file override with elevated permissions.", StatusSeverityType.Error);
-                    }
-                }
-                else
-                {
-                    // Already running as admin, proceed directly
-                    TraceLogger.Log("LRC - Corruption Core: Running as admin. Proceeding with file ownership override.", StatusSeverityType.Information);
-
-                    using (Process cmdProcess = new())
-                    {
-                        cmdProcess.StartInfo.FileName = "CMD.exe";
-                        cmdProcess.StartInfo.Arguments = $"/c takeown /F \"{targetFilePath}\" && icacls \"{targetFilePath}\" /grant {Environment.UserDomainName}\\{Environment.UserName}:(OI)(CI)F /T";
-                        cmdProcess.StartInfo.CreateNoWindow = true;
-                        cmdProcess.StartInfo.UseShellExecute = false;
-                        cmdProcess.Start();
-                        cmdProcess.WaitForExit();
-                    }
-                    TraceLogger.Log("LRC - Corruption Core: File ownership and permission override completed successfully.", StatusSeverityType.Information);
-                }
+                using var stream = new FileStream(path, FileMode.Open, access, FileShare.ReadWrite | FileShare.Delete, 1);
+                return true;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                reason = File.Exists(path) && File.GetAttributes(path).HasFlag(FileAttributes.ReadOnly) && access != FileAccess.Read
+                    ? "The file is marked as read-only."
+                    : $"Access denied ({ex.Message}). Enabling 'Take File Ownership' may fix this.";
+                return false;
+            }
+            catch (IOException ex) when ((ex.HResult & 0xFFFF) is 32 or 33) //ERROR_SHARING_VIOLATION / ERROR_LOCK_VIOLATION
+            {
+                reason = "The file is being used by another process (is the emulator or another program still running?). Permission override can't fix this.";
+                return false;
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"LRC - Corruption Core: Error during File Ownership and Permission Override. Exception: {ex.Message}", StatusSeverityType.Error);
+                reason = ex.Message;
+                return false;
             }
+        }
+
+        /// <summary>
+        /// Checks if new files can be created in a folder.
+        /// </summary>
+        public static bool CanCreateIn(string directory, out string? reason)
+        {
+            reason = null;
+            string probe = Path.Combine(directory, $".lrc-write-test-{Guid.NewGuid():N}.tmp");
+            try
+            {
+                using (new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1, FileOptions.DeleteOnClose)) { }
+                return true;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                reason = $"Access denied ({ex.Message}). Enabling 'Take File Ownership' may fix this.";
+                return false;
+            }
+            catch (Exception ex)
+            {
+                reason = ex.Message;
+                return false;
+            }
+            finally
+            {
+                try { if (File.Exists(probe)) File.Delete(probe); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Takes ownership of a file or folder and grants the current user full control over it (takeown + icacls), elevating with UAC if needed.
+        /// Returns true if the commands completed successfully.
+        /// </summary>
+        public static bool AttemptProtectedFileOverride(string targetPath)
+        {
+            TraceLogger.Log($"Attempting protected file override for: {targetPath}");
+            if (string.IsNullOrWhiteSpace(targetPath))
+            {
+                TraceLogger.Log("Target path is null or empty.", StatusSeverityType.Error);
+                return false;
+            }
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(targetPath).TrimEnd('\\');
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Invalid path for permission override: {ex.Message}", StatusSeverityType.Error);
+                return false;
+            }
+
+            bool isFile = File.Exists(fullPath);
+            bool isDirectory = !isFile && Directory.Exists(fullPath);
+            if (!isFile && !isDirectory)
+            {
+                TraceLogger.Log($"Target does not exist: {fullPath}", StatusSeverityType.Error);
+                return false;
+            }
+            if (fullPath.Contains('"'))
+            {
+                TraceLogger.Log("The path contains a quote character, permission override has been skipped.", StatusSeverityType.Error);
+                return false;
+            }
+
+            //Use the SID of the current (non-elevated) user. When UAC elevation is done with a different admin account,
+            //%USERNAME% inside the elevated process would be that admin, not the person running LRC.
+            string? sid = WindowsIdentity.GetCurrent().User?.Value;
+            if (string.IsNullOrEmpty(sid))
+            {
+                TraceLogger.Log("Unable to get the current user's SID, permission override has been skipped.", StatusSeverityType.Error);
+                return false;
+            }
+
+            //Clear the read-only attribute first (often enough on its own)
+            if (isFile)
+            {
+                try
+                {
+                    var attributes = File.GetAttributes(fullPath);
+                    if (attributes.HasFlag(FileAttributes.ReadOnly))
+                    {
+                        File.SetAttributes(fullPath, attributes & ~FileAttributes.ReadOnly);
+                        TraceLogger.Log("Cleared the read-only attribute.");
+                        if (CanOpen(fullPath, FileAccess.ReadWrite, out _))
+                            return true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Unable to clear the read-only attribute yet ({ex.Message}), continuing with ownership override.", StatusSeverityType.Warning);
+                }
+            }
+
+            //Notes on the command:
+            // - cmd uses && to chain commands (the old code used ';' which is PowerShell syntax, so icacls never ran).
+            // - (OI)(CI) and /T are for folders only, files just get :F.
+            // - cmd /c "<...>" strips the outer quotes, so the inner quoted paths stay intact.
+            string attrib = isFile ? $"attrib -r \"{fullPath}\" & " : "";
+            string grant = isFile ? $"\"*{sid}:F\"" : $"\"*{sid}:(OI)(CI)F\"";
+            string commands = $"{attrib}takeown /F \"{fullPath}\" && icacls \"{fullPath}\" /grant {grant}";
+
+            bool isAdmin = CommandRunner.IsRunAsAdmin();
+            int exitCode;
+            try
+            {
+                var startInfo = new ProcessStartInfo
+                {
+                    FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe"),
+                    Arguments = $"/c \"{commands}\"",
+                    WindowStyle = ProcessWindowStyle.Hidden,
+                    CreateNoWindow = true,
+                };
+                if (isAdmin)
+                {
+                    TraceLogger.Log("Running as admin, taking ownership directly.");
+                    startInfo.UseShellExecute = false;
+                    startInfo.RedirectStandardOutput = true;
+                    startInfo.RedirectStandardError = true;
+                }
+                else
+                {
+                    //Output can't be captured from an elevated process, the result is verified afterwards instead.
+                    TraceLogger.Log("Not running as admin, requesting elevation (UAC) for the ownership override.", StatusSeverityType.Warning);
+                    startInfo.UseShellExecute = true;
+                    startInfo.Verb = "runas";
+                }
+
+                using var process = Process.Start(startInfo);
+                if (process == null)
+                {
+                    TraceLogger.Log("Failed to start the permission override process.", StatusSeverityType.Error);
+                    return false;
+                }
+                Task<string>? stdout = isAdmin ? process.StandardOutput.ReadToEndAsync() : null;
+                Task<string>? stderr = isAdmin ? process.StandardError.ReadToEndAsync() : null;
+                if (!process.WaitForExit(60000))
+                {
+                    TraceLogger.Log("The permission override process didn't finish within 60 seconds.", StatusSeverityType.Error);
+                    return false;
+                }
+                exitCode = process.ExitCode;
+                if (stdout != null && stderr != null)
+                {
+                    string output = (stdout.Result + Environment.NewLine + stderr.Result).Trim();
+                    if (output.Length > 0) TraceLogger.Log($"Permission override output:\n{output}");
+                }
+            }
+            catch (Win32Exception ex) when (ex.NativeErrorCode == 1223) //ERROR_CANCELLED
+            {
+                TraceLogger.Log("The UAC prompt was cancelled, permission override has been skipped.", StatusSeverityType.Warning, true);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Error during file ownership and permission override: {ex.Message}", StatusSeverityType.Error);
+                return false;
+            }
+
+            if (exitCode != 0)
+            {
+                TraceLogger.Log($"Permission override failed (exit code {exitCode}).{(isAdmin ? " See the output above for the reason." : "")}", StatusSeverityType.Error);
+                return false;
+            }
+
+            bool works = isFile ? CanOpen(fullPath, FileAccess.ReadWrite, out string? reason) : CanCreateIn(fullPath, out reason);
+            if (works)
+                TraceLogger.Log("File ownership and permission override completed successfully.");
+            else
+                TraceLogger.Log($"Ownership was taken but the {(isFile ? "file" : "folder")} still can't be written: {reason}", StatusSeverityType.Error);
+            return works;
         }
     }
 }

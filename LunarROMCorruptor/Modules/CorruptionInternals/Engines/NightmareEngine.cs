@@ -20,74 +20,53 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
 //Acknowledgements:
 //This engine is from the WindowsGlitchHarvester, a ROM corruptor. This code is an attempt to get the same results as the original engine.
 
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
-    internal class NightmareEngine
+    public class NightmareEngine
     {
-        private static readonly Random rnd = new();
-
-        public static byte[] CorruptByte(byte[] ROM, CorruptionOptions CorruptOption, long i)
+        public sealed class Settings
         {
-            switch (CorruptOption)
+            public CorruptionOptions Option = CorruptionOptions.RANDOM;
+            public int TiltAmount = 1; //Increment/Decrement number
+        }
+
+        public static void CorruptByte(CorruptionContext ctx, Settings s, long i)
+        {
+            switch (s.Option)
             {
                 case CorruptionOptions.RANDOM:
-                    ROM[i] = (byte)rnd.Next(0, 256);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                    ctx.Set(i, (byte)ctx.Rnd.Next(0, 256));
                     break;
 
                 case CorruptionOptions.RANDOMTILT:
-                    switch (rnd.Next(0, 3))
+                    switch (ctx.Rnd.Next(0, 3))
                     {
                         case 0:
-                            ROM[i] = (byte)((byte)rnd.Next(0, 256) % (Byte.MaxValue + 1));
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                            ctx.Set(i, (byte)ctx.Rnd.Next(0, 256));
                             break;
-
                         case 1:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
+                            ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) + s.TiltAmount));
                             break;
-
-                        case 2:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
                         default:
-                            if (MessageBox.Show("The Nightmare Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                            {
-                                Application.Exit();
-                            }
+                            ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) - s.TiltAmount));
                             break;
                     }
                     break;
 
                 case CorruptionOptions.TILT:
-                    switch (rnd.Next(0, 2))
-                    {
-                        case 0:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] + (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        case 1:
-                            ROM[i] = CorruptionCore.ClampByte(ROM[i] - (int)Program.Form.NightmareEngineFrame.IncreDecrenumbnightmare.Value);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-                    }
+                    if (ctx.Rnd.Next(0, 2) == 0)
+                        ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) + s.TiltAmount));
+                    else
+                        ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) - s.TiltAmount));
                     break;
 
                 default:
-                    if (MessageBox.Show("The Nightmare Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    {
-                        Application.Exit();
-                    }
-                    break;
+                    throw new InvalidOperationException($"The Nightmare Engine doesn't support the corruption type {s.Option}.");
             }
-            return ROM;
         }
     }
 }

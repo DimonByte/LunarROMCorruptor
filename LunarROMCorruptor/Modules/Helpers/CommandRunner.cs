@@ -57,21 +57,26 @@ namespace LunarROMCorruptor.Modules.Helpers
                         return;
                     }
                     TraceLogger.Log($"The specified path is a file. Attempting to open its directory: {directoryPath}");
-                    startInfo.Arguments = $"{directoryPath}";
+                    startInfo.Arguments = $"\"{directoryPath}\"";
                 }
                 else if (Directory.Exists(normalizedPath))
                 {
                     TraceLogger.Log("The specified path is a directory. Attempting to open it directly in Explorer.");
-                    startInfo.Arguments = $"{normalizedPath}";
+                    startInfo.Arguments = $"\"{normalizedPath}\"";
                 }
                 else
                 {
                     TraceLogger.Log($"The specified path does not exist as a file or directory: {normalizedPath}", StatusSeverityType.Warning);
-                    string directoryPath = Path.GetDirectoryName(normalizedPath);
+                    if (normalizedPath == null)
+                    {
+                        TraceLogger.Log("Normalized path is null, aborting.");
+                        return;
+                    }
+                    string directoryPath = Path.GetDirectoryName(normalizedPath)!;
                     if (Directory.Exists(directoryPath))
                     {
                         TraceLogger.Log($"Attempting to open parent directory: {directoryPath}");
-                        startInfo.Arguments = $"{directoryPath}";
+                        startInfo.Arguments = $"\"{directoryPath}\"";
                     }
                     else
                     {

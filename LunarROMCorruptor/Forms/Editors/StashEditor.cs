@@ -29,9 +29,115 @@ namespace LunarROMCorruptor
     public partial class StashEditor : Form
     {
         private string? LoadedStashLocation;
+        private readonly Random _rnd = new();
+        private readonly System.Windows.Forms.Timer _countTimer = new() { Interval = 500 };
+
         public StashEditor()
         {
             InitializeComponent();
+            //Keeps the item count label up to date (ListBox has no "items changed" event)
+            _countTimer.Tick += (_, _) => StashCountLbl.Text = $"{stashListbox.Items.Count:N0} items ({RemovedItemslstbx.Items.Count:N0} removed)";
+            _countTimer.Start();
+        }
+
+        private List<string> CurrentLines() => [.. stashListbox.Items.Cast<object>().Select(i => i?.ToString() ?? "")];
+
+        private void SetLines(IEnumerable<string> lines)
+        {
+            stashListbox.BeginUpdate();
+            stashListbox.Items.Clear();
+            stashListbox.Items.AddRange([.. lines.Cast<object>()]);
+            stashListbox.EndUpdate();
+        }
+
+        private StashTools.MutateMode SelectedMutateMode => MutateModeComboBox.SelectedIndex switch
+        {
+            1 => StashTools.MutateMode.NudgeValue,
+            2 => StashTools.MutateMode.MoveAddress,
+            _ => StashTools.MutateMode.RandomValue
+        };
+
+        /// <summary>
+        /// Mutates the list. Returns false if there was nothing to mutate.
+        /// </summary>
+        private bool MutateList()
+        {
+            var lines = CurrentLines();
+            if (lines.Count == 0)
+            {
+                MessageBox.Show("The stash list is empty. Load a stash first.", "Mutate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+            long maxOffset = CorruptionCore.IsLoaded ? CorruptionCore.MaxByte : long.MaxValue;
+            var mutated = StashTools.Mutate(lines, (double)MutatePercentNumericUpDown.Value, SelectedMutateMode, (long)MutateAmountNumericUpDown.Value, maxOffset, _rnd, out int changed);
+            if (changed == 0)
+            {
+                MessageBox.Show("Nothing was mutated. Only byte entries ([x] File(i).SET(v)) can be mutated.", "Mutate", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return false;
+            }
+            SetLines(mutated);
+            TraceLogger.Log($"Stash Editor: mutated {changed} of {lines.Count} stash entries ({MutateModeComboBox.Text}).");
+            return true;
+        }
+
+        private void MutateBtn_Click(object? sender, EventArgs e)
+        {
+            MutateList();
+        }
+
+        private void MutateCorruptBtn_Click(object? sender, EventArgs e)
+        {
+            //The mutation is saved as a new stash file so the original corruption is kept
+            if (Program.Form.CorruptionQueueChkbox.Checked)
+            {
+                MessageBox.Show("Corruption queue is enabled. Please disable it and select a single file before corrupting.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+            if (!MutateList()) return;
+            string path = SaveNewStashFile();
+            Program.Form.CorruptUsingStashFile(path);
+        }
+
+        private void AppendStashBtn_Click(object? sender, EventArgs e)
+        {
+            Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+            OpenFileDialog.InitialDirectory = IOManager.CorruptionStashDirectory;
+            if (OpenFileDialog.ShowDialog() == DialogResult.Cancel) return;
+            try
+            {
+                var added = new List<string>();
+                foreach (var raw in File.ReadLines(OpenFileDialog.FileName))
+                {
+                    string line = raw.Trim();
+                    if (line.Length == 0) continue;
+                    if (!StashParser.IsValidStashLine(line))
+                    {
+                        MessageBox.Show($"This file is not a valid stash file ('{line}').", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    added.Add(line);
+                }
+                stashListbox.BeginUpdate();
+                stashListbox.Items.AddRange([.. added.Cast<object>()]);
+                stashListbox.EndUpdate();
+                TraceLogger.Log($"Stash Editor: appended {added.Count} entries from {Path.GetFileName(OpenFileDialog.FileName)}.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Error loading stash", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void SortStashBtn_Click(object? sender, EventArgs e)
+        {
+            SetLines(StashTools.SortByAddress(CurrentLines()));
+        }
+
+        private void DedupeStashBtn_Click(object? sender, EventArgs e)
+        {
+            var result = StashTools.RemoveDuplicates(CurrentLines(), out int removed);
+            SetLines(result);
+            MessageBox.Show($"Removed {removed} entries that were overwritten by a later entry for the same address.", "Remove duplicates", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         public void AttemptStashLoad(string fileloc)
         {
@@ -84,7 +190,8 @@ namespace LunarROMCorruptor
             }
             while (stashListbox.SelectedItems.Count > 0)
             {
-                stashListbox.Items.Remove(stashListbox.SelectedItems[0]);
+                if (stashListbox.SelectedItems[0] == null) break;
+                stashListbox.Items.Remove(stashListbox.SelectedItems[0]!);
             }
         }
 
@@ -119,7 +226,8 @@ namespace LunarROMCorruptor
             }
             while (RemovedItemslstbx.SelectedItems.Count > 0)
             {
-                RemovedItemslstbx.Items.Remove(RemovedItemslstbx.SelectedItems[0]);
+                if (RemovedItemslstbx.SelectedItems[0] == null) break;
+                RemovedItemslstbx.Items.Remove(RemovedItemslstbx.SelectedItems[0]!);
             }
         }
 
@@ -127,7 +235,8 @@ namespace LunarROMCorruptor
         {
             while (RemovedItemslstbx.SelectedItems.Count > 0)
             {
-                RemovedItemslstbx.Items.Remove(RemovedItemslstbx.SelectedItems[0]);
+                if (RemovedItemslstbx.SelectedItems[0] == null) break;
+                RemovedItemslstbx.Items.Remove(RemovedItemslstbx.SelectedItems[0]!);
             }
         }
 

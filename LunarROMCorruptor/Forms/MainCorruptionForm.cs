@@ -50,6 +50,7 @@ namespace LunarROMCorruptor
         public readonly ManualEngineControl ManualEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly ExclusionEngineControl ExclusionEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly SourceCodeEngineControl SourceCodeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly DatamoshEngineControl DatamoshEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly BlocksEngineControl BlocksEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public int MainSelectedProcessID = 999999;
 
@@ -88,6 +89,8 @@ namespace LunarROMCorruptor
             {
                 TraceLogger.OnLogEntryAdded -= OnTraceLogEntryAdded;
                 CorruptionCore.ResetSession();
+                CorruptionCore.ResetQueueSession();
+                CorruptionHistory.Clear();
             };
         }
 
@@ -134,6 +137,9 @@ namespace LunarROMCorruptor
             {
                 TraceLogger.Log($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. {ex}", StatusSeverityType.Error, true);
             }
+            CorruptionHistory.HistoryDirectory = Path.Combine(Application.StartupPath, "CorruptionHistory");
+            CorruptionHistory.Clear(); //History is per session
+            CorruptionHistoryBtn.Click += CorruptionHistoryBtn_Click;
             CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
             AllowDrop = true;
             BrowseEmulatorbutton.Enabled = false;
@@ -384,6 +390,11 @@ namespace LunarROMCorruptor
                     ExclusionEngineFrame.LoadAddresses(); //The loaded file may have changed since the profile was last shown
                     break;
 
+                case CorruptionEngineType.DatamoshEngine:
+                    newControl = DatamoshEngineFrame;
+                    newControl.Name = "DatamoshEngineControl";
+                    break;
+
                 case CorruptionEngineType.BlocksEngine:
                     newControl = BlocksEngineFrame;
                     newControl.Name = "BlocksEngineControl";
@@ -446,6 +457,7 @@ namespace LunarROMCorruptor
                     case CorruptionEngineType.VectorEngine: settings.Vector = VectorEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.SourceCodeEngine: settings.SourceCode = SourceCodeEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.BlocksEngine: settings.Blocks = BlocksEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.DatamoshEngine: settings.Datamosh = DatamoshEngineFrame.GetSettings(); break;
                 }
             }
             catch (InvalidOperationException ex)
@@ -593,7 +605,7 @@ namespace LunarROMCorruptor
             {
                 EndBusy();
             }
-            TraceLogger.Log($"Queue corruption finished: {succeeded} file(s) corrupted, {failed} failed{(overall == CorruptionResult.Cancelled ? ", cancelled by the user" : "")}.", failed > 0 ? StatusSeverityType.Warning : StatusSeverityType.Information, failed > 0);
+            TraceLogger.Log($"Queue corruption finished (each file was restored to its original first): {succeeded} file(s) corrupted, {failed} failed{(overall == CorruptionResult.Cancelled ? ", cancelled by the user" : "")}.", failed > 0 ? StatusSeverityType.Warning : StatusSeverityType.Information, failed > 0);
             ResetMultiFileUI();
             if (overall == CorruptionResult.Cancelled) return overall;
             if (succeeded == 0)
@@ -706,7 +718,8 @@ namespace LunarROMCorruptor
             if (settings == null) return null;
 
             string outputPath = SaveasTxt.Text;
-            bool recordStash = EnableStashSavesChkbox.Checked;
+            string sourcePath = CorruptionCore.SourcePath!;
+            string engineName = EngineParser.GetEngineDisplayName(settings.Engine);
             StashBytesList.Items.Clear();
 
             BeginBusy("Corrupting");
@@ -715,7 +728,14 @@ namespace LunarROMCorruptor
             {
                 var token = _corruptionCts!.Token;
                 var progress = CreateProgress("Corrupting");
-                result = await Task.Run(() => CorruptionCore.StartCorruption(settings, outputPath, recordStash, token, progress));
+                result = await Task.Run(() =>
+                {
+                    //The stash is always recorded so the corruption history works, the stash checkbox only controls the stash list/saving
+                    var r = CorruptionCore.StartCorruption(settings, outputPath, true, token, progress);
+                    if (r == CorruptionResult.Success)
+                        CorruptionHistory.Add(CorruptionCore.Stash, engineName, sourcePath);
+                    return r;
+                });
             }
             finally
             {
@@ -852,6 +872,27 @@ namespace LunarROMCorruptor
         private async void Restorefilebtn_Click(object sender, EventArgs e)
         {
             if (_busy) return;
+            if (CorruptionQueueChkbox.Checked)
+            {
+                //Queue mode: every queue file that LRC corrupted is put back to its original
+                if (!CorruptionCore.HasUnrestoredQueueChanges)
+                {
+                    MessageBox.Show("None of the queue files are currently corrupted by LRC, there is nothing to restore.", $"{nameof(LunarROMCorruptor)} - Restore", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+                BeginBusy("Restoring queue");
+                int count;
+                try
+                {
+                    count = await Task.Run(CorruptionCore.RestoreQueueFiles);
+                }
+                finally
+                {
+                    EndBusy();
+                }
+                MessageBox.Show($"{count} queue file(s) restored to their originals.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             if (!CorruptionCore.IsLoaded)
             {
                 TraceLogger.Log("Attempted to restore but no file is loaded. Please load a file before attempting to restore.", StatusSeverityType.Error, true);
@@ -873,6 +914,57 @@ namespace LunarROMCorruptor
                 MessageBox.Show("ROM restored successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 UpdateByteViewIfEnabled();
             }
+        }
+
+        /// <summary>
+        /// Shows the last corruptions with options to re-apply them, save them to the stash list or open them in the stash editor.
+        /// </summary>
+        private void CorruptionHistoryBtn_Click(object? sender, EventArgs e)
+        {
+            var menu = new ContextMenuStrip();
+            var entries = CorruptionHistory.Entries;
+            if (entries.Count == 0)
+            {
+                menu.Items.Add(new ToolStripMenuItem($"No corruptions yet (the last {CorruptionHistory.MaxEntries} are kept)") { Enabled = false });
+            }
+            for (int k = 0; k < entries.Count; k++)
+            {
+                var entry = entries[k];
+                var item = new ToolStripMenuItem($"#{k + 1}  {entry}");
+                item.DropDownItems.Add("Re-apply this corruption", null, (_, _) => ReapplyHistoryEntry(entry));
+                item.DropDownItems.Add("Save to stash list", null, (_, _) =>
+                {
+                    if (CorruptionHistory.SaveToStashList(entry) != null)
+                        IOManager.RefreshCorruptionStashList(StashFileList);
+                });
+                item.DropDownItems.Add("Open in Stash Editor", null, (_, _) =>
+                {
+                    if (_stashEditor == null || _stashEditor.IsDisposed)
+                        _stashEditor = new StashEditor();
+                    _stashEditor.AttemptStashLoad(entry.StashPath);
+                    _stashEditor.ShowDialog();
+                });
+                item.Enabled = !_busy && File.Exists(entry.StashPath);
+                menu.Items.Add(item);
+            }
+            menu.Closed += (_, _) => BeginInvoke(menu.Dispose);
+            menu.Show(CorruptionHistoryBtn, new Point(0, CorruptionHistoryBtn.Height));
+        }
+
+        private void ReapplyHistoryEntry(CorruptionHistoryEntry entry)
+        {
+            if (CorruptionQueueChkbox.Checked)
+            {
+                TraceLogger.Log("Corruption history can only be re-applied in single file mode.", StatusSeverityType.Warning, true);
+                return;
+            }
+            if (!CorruptionCore.PathsEqual(entry.SourcePath, CorruptionCore.SourcePath) &&
+                MessageBox.Show($"This corruption was made for {Path.GetFileName(entry.SourcePath)}, but {Path.GetFileName(CorruptionCore.SourcePath ?? "(no file)")} is loaded. Apply it anyway?",
+                    $"{nameof(LunarROMCorruptor)} - Corruption History", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+            {
+                return;
+            }
+            CorruptUsingStashFile(entry.StashPath);
         }
 
         private void TransferStash_Click(object sender, EventArgs e) //This saves the stash
@@ -1092,8 +1184,7 @@ namespace LunarROMCorruptor
             //Disable the ability to change the checkboxes
             EnableStashSavesChkbox.Enabled = !CorruptionQueueChkbox.Checked;
             FilesaveEnableAutoSaves.Enabled = !CorruptionQueueChkbox.Checked;
-            //Disable restore button
-            Restorefilebtn.Enabled = !CorruptionQueueChkbox.Checked;
+            //Restore works in both modes (queue files are journaled and restored before every corruption)
             //Disable corrupt using stash file
             Corruptusingstashbtn.Enabled = !CorruptionQueueChkbox.Checked;
             //Disable the save as button
@@ -1278,7 +1369,7 @@ namespace LunarROMCorruptor
 
         private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\").", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\") and the Datamosh Engine as File(offset).FRAME(frame).SET(DROP/REPLACE/REPEAT,n).{Environment.NewLine}{Environment.NewLine}Corruption History keeps the stash of the last {CorruptionHistory.MaxEntries} corruptions, so you can re-apply one or save it to the stash list. The Stash Editor's Mutate tool makes variations of a corruption you like.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteModeHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -1612,6 +1703,17 @@ namespace LunarROMCorruptor
                 }
                 if (answer == DialogResult.Yes)
                     CorruptionCore.RestoreROM(CorruptionCore.SourcePath);
+            }
+            if (CorruptionCore.HasUnrestoredQueueChanges)
+            {
+                var answer = MessageBox.Show("Some corruption queue files are still corrupted.\n\nRestore them to their originals before exiting? (The undo data is deleted when LRC closes.)", $"{nameof(LunarROMCorruptor)} - Restore queue files?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                if (answer == DialogResult.Cancel)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                if (answer == DialogResult.Yes)
+                    CorruptionCore.RestoreQueueFiles();
             }
         }
 

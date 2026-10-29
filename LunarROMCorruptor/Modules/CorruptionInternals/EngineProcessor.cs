@@ -46,6 +46,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public VectorEngine.Settings? Vector;
         public SourceCodeEngine.Settings? SourceCode;
         public BlocksEngine.Settings? Blocks;
+        public DatamoshEngine.Settings? Datamosh;
 
         /// <summary>
         /// Returns a copy with the byte range clamped to a file of the given length (used by the corruption queue where every file has a different size).
@@ -163,7 +164,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     BlocksEngine.Run(ctx, settings.Blocks ?? throw new InvalidOperationException("Blocks Engine settings missing."));
                     break;
                 case CorruptionEngineType.SourceCodeEngine:
-                    throw new InvalidOperationException("The Source Code Engine is a text engine and can't be run by the byte engine processor.");
+                case CorruptionEngineType.DatamoshEngine:
+                    throw new InvalidOperationException($"The {EngineParser.GetEngineDisplayName(settings.Engine)} rewrites the whole file and can't be run by the byte engine processor.");
                 default:
                     throw new InvalidOperationException($"Corruption engine not found ({settings.Engine}). Corruption has been aborted to prevent unwanted corruption.");
             }

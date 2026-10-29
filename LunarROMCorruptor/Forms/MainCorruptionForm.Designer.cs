@@ -69,6 +69,7 @@
             Intensity = new NumericUpDown();
             IntensityTrackbar = new TrackBar();
             StashBytesList = new ListBox();
+            CorruptionHistoryBtn = new Button();
             EnableStashSavesChkbox = new CheckBox();
             StashFileList = new ListBox();
             StashEditorbtn = new Button();
@@ -360,7 +361,7 @@
             CorruptionEngineComboBox.Font = new Font("Tahoma", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
-            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Source Code Engine" });
+            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Datamosh Engine", "Source Code Engine" });
             CorruptionEngineComboBox.Location = new Point(407, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
@@ -403,6 +404,7 @@
             FileCorruptionTab.Controls.Add(RandomByteCorruptRadioBtn);
             FileCorruptionTab.Controls.Add(CorruptionParametersPanel);
             FileCorruptionTab.Controls.Add(StashBytesList);
+            FileCorruptionTab.Controls.Add(CorruptionHistoryBtn);
             FileCorruptionTab.Controls.Add(EnableStashSavesChkbox);
             FileCorruptionTab.Controls.Add(StashFileList);
             FileCorruptionTab.Controls.Add(StashEditorbtn);
@@ -784,6 +786,21 @@
             IntensityTrackbar.Value = 1;
             IntensityTrackbar.Scroll += IntensityTrackbar_Scroll;
             // 
+            // CorruptionHistoryBtn
+            // 
+            CorruptionHistoryBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CorruptionHistoryBtn.BackColor = Color.FromArgb(52, 60, 111);
+            CorruptionHistoryBtn.FlatAppearance.BorderSize = 0;
+            CorruptionHistoryBtn.FlatStyle = FlatStyle.Flat;
+            CorruptionHistoryBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            CorruptionHistoryBtn.Location = new Point(384, 257);
+            CorruptionHistoryBtn.Margin = new Padding(2, 3, 2, 3);
+            CorruptionHistoryBtn.Name = "CorruptionHistoryBtn";
+            CorruptionHistoryBtn.Size = new Size(134, 27);
+            CorruptionHistoryBtn.TabIndex = 180;
+            CorruptionHistoryBtn.Text = "Corruption History ▾";
+            CorruptionHistoryBtn.UseVisualStyleBackColor = false;
+            // 
             // StashBytesList
             // 
             StashBytesList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
@@ -797,7 +814,7 @@
             StashBytesList.Location = new Point(384, 25);
             StashBytesList.Margin = new Padding(2, 3, 2, 3);
             StashBytesList.Name = "StashBytesList";
-            StashBytesList.Size = new Size(134, 259);
+            StashBytesList.Size = new Size(134, 229);
             StashBytesList.TabIndex = 158;
             // 
             // EnableStashSavesChkbox
@@ -1944,6 +1961,7 @@
         private System.Windows.Forms.Label CorruptionEnginelbl;
         internal System.Windows.Forms.TabPage FileCorruptionTab;
         internal System.Windows.Forms.ListBox StashBytesList;
+        internal System.Windows.Forms.Button CorruptionHistoryBtn;
         internal System.Windows.Forms.Button StashEditorbtn;
         internal System.Windows.Forms.Button Corruptusingstashbtn;
         internal System.Windows.Forms.Button RefreshStashBtn;

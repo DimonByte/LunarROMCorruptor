@@ -200,7 +200,7 @@
             BlocksHelpLbl.ForeColor = Color.Silver;
             BlocksHelpLbl.Location = new Point(24, 150);
             BlocksHelpLbl.Size = new Size(600, 110);
-            BlocksHelpLbl.Text = "Works on whole blocks instead of single bytes, like pixel sorting and data moshing in glitch art. SORT orders the elements by value, REVERSE/SHUFFLE/ROTATE move them around, SMEAR repeats one element across the block and ECHO mixes the block with the data that came earlier. Intensity = number of random blocks, Every Nth = every Nth block from the start byte. Tip: use ByteView to find image/audio data and drag over it to target it.";
+            BlocksHelpLbl.Text = "Works on whole blocks instead of single bytes, like pixel sorting and data moshing in glitch art. SORT orders the elements by value, REVERSE/SHUFFLE/ROTATE move them around, SMEAR repeats one element across the block and ECHO mixes the block with the data that came earlier. Intensity = number of random blocks, Every Nth = every Nth block from the start byte. Tip: use ByteView to find image/audio data and drag over it to target it. For compressed video (MP4/AVI) use the Datamosh Engine instead, Blocks only gives a datamosh look on uncompressed video or raw images.";
             BlocksHelpLbl.Name = "BlocksHelpLbl";
             BlocksHelpLbl.TabIndex = 11;
             // 

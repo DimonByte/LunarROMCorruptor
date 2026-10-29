@@ -381,4 +381,114 @@ namespace LunarROMCorruptor.Modules
             return !fileName.Any(InvalidChars.Contains);
         }
     }
+
+    public sealed class CorruptionHistoryEntry
+    {
+        public required string StashPath;
+        public required string SourcePath;
+        public required string EngineName;
+        public DateTime Time;
+        public long Changes;
+
+        public override string ToString() => $"{Time:HH:mm:ss}  {EngineName} ({Changes:N0} changes) - {Path.GetFileName(SourcePath)}";
+    }
+
+    /// <summary>
+    /// Keeps the stash of the last few corruptions so a previous corruption can be re-applied or saved later.
+    /// History is only kept for the current session (the folder is cleared when LRC starts and closes).
+    /// </summary>
+    public static class CorruptionHistory
+    {
+        public const int MaxEntries = 3;
+        public const long MaxStashEntries = 2_000_000; //Bigger stashes aren't written to the history (they'd be hundreds of MB)
+        private static readonly Lock _lock = new();
+        private static readonly List<CorruptionHistoryEntry> _entries = []; //Newest first
+        public static string HistoryDirectory = Path.Combine(AppContext.BaseDirectory, "CorruptionHistory");
+
+        public static IReadOnlyList<CorruptionHistoryEntry> Entries
+        {
+            get
+            {
+                lock (_lock) return [.. _entries];
+            }
+        }
+
+        /// <summary>
+        /// Saves the stash of a corruption that just finished. Safe to call from a background thread.
+        /// </summary>
+        public static CorruptionHistoryEntry? Add(StashLog stash, string engineName, string sourcePath)
+        {
+            if (stash.Count == 0) return null;
+            if (stash.Count > MaxStashEntries || stash.Overflowed)
+            {
+                TraceLogger.Log($"This corruption changed {stash.Count:N0} entries, which is too large to keep in the corruption history.", StatusSeverityType.Warning);
+                return null;
+            }
+            try
+            {
+                Directory.CreateDirectory(HistoryDirectory);
+                string path = Path.Combine(HistoryDirectory, $"history-{DateTime.Now:HHmmss}-{Guid.NewGuid():N}.stash");
+                stash.WriteTo(path);
+                var entry = new CorruptionHistoryEntry { StashPath = path, SourcePath = sourcePath, EngineName = engineName, Time = DateTime.Now, Changes = stash.Count };
+                lock (_lock)
+                {
+                    _entries.Insert(0, entry);
+                    while (_entries.Count > MaxEntries)
+                    {
+                        var old = _entries[^1];
+                        _entries.RemoveAt(_entries.Count - 1);
+                        try { File.Delete(old.StashPath); } catch { }
+                    }
+                }
+                TraceLogger.Log($"Corruption saved to history: {entry}");
+                return entry;
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to save the corruption to the history: {ex.Message}", StatusSeverityType.Warning);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Copies a history entry into the stash list folder so it's kept permanently. Returns the new file path.
+        /// </summary>
+        public static string? SaveToStashList(CorruptionHistoryEntry entry)
+        {
+            try
+            {
+                Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+                string name = $"{Path.GetFileNameWithoutExtension(entry.SourcePath)}-history-{entry.Time:yyyyMMdd-HHmmss}.stash";
+                string path = Path.Combine(IOManager.CorruptionStashDirectory, name);
+                File.Copy(entry.StashPath, path, true);
+                TraceLogger.Log($"History entry saved to the stash list as {name}");
+                return path;
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to save the history entry: {ex.Message}", StatusSeverityType.Error, true);
+                return null;
+            }
+        }
+
+        public static void Clear()
+        {
+            lock (_lock)
+            {
+                _entries.Clear();
+                try
+                {
+                    if (Directory.Exists(HistoryDirectory))
+                    {
+                        foreach (var file in Directory.GetFiles(HistoryDirectory, "history-*.stash"))
+                            File.Delete(file);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Unable to clear the corruption history folder: {ex.Message}", StatusSeverityType.Warning);
+                }
+            }
+        }
+    }
 }

@@ -61,6 +61,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
         private static OutputState? _output;
         private static InPlaceJournal? _journal;
+        private static readonly Dictionary<string, InPlaceJournal> _queueJournals = new(StringComparer.OrdinalIgnoreCase); //Undo journals for corruption queue files
         private static readonly Lock _sessionLock = new();
 
         private sealed class OutputState
@@ -102,6 +103,68 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         /// True when the loaded file has been corrupted in place and hasn't been restored yet.
         /// </summary>
         public static bool HasUnrestoredInPlaceChanges => _journal != null && _journal.HasChanges;
+
+        /// <summary>
+        /// True when at least one corruption queue file is currently corrupted and can be restored.
+        /// </summary>
+        public static bool HasUnrestoredQueueChanges
+        {
+            get
+            {
+                lock (_sessionLock)
+                    return _queueJournals.Values.Any(j => j.HasChanges);
+            }
+        }
+
+        private static InPlaceJournal GetQueueJournal(string filePath)
+        {
+            string full = Path.GetFullPath(filePath);
+            if (!_queueJournals.TryGetValue(full, out var journal))
+            {
+                journal = new InPlaceJournal(full);
+                _queueJournals[full] = journal;
+            }
+            return journal;
+        }
+
+        /// <summary>
+        /// Restores every corruption queue file back to its original content. Returns how many files were restored.
+        /// </summary>
+        public static int RestoreQueueFiles()
+        {
+            int restored = 0;
+            lock (_sessionLock)
+            {
+                foreach (var (path, journal) in _queueJournals)
+                {
+                    if (!journal.HasChanges) continue;
+                    try
+                    {
+                        journal.RevertAll();
+                        restored++;
+                    }
+                    catch (Exception ex)
+                    {
+                        TraceLogger.Log($"Unable to restore queue file {path}: {ex.Message}", StatusSeverityType.Error);
+                    }
+                }
+            }
+            TraceLogger.Log($"Restored {restored} corruption queue file(s) to their originals.");
+            return restored;
+        }
+
+        /// <summary>
+        /// Deletes the undo journals of the corruption queue (called when LRC closes).
+        /// </summary>
+        public static void ResetQueueSession()
+        {
+            lock (_sessionLock)
+            {
+                foreach (var journal in _queueJournals.Values)
+                    journal.Dispose();
+                _queueJournals.Clear();
+            }
+        }
 
         public static string FormatSize(long bytes, out double value, out string unit)
         {
@@ -244,7 +307,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             Stash.Enabled = recordStash;
             var rnd = new Random();
 
-            if (settings.Engine == CorruptionEngineType.SourceCodeEngine)
+            if (settings.Engine is CorruptionEngineType.SourceCodeEngine or CorruptionEngineType.DatamoshEngine)
             {
                 return RunTextEngine(settings, outputPath, rnd, token, progress);
             }
@@ -275,13 +338,31 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             }
         }
 
+        /// <summary>
+        /// Engines that rewrite the whole file (the file length can change): Source Code Engine and Datamosh Engine.
+        /// </summary>
+        private static void RunRewriteEngine(CorruptionSettings settings, CorruptionContext ctx, string inputPath, string outputPath)
+        {
+            switch (settings.Engine)
+            {
+                case CorruptionEngineType.SourceCodeEngine:
+                    SourceCodeEngine.Run(settings.SourceCode ?? throw new InvalidOperationException("Source Code Engine settings missing."), ctx, inputPath, outputPath);
+                    break;
+                case CorruptionEngineType.DatamoshEngine:
+                    DatamoshEngine.Run(settings.Datamosh ?? throw new InvalidOperationException("Datamosh Engine settings missing."), ctx, inputPath, outputPath);
+                    break;
+                default:
+                    throw new InvalidOperationException($"{settings.Engine} isn't a rewrite engine.");
+            }
+        }
+
         private static CorruptionResult RunTextEngine(CorruptionSettings settings, string outputPath, Random rnd, CancellationToken token, IProgress<double>? progress)
         {
             try
             {
                 PrepareTextOutput(outputPath);
                 var ctx = new CorruptionContext(null, settings, rnd, Stash.Enabled ? Stash : null, token, progress);
-                SourceCodeEngine.Run(settings.SourceCode!, ctx, SourcePath!, outputPath);
+                RunRewriteEngine(settings, ctx, SourcePath!, outputPath);
                 FinishTextOutput(outputPath);
                 return CorruptionResult.Success;
             }
@@ -293,14 +374,15 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Source Code Engine failed: {ex.Message}\n{ex}", StatusSeverityType.Error, true);
+                TraceLogger.Log($"{EngineParser.GetEngineDisplayName(settings.Engine)} failed: {ex.Message}\n{ex}", StatusSeverityType.Error, true);
                 FinishTextOutput(outputPath);
                 return CorruptionResult.Failed;
             }
         }
 
         /// <summary>
-        /// Corruption queue mode: corrupts a file directly in place. There is no undo for queue corruption (same as before).
+        /// Corruption queue mode: corrupts a file in place. Like in-place single file corruption, the original bytes are journaled first,
+        /// so every queue corruption starts from the original files and Restore puts all the queue files back.
         /// </summary>
         public static CorruptionResult CorruptFileInPlace(CorruptionSettings settings, string filePath, bool attemptOverride, CancellationToken token, IProgress<double>? progress)
         {
@@ -310,22 +392,41 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             if (!EnsureWritable(filePath, attemptOverride))
                 return CorruptionResult.Failed;
 
-            var rnd = new Random();
-            if (settings.Engine == CorruptionEngineType.SourceCodeEngine)
+            InPlaceJournal journal;
+            try
             {
+                lock (_sessionLock)
+                {
+                    journal = GetQueueJournal(filePath);
+                    journal.RevertAll(); //Restore the original before corrupting again
+                }
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to restore {filePath} to its original before corrupting: {ex.Message}", StatusSeverityType.Error);
+                return CorruptionResult.Failed;
+            }
+
+            var rnd = new Random();
+            if (settings.Engine is CorruptionEngineType.SourceCodeEngine or CorruptionEngineType.DatamoshEngine)
+            {
+                //Text and video engines change the file length, so a full backup is kept instead of page journaling
                 try
                 {
+                    lock (_sessionLock) journal.EnsureFullBackup();
                     var ctx = new CorruptionContext(null, settings, rnd, null, token, progress);
-                    SourceCodeEngine.Run(settings.SourceCode!, ctx, filePath, filePath);
+                    RunRewriteEngine(settings, ctx, filePath, filePath);
                     return CorruptionResult.Success;
                 }
                 catch (OperationCanceledException)
                 {
+                    lock (_sessionLock) journal.RevertAll();
                     return CorruptionResult.Cancelled;
                 }
                 catch (Exception ex)
                 {
-                    TraceLogger.Log($"Source Code Engine failed for {filePath}: {ex.Message}", StatusSeverityType.Error);
+                    TraceLogger.Log($"{EngineParser.GetEngineDisplayName(settings.Engine)} failed for {filePath}: {ex.Message}", StatusSeverityType.Error);
+                    try { lock (_sessionLock) journal.RevertAll(); } catch { }
                     return CorruptionResult.Failed;
                 }
             }
@@ -334,6 +435,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             try
             {
                 buffer = FileBuffer.OpenReadWrite(filePath);
+                buffer.PageFirstModified = journal.Record;
                 var fileSettings = settings.ClampTo(buffer.Length);
                 var ctx = new CorruptionContext(buffer, fileSettings, rnd, null, token, progress);
                 EngineProcessor.Run(fileSettings, ctx);
@@ -342,13 +444,18 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             }
             catch (OperationCanceledException)
             {
-                TraceLogger.Log($"Queue corruption cancelled. {filePath} may be partially corrupted.", StatusSeverityType.Warning);
-                try { buffer?.Flush(); } catch { }
+                buffer?.Dispose(flush: false);
+                buffer = null;
+                lock (_sessionLock) journal.RevertAll();
+                TraceLogger.Log($"Queue corruption cancelled. {filePath} has been restored to its original.", StatusSeverityType.Warning);
                 return CorruptionResult.Cancelled;
             }
             catch (Exception ex)
             {
                 TraceLogger.Log($"Failed to corrupt {filePath}: {ex.Message}\n{ex}", StatusSeverityType.Error);
+                buffer?.Dispose(flush: false);
+                buffer = null;
+                try { lock (_sessionLock) journal.RevertAll(); } catch { }
                 return CorruptionResult.Failed;
             }
             finally
@@ -370,6 +477,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
             var byteEntries = new List<(long Offset, byte Value)>();
             var textEntries = new List<StashParser.VarLineEntry>();
+            var frameEntries = new List<StashParser.FrameEntry>();
             long lineNumber = 0;
             try
             {
@@ -391,6 +499,10 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     {
                         textEntries.Add(entry);
                     }
+                    else if (StashParser.TryParseFrame(line, out var frame))
+                    {
+                        frameEntries.Add(frame);
+                    }
                     else
                     {
                         TraceLogger.Log($"Stash line {lineNumber} is invalid: '{line}'. Corruption has been aborted.", StatusSeverityType.Error, true);
@@ -406,6 +518,25 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
             Stash.Clear();
             Stash.Enabled = true;
+
+            if (frameEntries.Count > 0)
+            {
+                if (byteEntries.Count > 0 || textEntries.Count > 0)
+                    TraceLogger.Log("This stash contains Datamosh (FRAME) entries and other entries. Only the FRAME entries will be applied.", StatusSeverityType.Warning);
+                try
+                {
+                    PrepareTextOutput(outputPath);
+                    DatamoshEngine.ApplyStash(frameEntries, SourcePath, outputPath, Stash);
+                    FinishTextOutput(outputPath);
+                    return CorruptionResult.Success;
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Failed to apply Datamosh stash: {ex.Message}\n{ex}", StatusSeverityType.Error, true);
+                    FinishTextOutput(outputPath);
+                    return CorruptionResult.Failed;
+                }
+            }
 
             if (textEntries.Count > 0)
             {
@@ -1167,6 +1298,26 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
     public static partial class StashParser
     {
         public readonly record struct VarLineEntry(long Offset, string Name, int Line, string Value);
+        public readonly record struct FrameEntry(long Offset, int FrameIndex, DatamoshEngine.FrameAction Action);
+
+        [GeneratedRegex(@"^\[x\] File\((\d+)\)\.FRAME\((\d+)\)\.SET\((DROP|REPLACE|REPEAT,(\d+))\)$")]
+        private static partial Regex FrameLineRegex();
+
+        public static bool TryParseFrame(string line, out FrameEntry entry)
+        {
+            entry = default;
+            var m = FrameLineRegex().Match(line);
+            if (!m.Success || !long.TryParse(m.Groups[1].Value, out long offset) || !int.TryParse(m.Groups[2].Value, out int frame))
+                return false;
+            var action = m.Groups[3].Value switch
+            {
+                "DROP" => new DatamoshEngine.FrameAction(DatamoshEngine.ActionKind.Drop),
+                "REPLACE" => new DatamoshEngine.FrameAction(DatamoshEngine.ActionKind.Replace),
+                _ => new DatamoshEngine.FrameAction(DatamoshEngine.ActionKind.Repeat, int.TryParse(m.Groups[4].Value, out int n) ? Math.Clamp(n, 1, 1000) : 1)
+            };
+            entry = new FrameEntry(offset, frame, action);
+            return true;
+        }
 
         [GeneratedRegex(@"^\[x\] File\((\d+)\)\.SET\((\d+)\)$")]
         private static partial Regex ByteLineRegex();
@@ -1196,7 +1347,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             return true;
         }
 
-        public static bool IsValidStashLine(string line) => TryParseByte(line, out _, out _) || TryParseVarLine(line, out _);
+        public static bool IsValidStashLine(string line) => TryParseByte(line, out _, out _) || TryParseVarLine(line, out _) || TryParseFrame(line, out _);
 
         public static string Escape(string s)
         {
@@ -1233,6 +1384,111 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 }
             }
             return sb.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Stash tools used by the Stash Editor: mutate (make variations of a corruption), sort and remove duplicates.
+    /// Only byte entries ([x] File(i).SET(v)) are mutated, Source Code (VARLINE) and Datamosh (FRAME) entries are kept as they are.
+    /// </summary>
+    public static class StashTools
+    {
+        public enum MutateMode
+        {
+            RandomValue, //Give the byte a new random value
+            NudgeValue, //Add/subtract up to <amount> from the value
+            MoveAddress //Move the entry up to <amount> bytes forwards/backwards
+        }
+
+        public static List<string> Mutate(IReadOnlyList<string> lines, double percent, MutateMode mode, long amount, long maxOffset, Random rnd, out int changed)
+        {
+            var result = new List<string>(lines);
+            var byteLines = new List<(int Index, long Offset, byte Value)>();
+            for (int i = 0; i < result.Count; i++)
+            {
+                if (StashParser.TryParseByte(result[i], out long offset, out byte value))
+                    byteLines.Add((i, offset, value));
+            }
+            changed = 0;
+            if (byteLines.Count == 0) return result;
+
+            int count = (int)Math.Clamp(Math.Round(byteLines.Count * Math.Clamp(percent, 0, 100) / 100.0), 1, byteLines.Count);
+            amount = Math.Max(1, amount);
+            maxOffset = Math.Max(0, maxOffset);
+            //Partial Fisher-Yates so each entry is mutated at most once
+            var pool = byteLines.ToArray();
+            for (int n = 0; n < count; n++)
+            {
+                int j = rnd.Next(n, pool.Length);
+                (pool[n], pool[j]) = (pool[j], pool[n]);
+                var (index, offset, value) = pool[n];
+                switch (mode)
+                {
+                    case MutateMode.RandomValue:
+                        byte newValue;
+                        do { newValue = (byte)rnd.Next(256); } while (newValue == value);
+                        value = newValue;
+                        break;
+                    case MutateMode.NudgeValue:
+                        long delta = rnd.NextInt64(1, Math.Min(amount, 255) + 1) * (rnd.Next(2) == 0 ? 1 : -1);
+                        long nudged = value + delta;
+                        if (nudged < 0 || nudged > 255) nudged = value - delta; //Go the other way instead of clamping
+                        value = (byte)Math.Clamp(nudged, 0, 255);
+                        break;
+                    case MutateMode.MoveAddress:
+                        long move = rnd.NextInt64(1, amount + 1) * (rnd.Next(2) == 0 ? 1 : -1);
+                        long moved = offset + move;
+                        if (moved < 0 || moved > maxOffset) moved = offset - move;
+                        offset = Math.Clamp(moved, 0, maxOffset);
+                        break;
+                }
+                string line = StashParser.FormatByte(offset, value);
+                if (line != result[index]) changed++;
+                result[index] = line;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Sorts byte entries by address (entries for the same address keep their order, so the result of applying the stash doesn't change).
+        /// Other entries (VARLINE/FRAME) are kept first, in their original order.
+        /// </summary>
+        public static List<string> SortByAddress(IReadOnlyList<string> lines)
+        {
+            var others = new List<string>();
+            var bytes = new List<(long Offset, int Order, string Line)>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (StashParser.TryParseByte(lines[i], out long offset, out _)) bytes.Add((offset, i, lines[i]));
+                else others.Add(lines[i]);
+            }
+            return [.. others, .. bytes.OrderBy(b => b.Offset).ThenBy(b => b.Order).Select(b => b.Line)];
+        }
+
+        /// <summary>
+        /// Removes entries that are overwritten by a later entry for the same address (the result of applying the stash doesn't change).
+        /// </summary>
+        public static List<string> RemoveDuplicates(IReadOnlyList<string> lines, out int removed)
+        {
+            var lastIndex = new Dictionary<string, int>();
+            for (int i = 0; i < lines.Count; i++)
+                lastIndex[KeyOf(lines[i])] = i;
+            var result = new List<string>();
+            for (int i = 0; i < lines.Count; i++)
+            {
+                if (lastIndex[KeyOf(lines[i])] == i)
+                    result.Add(lines[i]);
+            }
+            removed = lines.Count - result.Count;
+            return result;
+        }
+
+        private static string KeyOf(string line)
+        {
+            if (StashParser.TryParseByte(line, out long offset, out _)) return "B" + offset;
+            if (StashParser.TryParseVarLine(line, out var v)) return "V" + v.Offset;
+            if (StashParser.TryParseFrame(line, out var f)) return "F" + f.Offset;
+            return "L" + line;
         }
     }
 }

@@ -40,7 +40,7 @@ namespace LunarROMCorruptor
     public partial class MainCorruptionForm : Form
     {
         private readonly Random rnd = new(); //Used for random number generation
-        private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} beta"; //"v1.0.4 - Build Number: " + 
+        private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version}"; //"v1.0.4 - Build Number: " + 
         readonly CorruptionQueueForm CorruptionQueueFormSettings = new(); //Creates the corruption queue form and then it will be read later by the main form.
         #region Corruption Engine Frames
         public readonly NightmareEngineControl NightmareEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
@@ -136,7 +136,7 @@ namespace LunarROMCorruptor
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. {ex}", StatusSeverityType.Error, true);
+                TraceLogger.Log($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. Please make an exception for LRC in your antivirus/ransomware protection software since LRC requires permission to edit files. Error: {ex.Message}", StatusSeverityType.Error, true);
             }
             CorruptionHistory.HistoryDirectory = Path.Combine(Application.StartupPath, "CorruptionHistory");
             CorruptionHistory.Clear(); //History is per session

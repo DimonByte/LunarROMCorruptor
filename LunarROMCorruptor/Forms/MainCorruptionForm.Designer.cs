@@ -112,6 +112,7 @@
             TraceLoggerTxtBox = new RichTextBox();
             SaveLogBtn = new Button();
             CorruptButtonPanel = new Panel();
+            CorruptionProgressBar = new ProgressBar();
             CorruptButton = new Button();
             SaveasTxt = new TextBox();
             FileSelectPanel = new Panel();
@@ -357,7 +358,7 @@
             CorruptionEngineComboBox.Font = new Font("Tahoma", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
-            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine" });
+            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Source Code Engine" });
             CorruptionEngineComboBox.Location = new Point(407, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
@@ -1429,12 +1430,24 @@
             CorruptButtonPanel.BackColor = Color.FromArgb(70, 70, 120);
             CorruptButtonPanel.BorderStyle = BorderStyle.FixedSingle;
             CorruptButtonPanel.Controls.Add(CorruptButton);
+            CorruptButtonPanel.Controls.Add(CorruptionProgressBar);
             CorruptButtonPanel.Dock = DockStyle.Bottom;
             CorruptButtonPanel.Location = new Point(0, 495);
             CorruptButtonPanel.Margin = new Padding(2, 3, 2, 3);
             CorruptButtonPanel.Name = "CorruptButtonPanel";
             CorruptButtonPanel.Size = new Size(758, 60);
             CorruptButtonPanel.TabIndex = 141;
+            // 
+            // CorruptionProgressBar
+            // 
+            CorruptionProgressBar.Dock = DockStyle.Bottom;
+            CorruptionProgressBar.Location = new Point(0, 52);
+            CorruptionProgressBar.Maximum = 1000;
+            CorruptionProgressBar.Name = "CorruptionProgressBar";
+            CorruptionProgressBar.Size = new Size(756, 6);
+            CorruptionProgressBar.Style = ProgressBarStyle.Continuous;
+            CorruptionProgressBar.TabIndex = 2;
+            CorruptionProgressBar.Visible = false;
             // 
             // CorruptButton
             // 
@@ -1914,6 +1927,7 @@
         internal System.Windows.Forms.Button Changesaveasbtn;
         internal System.Windows.Forms.Panel CorruptButtonPanel;
         public System.Windows.Forms.Button CorruptButton;
+        internal System.Windows.Forms.ProgressBar CorruptionProgressBar;
         internal System.Windows.Forms.Button Openfilebtn;
         internal System.Windows.Forms.Panel FileSelectPanel;
         internal System.Windows.Forms.OpenFileDialog EmulatorFileDialog;

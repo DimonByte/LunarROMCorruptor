@@ -20,6 +20,9 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+using LunarROMCorruptor.Modules.CorruptionInternals;
+using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
+
 namespace LunarROMCorruptor
 {
     public partial class NightmareEngineControl : UserControl
@@ -27,6 +30,16 @@ namespace LunarROMCorruptor
         public NightmareEngineControl()
         {
             InitializeComponent();
+        }
+
+        public NightmareEngine.Settings GetSettings()
+        {
+            var option = EngineParser.ParseCorruptionOptions(NightmareComboBox.Text) ?? throw new InvalidOperationException($"Invalid Nightmare Engine corruption type '{NightmareComboBox.Text}'.");
+            return new NightmareEngine.Settings
+            {
+                Option = option,
+                TiltAmount = (int)IncreDecrenumbnightmare.Value
+            };
         }
     }
 }

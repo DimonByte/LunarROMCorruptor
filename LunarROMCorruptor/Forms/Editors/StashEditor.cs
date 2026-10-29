@@ -21,13 +21,14 @@
 //SOFTWARE.
 
 using LunarROMCorruptor.Modules;
+using LunarROMCorruptor.Modules.CorruptionInternals;
 using System.Text;
 
 namespace LunarROMCorruptor
 {
     public partial class StashEditor : Form
     {
-        private string LoadedStashLocation;
+        private string? LoadedStashLocation;
         public StashEditor()
         {
             InitializeComponent();
@@ -36,46 +37,39 @@ namespace LunarROMCorruptor
         {
             try
             {
-                stashListbox.Items.Clear();
-                //Check if the file being loaded contains only text
-                if (File.ReadAllBytes(fileloc).All(b => b < 128))
+                var lines = new List<string>();
+                int lineNumber = 0;
+                foreach (var rawLine in File.ReadLines(fileloc))
                 {
-                    //If it does, load it as a text file
-                    foreach (var line in File.ReadLines(fileloc))
+                    lineNumber++;
+                    string line = rawLine.Trim();
+                    if (line.Length == 0) continue;
+                    //Accepts both "[x] File(i).SET(v)" and the Source Code Engine "[x] File(i).VARLINE("name",line).SET("value")" format
+                    if (!StashParser.IsValidStashLine(line))
                     {
-                        //If the line doesn't start with "[x] File" it's not a valid line
-                        if (!line.StartsWith("[x] File"))
-                        {
-                            MessageBox.Show("This file is not a valid stash file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
-                        else //passed checks
-                        {
-                            stashListbox.Items.Add(line);
-                            LoadedStashLocation = fileloc;
-                        }
+                        MessageBox.Show($"This file is not a valid stash file (line {lineNumber}: '{line}').", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
                     }
+                    lines.Add(line);
                 }
-                else
-                {
-                    MessageBox.Show("This file is not a valid stash file.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                }
+                stashListbox.BeginUpdate();
+                stashListbox.Items.Clear();
+                RemovedItemslstbx.Items.Clear();
+                stashListbox.Items.AddRange([.. lines]);
+                stashListbox.EndUpdate();
+                LoadedStashLocation = fileloc;
+                Text = $"Stash Editor - {Path.GetFileName(fileloc)}";
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.ToString());
+                MessageBox.Show(ex.Message, "Error loading stash", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void Openfilebtn_Click(object sender, EventArgs e)
         {
-            //Check if CorruptionStashList folder exists
-            if (!Directory.Exists(@"CorruptionStashList"))
-            {
-                //If it doesn't, create it
-                Directory.CreateDirectory(@"CorruptionStashList");
-            }
-            OpenFileDialog.InitialDirectory = Path.GetDirectoryName(Application.ExecutablePath + "/CorruptionStashList/");
+            Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+            OpenFileDialog.InitialDirectory = IOManager.CorruptionStashDirectory;
             if (OpenFileDialog.ShowDialog() != DialogResult.Cancel)
             {
                 AttemptStashLoad(OpenFileDialog.FileName);
@@ -96,19 +90,19 @@ namespace LunarROMCorruptor
 
         private void Remove50btn_Click(object sender, EventArgs e)
         {
-            try
-            {
-                int half = stashListbox.Items.Count / 2;
-                for (int i = 0; i <= half; i++)
-                {
-                    RemovedItemslstbx.Items.Add(stashListbox.Items[i]);
-                    stashListbox.Items.Remove(stashListbox.Items[i]);
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            //Moves the first half of the stash to the removed list (the old loop removed while indexing forward, so it skipped every other item)
+            int half = (stashListbox.Items.Count + 1) / 2;
+            if (half == 0) return;
+            var moved = new object[half];
+            for (int i = 0; i < half; i++)
+                moved[i] = stashListbox.Items[i];
+            stashListbox.BeginUpdate();
+            RemovedItemslstbx.BeginUpdate();
+            RemovedItemslstbx.Items.AddRange(moved);
+            for (int i = 0; i < half; i++)
+                stashListbox.Items.RemoveAt(0);
+            RemovedItemslstbx.EndUpdate();
+            stashListbox.EndUpdate();
         }
 
         private void Addbtn_Click(object sender, EventArgs e)
@@ -143,22 +137,28 @@ namespace LunarROMCorruptor
         }
         private string SaveNewStashFile()
         {
-            Program.Form.StashFileList.Items.Clear();
-            StringBuilder builder = new();
+            Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+            string path;
+            do
+            {
+                path = Path.Combine(IOManager.CorruptionStashDirectory, new Random().Next(1000, 999999999) + ".stash");
+            } while (File.Exists(path));
+            WriteStash(path);
+            IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
+            TraceLogger.Log(path + " - Saved to a brand new stash file.");
+            LoadedStashLocation = path;
+            return path;
+        }
+
+        private void WriteStash(string path)
+        {
+            using var writer = new StreamWriter(path, false, new UTF8Encoding(false));
             foreach (var listitem in stashListbox.Items)
             {
-                builder.Append(listitem);
-                builder.AppendLine();
+                writer.WriteLine(listitem);
             }
-
-            //var fileCount = Directory.GetFiles(Application.StartupPath + @"\CorruptionStashList\", "*.*", SearchOption.TopDirectoryOnly).Length;
-            //fileCount += 1
-            var rnd = new Random().Next(1000, 999999999);
-            File.WriteAllText(Application.StartupPath + @"\CorruptionStashList\" + rnd + ".stash", builder.ToString());
-            IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
-            Console.WriteLine(Application.StartupPath + @"\CorruptionStashList\" + rnd + ".stash" + " - Saved to a brand new stash file.");
-            return Application.StartupPath + @"\CorruptionStashList\" + rnd + ".stash";
         }
+
         private void SaveToExistingStashFile()
         {
             //Check if a stash file location is loaded first.
@@ -173,16 +173,17 @@ namespace LunarROMCorruptor
                 MessageBox.Show("Corruption queue is enabled. Please disable it and select a single file before corrupting.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
-            Program.Form.StashFileList.Items.Clear();
-            StringBuilder builder = new();
-            foreach (var listitem in stashListbox.Items)
+            try
             {
-                builder.Append(listitem);
-                builder.AppendLine();
+                WriteStash(LoadedStashLocation);
             }
-            File.WriteAllText(LoadedStashLocation, builder.ToString());
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to save the stash: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
-            Console.WriteLine(LoadedStashLocation + " - Saved to existing stash file.");
+            TraceLogger.Log(LoadedStashLocation + " - Saved to existing stash file.");
         }
         private void StashEditor_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -192,7 +193,13 @@ namespace LunarROMCorruptor
 
         private void Restorebtn_Click(object sender, EventArgs e)
         {
+            if (LoadedStashLocation == null || !File.Exists(LoadedStashLocation))
+            {
+                MessageBox.Show("No stash file is loaded.", $"Info - {nameof(LunarROMCorruptor)} ", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
             stashListbox.Items.Clear();
+            RemovedItemslstbx.Items.Clear();
             try
             {
                 foreach (var line in File.ReadLines(LoadedStashLocation))

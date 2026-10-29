@@ -115,12 +115,12 @@
             this.LocationStash.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
             this.LocationStash.Location = new System.Drawing.Point(70, 183);
             this.LocationStash.Maximum = new decimal(new int[] {
-            99999999,
-            0,
+            -727379969,
+            232,
             0,
             0});
             this.LocationStash.Minimum = new decimal(new int[] {
-            1,
+            0,
             0,
             0,
             0});

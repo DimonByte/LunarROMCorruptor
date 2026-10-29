@@ -34,12 +34,23 @@ namespace LunarROMCorruptor
             if (OpenFileDialog.ShowDialog() != DialogResult.Cancel)
             {
                 // Add each selected file to the list
-                foreach (string fileName in OpenFileDialog.FileNames)
-                {
-                    CorruptionQueueList.Items.Add(fileName);
-                }
+                AddFiles(OpenFileDialog.FileNames);
             }
         }
+        /// <summary>
+        /// Adds files to the queue, skipping duplicates.
+        /// </summary>
+        public void AddFiles(IEnumerable<string> files)
+        {
+            CorruptionQueueList.BeginUpdate();
+            foreach (var file in files)
+            {
+                if (!CorruptionQueueList.Items.Contains(file))
+                    CorruptionQueueList.Items.Add(file);
+            }
+            CorruptionQueueList.EndUpdate();
+        }
+
         private void SendFilestoCorruptorBTN_Click(object sender, EventArgs e)
         {
             //Check if there are no items in the list
@@ -50,12 +61,13 @@ namespace LunarROMCorruptor
             }
             else
             {
-                //for each item on the queue, check if the file size isn't bigger than 2gb
-                foreach (string file in CorruptionQueueList.Items)
+                //The old 2 GB limit is gone (files aren't loaded into memory anymore), just make sure every file still exists.
+                foreach (var item in CorruptionQueueList.Items)
                 {
-                    if (new FileInfo(file).Length > 2147483648)
+                    string file = item?.ToString() ?? "";
+                    if (!File.Exists(file))
                     {
-                        MessageBox.Show("File " + file + " is too big to be corrupted.", "File Too Big", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("File " + file + " doesn't exist anymore. Remove it from the queue first.", "File Not Found", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
                 }
@@ -72,10 +84,7 @@ namespace LunarROMCorruptor
             folderBrowserDialog1.SelectedPath = Application.StartupPath;
             if (folderBrowserDialog1.ShowDialog() != DialogResult.Cancel)
             {
-                foreach (string file in Directory.GetFiles(folderBrowserDialog1.SelectedPath))
-                {
-                    CorruptionQueueList.Items.Add(file);
-                }
+                AddFiles(Directory.GetFiles(folderBrowserDialog1.SelectedPath));
             }
         }
 
@@ -97,17 +106,21 @@ namespace LunarROMCorruptor
         {
             //Get the information from the file dragged.
             DragandDropICON.Hide();
-            string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (e.Data?.GetData(DataFormats.FileDrop) is not string[] files)
+                return;
             foreach (var path1 in files)
             {
-                //add files to the queue list
-                CorruptionQueueList.Items.Add(path1);
+                //add files to the queue list (folders add the files inside them)
+                if (Directory.Exists(path1))
+                    AddFiles(Directory.GetFiles(path1));
+                else
+                    AddFiles([path1]);
             }
         }
 
         private void CorruptionQueueForm_DragEnter(object sender, DragEventArgs e)
         {
-            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            if (e.Data != null && e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 DragandDropICON.BringToFront();
                 DragandDropICON.Show();

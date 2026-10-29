@@ -20,109 +20,52 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
-    internal class MergeEngine
+    public class MergeEngine
     {
-        private static readonly Random rnd = new();
-
-        public static byte[] CorruptByte(byte[] ROM, byte[] ROMMerge, CorruptionOptions CorruptionOption, long i)
+        public sealed class Settings
         {
-            if (Program.Form.MergeEngineFrame.ReplaceByteWithSamePos.Checked)
+            public string MergeFilePath = "";
+            public CorruptionOptions Option = CorruptionOptions.NONE; //NONE or RANGE
+            public bool SamePosition = true; //Use the merge file byte at the same position, otherwise a random merge file byte
+            public bool Mod256; //Use wrapping (mod 256) arithmetic instead of copying (NONE) / absolute difference (RANGE)
+        }
+
+        public static FileBuffer OpenMergeFile(Settings s)
+        {
+            if (string.IsNullOrWhiteSpace(s.MergeFilePath) || !File.Exists(s.MergeFilePath))
+                throw new FileNotFoundException("The Merge Engine file couldn't be found. Please select a merge file.", s.MergeFilePath);
+            var data = FileBuffer.OpenRead(s.MergeFilePath, 256);
+            if (data.Length == 0)
             {
-                if (Program.Form.MergeEngineFrame.Mod256MergeEnginechkbox.Checked)
-                {
-                    switch (CorruptionOption)
-                    {
-                        case CorruptionOptions.NONE:
-                            ROM[i] = (byte)(ROMMerge[i] % Byte.MaxValue + 1);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        case CorruptionOptions.RANGE:
-                            ROM[i] = (byte)Math.Abs(ROM[i] - ROMMerge[i] % byte.MaxValue + 1);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        default:
-                            if (MessageBox.Show("The Merge Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                            {
-                                Application.Exit();
-                            }
-                            break;
-                    }
-                }
-                else
-                {
-                    switch (CorruptionOption)
-                    {
-                        case CorruptionOptions.NONE:
-                            ROM[i] = ROMMerge[i];
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        case CorruptionOptions.RANGE:
-                            ROM[i] = (byte)Math.Abs(ROM[i] - ROMMerge[i]);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        default:
-                            if (MessageBox.Show("The Merge Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                            {
-                                Application.Exit();
-                            }
-                            break;
-                    }
-                }
+                data.Dispose();
+                throw new InvalidDataException("The Merge Engine file is empty.");
             }
-            else
+            return data;
+        }
+
+        public static void CorruptByte(CorruptionContext ctx, Settings s, FileBuffer merge, long i)
+        {
+            //Same position wraps around if the merge file is smaller than the file being corrupted (previously this crashed).
+            long mergeIndex = s.SamePosition ? i % merge.Length : ctx.Rnd.NextInt64(0, merge.Length);
+            byte mergeByte = merge[mergeIndex];
+            byte current = ctx.Get(i);
+
+            switch (s.Option)
             {
-                if (Program.Form.MergeEngineFrame.Mod256MergeEnginechkbox.Checked)
-                {
-                    switch (CorruptionOption)
-                    {
-                        case CorruptionOptions.NONE:
-                            ROM[i] = (byte)(ROMMerge[rnd.Next(0, ROMMerge.Length)] % Byte.MaxValue + 1);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
+                case CorruptionOptions.NONE:
+                    ctx.Set(i, s.Mod256 ? (byte)((current + mergeByte) & 0xFF) : mergeByte);
+                    break;
 
-                        case CorruptionOptions.RANGE:
-                            ROM[i] = (byte)Math.Abs(ROM[rnd.Next(0, ROMMerge.Length)] - ROMMerge[i] % byte.MaxValue + 1);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
+                case CorruptionOptions.RANGE:
+                    ctx.Set(i, s.Mod256 ? (byte)((current - mergeByte) & 0xFF) : (byte)Math.Abs(current - mergeByte));
+                    break;
 
-                        default:
-                            if (MessageBox.Show("The Merge Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                            {
-                                Application.Exit();
-                            }
-                            break;
-                    }
-                }
-                else
-                {
-                    switch (CorruptionOption)
-                    {
-                        case CorruptionOptions.NONE:
-                            ROM[i] = ROMMerge[rnd.Next(0, ROMMerge.Length)];
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        case CorruptionOptions.RANGE:
-                            ROM[i] = (byte)Math.Abs(ROM[i] - ROMMerge[rnd.Next(0, ROMMerge.Length)]);
-                            Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                            break;
-
-                        default:
-                            if (MessageBox.Show("The Merge Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                            {
-                                Application.Exit();
-                            }
-                            break;
-                    }
-                }
+                default:
+                    throw new InvalidOperationException($"The Merge Engine doesn't support the corruption type {s.Option}.");
             }
-            return ROM;
         }
     }
 }

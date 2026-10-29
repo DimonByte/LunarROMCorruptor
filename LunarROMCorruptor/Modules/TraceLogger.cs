@@ -42,7 +42,8 @@ namespace LunarROMCorruptor.Modules
         private static DateTime _lastDateCheck = DateTime.MinValue;
         private static readonly bool EnableDiskLogging = false;
         private static bool _isDirectoryCreated = false;
-        public static Action<string, StatusSeverityType> OnLogEntryAdded;
+        public static Action<string, StatusSeverityType>? OnLogEntryAdded;
+        public static volatile bool SuppressMessageBoxes; //Set while automation is running so errors don't stack up modal dialogs
         static TraceLogger()
         {
             EnsureLogDirectoryExists();
@@ -136,9 +137,9 @@ namespace LunarROMCorruptor.Modules
             {
                 Debug.WriteLine($"Failed to prepare log entry: {ex}");
             }
-            if (reportErrorAsMessageBox)
+            if (reportErrorAsMessageBox && !SuppressMessageBoxes)
             {
-                MessageBox.Show($"An {severity} message occurred in LRC at {className}.{memberName}: {message}", $"{severity} occurred in LRC", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ShowMessageBox($"{message}{Environment.NewLine}{Environment.NewLine}(Reported by {className}.{memberName})", $"{severity} - {nameof(LunarROMCorruptor)}", severity);
             }
             Debug.WriteLine(logEntry);
             OnLogEntryAdded?.Invoke(logEntry, severity);
@@ -156,6 +157,36 @@ namespace LunarROMCorruptor.Modules
                     Debug.WriteLine($"Failed to write to log: {ex}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Shows the message box on the UI thread (corruption runs on a background thread now).
+        /// </summary>
+        private static void ShowMessageBox(string text, string caption, StatusSeverityType severity)
+        {
+            var icon = severity switch
+            {
+                StatusSeverityType.Information or StatusSeverityType.Debug => MessageBoxIcon.Information,
+                StatusSeverityType.Warning => MessageBoxIcon.Warning,
+                _ => MessageBoxIcon.Error
+            };
+            try
+            {
+                var form = Program.Form;
+                if (form != null && form.IsHandleCreated && !form.IsDisposed)
+                {
+                    if (form.InvokeRequired)
+                        form.Invoke(() => MessageBox.Show(form, text, caption, MessageBoxButtons.OK, icon));
+                    else
+                        MessageBox.Show(form, text, caption, MessageBoxButtons.OK, icon);
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to show message box on the UI thread: {ex}");
+            }
+            MessageBox.Show(text, caption, MessageBoxButtons.OK, icon);
         }
 
         private static string ExtractClassName(string filePath)

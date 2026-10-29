@@ -41,7 +41,6 @@ namespace LunarROMCorruptor
     {
         private readonly Random rnd = new(); //Used for random number generation
         private readonly string vernumber = $"v{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version} beta"; //"v1.0.4 - Build Number: " + 
-        public List<string> InternalStashItems = []; //Adding to this list will make corruptions faster as it's not in the GUI so it doesn't have to render every item update.
         readonly CorruptionQueueForm CorruptionQueueFormSettings = new(); //Creates the corruption queue form and then it will be read later by the main form.
         public readonly NightmareEngineControl NightmareEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly LerpEngineControl LerpEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
@@ -50,18 +49,46 @@ namespace LunarROMCorruptor
         public readonly VectorEngineControl VectorEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly ManualEngineControl ManualEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly ExclusionEngineControl ExclusionEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly SourceCodeEngineControl SourceCodeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public int MainSelectedProcessID = 999999;
+
+        private const int StashDisplayLimit = 50000; //More stash entries than this are not shown in the list (a "LargeStash" placeholder is shown instead)
+        private const string MultipleFilesText = "---Multiple files selected---";
+        private const string MultipleFilesSaveText = "---Corruption will be applied on the files selected---";
+
+        private CancellationTokenSource? _corruptionCts; //Cancels the running corruption
+        private bool _busy; //True while a corruption/restore is running on the background thread
+        private bool _automationTickRunning;
+        private bool _inPlaceWarningShown;
+        private bool _closeAfterBusy; //Set when the user closes LRC while a corruption is running, the form closes once it has been cancelled/reverted
+        private long _trackScale = 1; //TrackBars only go up to int.MaxValue, for larger files each trackbar step is _trackScale bytes
+        private string _corruptButtonIdleText = "Corrupt File";
+        private StashEditor? _stashEditor;
+        private readonly Dictionary<Control, bool> _enabledBeforeBusy = [];
+
         public MainCorruptionForm()
         {
             InitializeComponent();
+            FormClosing += MainCorruptionForm_FormClosing;
+            FormClosed += (_, _) =>
+            {
+                TraceLogger.OnLogEntryAdded -= OnTraceLogEntryAdded;
+                CorruptionCore.ResetSession();
+            };
         }
 
         private void OnTraceLogEntryAdded(string logEntry, LunarROMCorruptor.Modules.StatusSeverityType severity)
         {
+            if (IsDisposed || !IsHandleCreated) return;
             if (InvokeRequired)
             {
-                Invoke(new Action<string, LunarROMCorruptor.Modules.StatusSeverityType>(OnTraceLogEntryAdded), logEntry, severity);
+                BeginInvoke(new Action<string, LunarROMCorruptor.Modules.StatusSeverityType>(OnTraceLogEntryAdded), logEntry, severity);
                 return;
+            }
+            if (TraceLoggerTxtBox.TextLength > 2_000_000) //Keep the log box from growing forever during long automation sessions
+            {
+                TraceLoggerTxtBox.Select(0, TraceLoggerTxtBox.TextLength / 2);
+                TraceLoggerTxtBox.SelectedText = "";
             }
             TraceLoggerTxtBox.AppendText($"{logEntry}{Environment.NewLine}");
             TraceLoggerTxtBox.SelectionStart = TraceLoggerTxtBox.Text.Length;
@@ -74,19 +101,24 @@ namespace LunarROMCorruptor
             TraceLogger.Log("LunarROMCorruptor started.");
             Text = $"{nameof(LunarROMCorruptor)} - " + vernumber;
             AboutVerLabel.Text = vernumber;
-            if (!Directory.Exists(Application.StartupPath + "\\Saves\\")) //If file doesn't exist, assume it's the first time the program has been run and create the directory.
+            string savesDirectory = Path.Combine(Application.StartupPath, "Saves");
+            if (!Directory.Exists(savesDirectory)) //If the folder doesn't exist, assume it's the first time the program has been run.
             {
-                try
+                if (MessageBox.Show($"Welcome to {nameof(LunarROMCorruptor)}!{Environment.NewLine}{Environment.NewLine}Disclaimer:{Environment.NewLine}{nameof(LunarROMCorruptor)} is distributed under an MIT license.{Environment.NewLine}{Environment.NewLine}By clicking OK, you agree to that license and also understand the risks and disclaimers provided.{Environment.NewLine}{Environment.NewLine}This program can irreversibly corrupt personal or critical system data if you're not careful.{Environment.NewLine}This program comes with no warranty of ANY kind and is provided 'AS IS'.{Environment.NewLine}You're responsible for backing up your data before use and for any damage that comes with the use or misuse of this program.{Environment.NewLine}{Environment.NewLine}This message will not show up again but you can read the license again by going to the 'About' tab.{Environment.NewLine}{Environment.NewLine}Enjoy!", $"{nameof(LunarROMCorruptor)} - INFO", MessageBoxButtons.OKCancel, MessageBoxIcon.Information) != DialogResult.OK)
                 {
-                    TraceLogger.Log("Saves directory not found. Attempting to create directory...");
-                    Directory.CreateDirectory(Application.StartupPath + "\\Saves\\");
-                    Directory.CreateDirectory(Application.StartupPath + "\\CorruptionStashList\\");
-                    MessageBox.Show($"Welcome to {nameof(LunarROMCorruptor)}!{Environment.NewLine}{Environment.NewLine}Disclaimer:{Environment.NewLine}{nameof(LunarROMCorruptor)} is distributed under an MIT license.{Environment.NewLine}{Environment.NewLine}By clicking OK, you agree to that license and also understand the risks and disclaimers provided.{Environment.NewLine}{Environment.NewLine}This program can irreversibly corrupt personal or critical system data if you're not careful.{Environment.NewLine}This program comes with no warranty of ANY kind and is provided 'AS IS'.{Environment.NewLine}You're responsible for backing up your data before use and for any damage that comes with the use or misuse of this program.{Environment.NewLine}{Environment.NewLine}This message will not show up again but you can read the license again by going to the 'About' tab.{Environment.NewLine}{Environment.NewLine}Enjoy!", $"{nameof(LunarROMCorruptor)} - INFO", MessageBoxButtons.OKCancel, MessageBoxIcon.Information);
+                    TraceLogger.Log("User did not accept the disclaimer. Closing.");
+                    Close();
+                    return;
                 }
-                catch (Exception ex)
-                {
-                    TraceLogger.Log($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. {ex}", StatusSeverityType.Error, true);
-                }
+            }
+            try
+            {
+                Directory.CreateDirectory(savesDirectory);
+                Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Error trying to create directory folders. Your anti-virus or ransomware protection may be enabled and is blocking LRC from creating these directories. {ex}", StatusSeverityType.Error, true);
             }
             CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
             AllowDrop = true;
@@ -120,39 +152,81 @@ namespace LunarROMCorruptor
             byteViewColourChkbox.Checked = Settings.Default.ByteViewColourMode;
             ByteViewupdateWhenCorruptedChkBox.Checked = Settings.Default.ByteViewUpdateOnCorruption;
             AttemptProtectedFileOverrideChkBox.Checked = Settings.Default.AttemptProtectedFileOverride;
+            CorruptionCore.AttemptOverrideOnWrite = AttemptProtectedFileOverrideChkBox.Checked;
         }
+
+        #region File loading and byte range
 
         public void LoadFile(string FileLocation)
         {
+            if (_busy)
+            {
+                TraceLogger.Log("A corruption is still running. Wait for it to finish (or cancel it) before loading another file.", StatusSeverityType.Warning, true);
+                return;
+            }
+            if (CorruptionCore.HasUnrestoredInPlaceChanges)
+            {
+                var answer = MessageBox.Show($"{CorruptionCore.SourcePath} is currently corrupted in place.\n\nRestore it to the original before loading the new file? (The undo data is lost once a new file is loaded.)", $"{nameof(LunarROMCorruptor)} - Restore?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                if (answer == DialogResult.Cancel) return;
+                if (answer == DialogResult.Yes) CorruptionCore.RestoreROM(CorruptionCore.SourcePath!);
+            }
             TraceLogger.Log($"Attempting to load file: {FileLocation}");
             AttentionPictureBox.Image = Resources.Loading;
             AttentionPictureBox.Show();
             Refresh();
-            if (CorruptionCore.LoadROM(FileLocation))
+            if (CorruptionCore.LoadROM(FileLocation, AttemptProtectedFileOverrideChkBox.Checked))
             {
                 TraceLogger.Log($"File loaded in to corruptioncore: {FileLocation}");
-                StartByteTrackBar.Value = 0;
-                StartByteTrackBar.Maximum = CorruptionCore.MaxByte;
-                EndByteTrackbar.Maximum = CorruptionCore.MaxByte;
-                EndByteTrackbar.Value = CorruptionCore.MaxByte;
-                EndByteNumb.Maximum = CorruptionCore.MaxByte;
-                EndByteNumb.Value = CorruptionCore.MaxByte;
-                StartByteNumb.Maximum = CorruptionCore.MaxByte;
-                StartByteNumb.Value = 0;
-                FileSelectiontxt.Text = FileLocation;
-                SaveasTxt.Text = FileLocation;
-                MainSaveFileDialog.FileName = Path.GetDirectoryName(SaveasTxt.Text);
-                string exc = Path.GetExtension(FileLocation);
-                SaveasTxt.Text = SaveasTxt.Text.Replace(Path.GetFileName(FileLocation), "CorruptedFile" + exc);
-                CorruptButton.Text = $"Corrupt File ({CorruptionCore.rawFileSize} {CorruptionCore.fileSizeUnit})";
-                AttentionPictureBox.Hide();
-                AttentionPictureBox.Image = Resources.dragicon;
+                SetByteRange(CorruptionCore.MaxByte);
+                FileSelectiontxt.Text = CorruptionCore.SourcePath;
+                string directory = Path.GetDirectoryName(CorruptionCore.SourcePath!) ?? "";
+                SaveasTxt.Text = Path.Combine(directory, "CorruptedFile" + Path.GetExtension(CorruptionCore.SourcePath));
+                MainSaveFileDialog.InitialDirectory = directory;
+                _corruptButtonIdleText = $"Corrupt File ({CorruptionCore.rawFileSize} {CorruptionCore.fileSizeUnit})";
+                CorruptButton.Text = _corruptButtonIdleText;
+                StashBytesList.Items.Clear();
+                _inPlaceWarningShown = false;
+                if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
                 TraceLogger.Log($"File loaded successfully and UI updated for file: {FileLocation}");
             }
             else
             {
-                TraceLogger.Log($"Failed to load file: {FileLocation}", StatusSeverityType.Error, true);
+                TraceLogger.Log($"Failed to load file: {FileLocation}", StatusSeverityType.Error);
             }
+            AttentionPictureBox.Hide();
+            AttentionPictureBox.Image = Resources.dragicon;
+        }
+
+        /// <summary>
+        /// Sets the start/end byte controls for a file. TrackBars are limited to int.MaxValue, so for files larger than 2 GB the trackbars
+        /// move in steps of _trackScale bytes, while the number boxes stay exact.
+        /// </summary>
+        private void SetByteRange(long maxByte)
+        {
+            maxByte = Math.Max(0, maxByte);
+            _trackScale = maxByte > int.MaxValue ? maxByte / int.MaxValue + 1 : 1;
+            int trackMax = (int)(maxByte / _trackScale);
+            StartByteTrackBar.Value = 0;
+            EndByteTrackbar.Value = 0;
+            StartByteTrackBar.Maximum = trackMax;
+            EndByteTrackbar.Maximum = trackMax;
+            StartByteNumb.Value = 0;
+            EndByteNumb.Value = 0;
+            StartByteNumb.Maximum = maxByte;
+            EndByteNumb.Maximum = maxByte;
+            EndByteNumb.Value = maxByte;
+            StartByteNumb.Value = 0;
+            EndByteTrackbar.Value = trackMax;
+            if (_trackScale > 1)
+                TraceLogger.Log($"File is larger than 2 GB: the byte trackbars move in steps of {_trackScale} bytes, use the number boxes for exact values.");
+        }
+
+        private int ToTrackValue(decimal value, TrackBar bar) => (int)Math.Clamp((long)value / _trackScale, bar.Minimum, bar.Maximum);
+
+        private decimal FromTrackValue(TrackBar bar, NumericUpDown box)
+        {
+            if (bar.Value >= bar.Maximum) return box.Maximum;
+            return Math.Clamp((decimal)bar.Value * _trackScale, box.Minimum, box.Maximum);
         }
 
         private void Openfilebtn_Click(object sender, EventArgs e)
@@ -171,37 +245,49 @@ namespace LunarROMCorruptor
 
         private void StartByteTrackBar_Scroll(object sender, EventArgs e)
         {
-            StartByteNumb.Value = StartByteTrackBar.Value;
+            StartByteNumb.Value = FromTrackValue(StartByteTrackBar, StartByteNumb);
         }
 
         private void EndByteTrackbar_Scroll(object sender, EventArgs e)
         {
-            EndByteNumb.Value = EndByteTrackbar.Value;
+            EndByteNumb.Value = FromTrackValue(EndByteTrackbar, EndByteNumb);
+        }
+
+        private void StartByteNumb_ValueChanged(object sender, EventArgs e)
+        {
+            StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
+        }
+
+        private void EndByteNumb_ValueChanged(object sender, EventArgs e)
+        {
+            EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
         }
 
         private void CorrupteverynthbyteTrackbar_Scroll(object sender, EventArgs e)
         {
-            EveryNthByte.Value = CorrupteverynthbyteTrackbar.Value;
+            EveryNthByte.Value = Math.Clamp(CorrupteverynthbyteTrackbar.Value, EveryNthByte.Minimum, EveryNthByte.Maximum);
         }
 
         private void IntensityTrackbar_Scroll(object sender, EventArgs e)
         {
-            Intensity.Value = IntensityTrackbar.Value;
+            Intensity.Value = Math.Clamp(IntensityTrackbar.Value, Intensity.Minimum, Intensity.Maximum);
         }
 
         private void Intensity_ValueChanged(object sender, EventArgs e)
         {
-            IntensityTrackbar.Value = (int)Intensity.Value;
+            IntensityTrackbar.Value = (int)Math.Clamp(Intensity.Value, IntensityTrackbar.Minimum, IntensityTrackbar.Maximum);
         }
 
         private void EveryNthByte_ValueChanged(object sender, EventArgs e)
         {
-            CorrupteverynthbyteTrackbar.Value = (int)EveryNthByte.Value;
+            CorrupteverynthbyteTrackbar.Value = (int)Math.Clamp(EveryNthByte.Value, CorrupteverynthbyteTrackbar.Minimum, CorrupteverynthbyteTrackbar.Maximum);
         }
 
         private void AllowLargeIntensity_CheckedChanged(object sender, EventArgs e)
         {
-            int maxIntensity = AllowLargeIntensity.Checked ? 99999 : 1000; //This changes the value based on the checked state of the checkbox
+            int maxIntensity = AllowLargeIntensity.Checked ? 10_000_000 : 1000; //This changes the value based on the checked state of the checkbox
+            if (Intensity.Value > maxIntensity) Intensity.Value = maxIntensity;
+            if (EveryNthByte.Value > maxIntensity) EveryNthByte.Value = maxIntensity;
             Intensity.Maximum = maxIntensity;
             IntensityTrackbar.Maximum = maxIntensity;
             CorrupteverynthbyteTrackbar.Maximum = maxIntensity;
@@ -224,8 +310,13 @@ namespace LunarROMCorruptor
             if (MainSaveFileDialog.ShowDialog() != DialogResult.Cancel)
             {
                 SaveasTxt.Text = MainSaveFileDialog.FileName;
+                _inPlaceWarningShown = false;
             }
         }
+
+        #endregion
+
+        #region Engine selection
 
         private void CorruptionEngineComboBox_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -273,6 +364,12 @@ namespace LunarROMCorruptor
                 case CorruptionEngineType.ExclusionEngine:
                     newControl = ExclusionEngineFrame;
                     newControl.Name = "ExclusionEngineControl";
+                    ExclusionEngineFrame.LoadAddresses(); //The loaded file may have changed since the profile was last shown
+                    break;
+
+                case CorruptionEngineType.SourceCodeEngine:
+                    newControl = SourceCodeEngineFrame;
+                    newControl.Name = "SourceCodeEngineControl";
                     break;
             }
 
@@ -287,98 +384,205 @@ namespace LunarROMCorruptor
             }
         }
 
-        private void BrowseEmulatorbutton_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Takes a snapshot of every setting on the UI thread so the corruption can safely run on a background thread.
+        /// Returns null (and tells the user why) if a setting is invalid.
+        /// </summary>
+        private CorruptionSettings? BuildSettings(bool queueMode)
         {
-            if (EmulatorFileDialog.ShowDialog() != DialogResult.Cancel)
+            if (StartByteNumb.Value > EndByteNumb.Value)
             {
-                EmulatorLocationtxt.Text = EmulatorFileDialog.FileName;
-                //Save selected path to settings
-                Settings.Default.EmulatorPath = EmulatorFileDialog.FileName;
-                Settings.Default.Save();
+                TraceLogger.Log("Start Byte value is greater than End Byte value. Aborting corruption process.", StatusSeverityType.Error, true);
+                return null;
             }
+            var engine = EngineParser.ParseEngineType(CorruptionEngineComboBox.Text);
+            if (engine == CorruptionEngineType.INVALID)
+            {
+                TraceLogger.Log($"Invalid corruption engine selected: '{CorruptionEngineComboBox.Text}'. Aborting corruption.", StatusSeverityType.Error, true);
+                return null;
+            }
+
+            var settings = new CorruptionSettings
+            {
+                Engine = engine,
+                StartByte = (long)StartByteNumb.Value,
+                //In queue mode every file has a different size, "end of file" is kept as "end of each file"
+                EndByte = queueMode && EndByteNumb.Value == EndByteNumb.Maximum ? long.MaxValue : (long)EndByteNumb.Value,
+                EveryNth = CorruptEverynthByteRadioBtn.Checked,
+                Intensity = CorruptEverynthByteRadioBtn.Checked ? (long)EveryNthByte.Value : (long)Intensity.Value
+            };
+            try
+            {
+                switch (engine)
+                {
+                    case CorruptionEngineType.NightmareEngine: settings.Nightmare = NightmareEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.LerpEngine: settings.Lerp = LerpEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.LogicEngine: settings.Logic = LogicEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.MergeEngine: settings.Merge = MergeEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.ManualEngine: settings.Manual = ManualEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.ExclusionEngine: settings.Exclusion = ExclusionEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.VectorEngine: settings.Vector = VectorEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.SourceCodeEngine: settings.SourceCode = SourceCodeEngineFrame.GetSettings(); break;
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                TraceLogger.Log(ex.Message, StatusSeverityType.Error, true);
+                return null;
+            }
+            return settings;
         }
 
-        private void OverrideArgumentschbox_CheckedChanged(object sender, EventArgs e)
+        #endregion
+
+        #region Corruption (runs on a background thread)
+
+        private async void CorruptButton_Click(object sender, EventArgs e)
         {
-            OverrideArguments.Enabled = OverrideArgumentschbox.Checked;
+            if (_busy)
+            {
+                //While a corruption is running the corrupt button is the cancel button
+                if (_corruptionCts != null && !_corruptionCts.IsCancellationRequested)
+                {
+                    TraceLogger.Log("Cancel requested by the user.");
+                    _corruptionCts.Cancel();
+                    CorruptButton.Text = "Cancelling...";
+                }
+                return;
+            }
+            await RunCorruptionAsync();
         }
 
-        private void Runemulatorchbox_CheckedChanged(object sender, EventArgs e)
+        /// <summary>
+        /// Starts a corruption (single file or queue). Returns the result, or null if nothing was started.
+        /// </summary>
+        public async Task<CorruptionResult?> RunCorruptionAsync()
         {
-            if (Runemulatorchbox.Checked)
-            {
-                EmulatorLocationtxt.BackColor = Color.White;
-                BrowseEmulatorbutton.Enabled = true;
-            }
-            else
-            {
-                EmulatorLocationtxt.BackColor = Color.Gray;
-                BrowseEmulatorbutton.Enabled = false;
-            }
-            //Save changes to settings
-            Settings.Default.RunEmulator = Runemulatorchbox.Checked;
-            Settings.Default.Save();
-        }
-
-        private void CorruptButton_Click(object sender, EventArgs e)
-        {
+            if (_busy) return null;
             TraceLogger.Log("Corruption process started by user.");
+            CorruptionResult? result = CorruptionQueueChkbox.Checked ? await ProcessMultiFileCorruptionAsync() : await ProcessSingleFileCorruptionAsync();
+            TraceLogger.Log($"Corruption process completed. Result: {(result?.ToString() ?? "not started")}. Stash Item Count: {CorruptionCore.Stash.Count}");
+            return result;
+        }
 
-            // Main Function - Starts the corruption process.
-            // ROM is used in multi file corruption and will store the corrupted file data.
-            // FINROM is used in single file corruption and is the one that gets corrupted and saved. And ROM will then contain the original file for restore purposes.
+        private void BeginBusy(string status)
+        {
+            _busy = true;
+            _corruptionCts?.Dispose();
+            _corruptionCts = new CancellationTokenSource();
+            _enabledBeforeBusy.Clear();
+            foreach (Control control in new Control[] { Openfilebtn, Restorefilebtn, Changesaveasbtn, Corruptusingstashbtn, StashEditorbtn, TransferStash, CopySaveToCorruptedFileBtn, FilesaveSavebtn, CorruptionQueueChkbox, ByteViewRefreshBtn, CorruptionEngineComboBox })
+            {
+                _enabledBeforeBusy[control] = control.Enabled;
+                control.Enabled = false;
+            }
+            AllowDrop = false;
+            CorruptionProgressBar.Value = 0;
+            CorruptionProgressBar.Visible = true;
+            CorruptButton.Text = $"{status} - click to cancel";
+            UseWaitCursor = true;
+            CorruptButton.UseWaitCursor = false;
+        }
 
-            if (CorruptionQueueChkbox.Checked) //Multiple File Corruption
+        private void EndBusy()
+        {
+            foreach (var (control, enabled) in _enabledBeforeBusy)
+                control.Enabled = enabled;
+            _enabledBeforeBusy.Clear();
+            AllowDrop = true;
+            CorruptionProgressBar.Visible = false;
+            CorruptButton.Text = CorruptionQueueChkbox.Checked ? "Corrupt Files" : _corruptButtonIdleText;
+            UseWaitCursor = false;
+            _busy = false;
+            if (_closeAfterBusy)
+                BeginInvoke(Close);
+        }
+
+        private Progress<double> CreateProgress(string status, int fileIndex = 0, int fileCount = 1)
+        {
+            return new Progress<double>(p =>
             {
-                ProcessMultiFileCorruption();
-            }
-            else //Use normal, one file corruption code.
-            {
-                ProcessSingleFileCorruption();
-            }
-            TraceLogger.Log($"Corruption process completed. Stash Item Count: {InternalStashItems.Count}");
+                if (!_busy) return;
+                double overall = (fileIndex + Math.Clamp(p, 0, 1)) / Math.Max(1, fileCount);
+                CorruptionProgressBar.Value = (int)Math.Clamp(overall * CorruptionProgressBar.Maximum, 0, CorruptionProgressBar.Maximum);
+                if (_corruptionCts != null && !_corruptionCts.IsCancellationRequested)
+                    CorruptButton.Text = $"{status} {overall:P0} - click to cancel";
+            });
         }
 
         private void StartSuccessFeedback()
         {
             CorruptButton.BackColor = Color.Green;
-            using var soundPlayer = new SoundPlayer(Resources.success3);
-
             if (!SilentCorruptionchbox.Checked)
             {
+                using var soundPlayer = new SoundPlayer(Resources.success3);
                 soundPlayer.Play();
             }
 
             CorruptButtonColorChanger.Start(); //Change the corruption button colour back to normal after the timer ticks.
         }
 
-        private void ProcessMultiFileCorruption()
+        private void StartFailureFeedback()
+        {
+            CorruptButton.BackColor = Color.DarkRed;
+            CorruptButtonColorChanger.Start();
+        }
+
+        private async Task<CorruptionResult?> ProcessMultiFileCorruptionAsync()
         {
             TraceLogger.Log("Corruption Queue enabled. Starting multi-file corruption process.");
 
             if (!ValidateMultiFileCorruption())
             {
-                return;
+                return null;
             }
 
-            var selectedFiles = GetSelectedFilesFromQueue();
+            var settings = BuildSettings(queueMode: true);
+            if (settings == null) return null;
+            var selectedFiles = GetSelectedFilesFromQueue().ToList();
+            bool attemptOverride = AttemptProtectedFileOverrideChkBox.Checked;
 
-            int SelectedStartByte = (int)Math.Min(StartByteNumb.Value, CorruptionCore.MaxByte);
-            int SelectedEndByte = (int)EndByteNumb.Value;
-            int tmpintensity = CorruptEverynthByteRadioBtn.Checked ? (int)EveryNthByte.Value : (int)Intensity.Value;
-
-            // Clear and trim stash list
+            // Clear stash list (stashes aren't recorded in queue mode)
             StashBytesList.Items.Clear();
-            InternalStashItems.Clear();
-            InternalStashItems.TrimExcess();
+            CorruptionCore.Stash.Clear();
 
-            foreach (var filePath in selectedFiles)
+            BeginBusy("Corrupting queue");
+            var token = _corruptionCts!.Token;
+            int succeeded = 0, failed = 0;
+            CorruptionResult overall = CorruptionResult.Success;
+            try
             {
-                ProcessSingleFileInQueue(filePath, SelectedStartByte, SelectedEndByte, tmpintensity);
+                for (int k = 0; k < selectedFiles.Count; k++)
+                {
+                    string filePath = selectedFiles[k];
+                    var progress = CreateProgress($"File {k + 1}/{selectedFiles.Count}", k, selectedFiles.Count);
+                    var result = await Task.Run(() => CorruptionCore.CorruptFileInPlace(settings, filePath, attemptOverride, token, progress));
+                    if (result == CorruptionResult.Success) succeeded++;
+                    else if (result == CorruptionResult.Failed) failed++;
+                    else
+                    {
+                        overall = CorruptionResult.Cancelled;
+                        break;
+                    }
+                }
             }
+            finally
+            {
+                EndBusy();
+            }
+            TraceLogger.Log($"Queue corruption finished: {succeeded} file(s) corrupted, {failed} failed{(overall == CorruptionResult.Cancelled ? ", cancelled by the user" : "")}.", failed > 0 ? StatusSeverityType.Warning : StatusSeverityType.Information, failed > 0);
             ResetMultiFileUI();
-            RunEmulatorIfEnabled();
+            if (overall == CorruptionResult.Cancelled) return overall;
+            if (succeeded == 0)
+            {
+                StartFailureFeedback();
+                return CorruptionResult.Failed;
+            }
+            //Run the file picked in the queue window, or the first file of the queue
+            string runFile = !string.IsNullOrWhiteSpace(CorruptionQueueFormSettings.SelectedRunFileTXT.Text) ? CorruptionQueueFormSettings.SelectedRunFileTXT.Text : selectedFiles[0];
+            RunEmulatorIfEnabled(runFile);
             StartSuccessFeedback();
+            return CorruptionResult.Success;
         }
 
         private bool ValidateMultiFileCorruption()
@@ -390,7 +594,7 @@ namespace LunarROMCorruptor
                 return false;
             }
 
-            if (FileSelectiontxt.Text != "---Multiple files selected---")
+            if (FileSelectiontxt.Text != MultipleFilesText)
             {
                 TraceLogger.Log("Corruption Queue has files but the main form is still showing a single file selected. This likely means the user hasn't sent the files to the corruptor yet. Aborting corruption process.", StatusSeverityType.Error, true);
                 return false;
@@ -403,19 +607,13 @@ namespace LunarROMCorruptor
             }
 
             // Validate each file in the queue exists
-            foreach (var item in CorruptionQueueFormSettings.CorruptionQueueList.Items.Cast<ListViewItem>().Select(i => i.Text))
+            foreach (var item in GetSelectedFilesFromQueue())
             {
                 if (!File.Exists(item))
                 {
-                    TraceLogger.Log($"File in corruption queue does not exist: {item}. Aborting corruption process for that file.", StatusSeverityType.Error, true);
+                    TraceLogger.Log($"File in corruption queue does not exist: {item}. Aborting corruption process.", StatusSeverityType.Error, true);
                     return false;
                 }
-            }
-
-            if (StartByteNumb.Value > EndByteNumb.Value)
-            {
-                TraceLogger.Log("Start Byte value is greater than End Byte value. Aborting corruption process.", StatusSeverityType.Error, true);
-                return false;
             }
 
             return true;
@@ -423,83 +621,17 @@ namespace LunarROMCorruptor
 
         private IEnumerable<string> GetSelectedFilesFromQueue()
         {
-            return CorruptionQueueFormSettings.CorruptionQueueList.Items.Cast<ListViewItem>().Select(i => i.Text);
-        }
-
-        private void ProcessSingleFileInQueue(string filePath, int startByte, int endByte, int intensity)
-        {
-            TraceLogger.Log($"Starting corruption for file: {filePath}");
-
-            if (CorruptionCore.LoadROM(filePath))
-            {
-                TraceLogger.Log($"Failed to load file: {filePath}. Skipping this file and moving to the next one in the queue.", StatusSeverityType.Error, true);
-                return;
-            }
-
-            if (CorruptionCore.ROM == null)
-            {
-                TraceLogger.Log($"File loaded but ROM is null for file: {filePath}. This indicates a problem with loading the file into memory. Stopping corruption...", StatusSeverityType.Error, true);
-                return;
-            }
-
-            // Configure UI and restore settings from loaded file
-            ConfigureUIForFile(filePath);
-
-            try
-            {
-                if (AttemptProtectedFileOverrideChkBox.Checked && File.Exists(SaveasTxt.Text))
-                {
-                    FileOverrideHelper.AttemptProtectedFileOverride(SaveasTxt.Text);
-                }
-                TraceLogger.Log($"Starting corruption for file: {filePath} using engine: {CorruptionEngineComboBox.Text}");
-
-                CorruptionCore.ROM = CorruptionCore.StartCorruption(
-                    CorruptionCore.ROM,
-                    startByte,
-                    endByte,
-                    CorruptEverynthByteRadioBtn.Checked,
-                    intensity,
-                    EngineParser.GetEngineDisplayName(EngineParser.ParseEngineType(CorruptionEngineComboBox.Text))
-                );
-
-                if (CorruptionCore.ROM != null)
-                {
-                    TraceLogger.Log($"Attempting to save corrupted file: {filePath}");
-                    CorruptionCore.SaveROM(CorruptionCore.ROM, filePath);
-                }
-                else
-                {
-                    TraceLogger.Log($"Corruption returned null for file: {filePath}. No data has been saved and corruption has been aborted for this file.", StatusSeverityType.Error, true);
-                }
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Failed to save corrupted file: {filePath}. Exception: {ex}", StatusSeverityType.Error, true);
-            }
-        }
-
-        private void ConfigureUIForFile(string filePath)
-        {
-            CorruptionCore.MaxByte = CorruptionCore.ROM!.Length - 1; //adding ! since we checked if the ROM was null in the single process queue.
-            StartByteTrackBar.Value = 0;
-            StartByteTrackBar.Maximum = CorruptionCore.MaxByte;
-            EndByteTrackbar.Maximum = CorruptionCore.MaxByte;
-            EndByteTrackbar.Value = CorruptionCore.MaxByte;
-            EndByteNumb.Maximum = CorruptionCore.MaxByte;
-            EndByteNumb.Value = CorruptionCore.MaxByte;
-            StartByteNumb.Maximum = CorruptionCore.MaxByte;
-            StartByteNumb.Value = 0;
-            FileSelectiontxt.Text = filePath;
-            SaveasTxt.Text = filePath;
+            //The queue is a ListBox of file path strings (the old code cast them to ListViewItem, which threw an InvalidCastException)
+            return CorruptionQueueFormSettings.CorruptionQueueList.Items.Cast<object>().Select(i => i?.ToString() ?? "").Where(i => i.Length > 0);
         }
 
         private void ResetMultiFileUI()
         {
-            FileSelectiontxt.Text = "---Multiple files selected---";
-            SaveasTxt.Text = "---Corruption will be applied on the files selected---";
+            FileSelectiontxt.Text = MultipleFilesText;
+            SaveasTxt.Text = MultipleFilesSaveText;
         }
 
-        private void RunEmulatorIfEnabled()
+        private void RunEmulatorIfEnabled(string fileToRun)
         {
             if (Runemulatorchbox.Checked)
             {
@@ -508,7 +640,7 @@ namespace LunarROMCorruptor
                     CommandRunner.StartEmulator(
                         ReopenChbox.Checked,
                         EmulatorLocationtxt.Text,
-                        SaveasTxt.Text,
+                        fileToRun,
                         OverrideArgumentschbox.Checked,
                         OverrideArguments.Text
                     );
@@ -520,157 +652,131 @@ namespace LunarROMCorruptor
             }
         }
 
-        private void ProcessSingleFileCorruption()
+        private bool ValidateSingleFileSelection()
         {
-            if (StartByteNumb.Value > EndByteNumb.Value)
-            {
-                TraceLogger.Log("Start Byte value is greater than End Byte value. Aborting corruption process.", StatusSeverityType.Error, true);
-                return;
-            }
-
-            if (string.IsNullOrEmpty(FileSelectiontxt.Text) || FileSelectiontxt.Text == "No file selected." || !File.Exists(FileSelectiontxt.Text))
+            if (string.IsNullOrEmpty(FileSelectiontxt.Text) || FileSelectiontxt.Text == "No file selected." || FileSelectiontxt.Text == MultipleFilesText || !CorruptionCore.IsLoaded || !File.Exists(CorruptionCore.SourcePath))
             {
                 TraceLogger.Log("No valid file selected for corruption. Please select a valid file before attempting to corrupt.", StatusSeverityType.Error, true);
-                return;
+                return false;
             }
-
-            if (CorruptionCore.ROM == null)
+            if (string.IsNullOrWhiteSpace(SaveasTxt.Text) || SaveasTxt.Text == MultipleFilesSaveText)
             {
-                TraceLogger.Log("ROM is null when attempting to corrupt. This likely means the file wasn't loaded into memory. Aborting corruption process.", StatusSeverityType.Error, true);
-                return;
+                TraceLogger.Log("No valid save location set. Please choose where the corrupted file should be saved.", StatusSeverityType.Error, true);
+                return false;
             }
-
-            if (AttemptProtectedFileOverrideChkBox.Checked && File.Exists(SaveasTxt.Text))
+            if (CorruptionCore.IsInPlace(SaveasTxt.Text) && !_inPlaceWarningShown)
             {
-                FileOverrideHelper.AttemptProtectedFileOverride(SaveasTxt.Text);
+                if (MessageBox.Show("The save location is the original file, so the original will be corrupted directly.\n\nRestore can undo this while LRC stays open (the original bytes are kept in a temporary undo journal), but it's still recommended to save to a different file.\n\nContinue?",
+                    $"{nameof(LunarROMCorruptor)} - Corrupting the original file", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                {
+                    return false;
+                }
+                _inPlaceWarningShown = true;
             }
+            return true;
+        }
 
-            int SelectedStartByte = (int)Math.Min(StartByteNumb.Value, CorruptionCore.MaxByte);
-            int SelectedEndByte = (int)EndByteNumb.Value;
-            int tmpintensity = CorruptEverynthByteRadioBtn.Checked ? (int)EveryNthByte.Value : (int)Intensity.Value;
+        private async Task<CorruptionResult?> ProcessSingleFileCorruptionAsync()
+        {
+            if (!ValidateSingleFileSelection()) return null;
+            var settings = BuildSettings(queueMode: false);
+            if (settings == null) return null;
 
-            // Clear and trim stash list
+            string outputPath = SaveasTxt.Text;
+            bool recordStash = EnableStashSavesChkbox.Checked;
             StashBytesList.Items.Clear();
-            InternalStashItems.Clear();
-            InternalStashItems.TrimExcess();
 
-            CorruptionCore.FINROM = (byte[])CorruptionCore.ROM.Clone(); //Gets duplicated so original ROM can be restored. FINROM is the one that gets corrupted and saved.
-            CorruptionCore.FINROM = CorruptionCore.StartCorruption(
-                CorruptionCore.FINROM,
-                SelectedStartByte,
-                SelectedEndByte,
-                CorruptEverynthByteRadioBtn.Checked,
-                tmpintensity,
-                EngineParser.GetEngineDisplayName(EngineParser.ParseEngineType(CorruptionEngineComboBox.Text))
-            );
-
-            // Validate corruption result
-            if (CorruptionCore.FINROM == null) //Something went wrong here...
-            {
-                TraceLogger.Log("The corrupted ROM returned from the corruption engine is null. This indicates a critical error in the corruption process. No data has been saved and corruption has been aborted.", StatusSeverityType.Fatal, true);
-                return;
-            }
-
+            BeginBusy("Corrupting");
+            CorruptionResult result;
             try
             {
-                CorruptionCore.SaveROM(CorruptionCore.FINROM, SaveasTxt.Text);
+                var token = _corruptionCts!.Token;
+                var progress = CreateProgress("Corrupting");
+                result = await Task.Run(() => CorruptionCore.StartCorruption(settings, outputPath, recordStash, token, progress));
             }
-            catch (Exception ex)
+            finally
             {
-                TraceLogger.Log($"Failed to save corrupted file: {SaveasTxt.Text}. Exception: {ex}", StatusSeverityType.Error, true);
-                return;
+                EndBusy();
+            }
+
+            if (result != CorruptionResult.Success)
+            {
+                if (result == CorruptionResult.Failed) StartFailureFeedback();
+                return result;
             }
 
             if (FilesaveEnableAutoSaves.Checked) //Save the corrupted file copy into the file saves if auto saves is enabled.
             {
-                IOManager.SaveCorruptedFileCopy(SaveasTxt.Text, FilesaveList);
+                string? saved = await Task.Run(() => IOManager.CopyToSaves(outputPath)); //Can be a large file now, so it's copied in the background
+                if (saved != null) FilesaveList.Items.Add(saved);
             }
 
-            RunEmulatorIfEnabled();
-            HandleStashSaving();
+            RunEmulatorIfEnabled(outputPath);
+            await HandleStashSavingAsync();
             UpdateByteViewIfEnabled();
             StartSuccessFeedback();
-            GC.Collect();
+            return result;
         }
 
-        private void HandleStashSaving()
+        private async Task HandleStashSavingAsync()
         {
-            if (EnableStashSavesChkbox.Checked)
+            StashBytesList.Items.Clear();
+            if (!EnableStashSavesChkbox.Checked) return;
+            var stash = CorruptionCore.Stash;
+            if (stash.Count > StashDisplayLimit)
             {
-                if (InternalStashItems.Count > 50000)
+                StashBytesList.Items.Add("LargeStash");
+                return;
+            }
+            //Format the entries off the UI thread, then add them in one go
+            var objects = await Task.Run(() => stash.FormatLines(StashDisplayLimit).Cast<object>().ToArray());
+            StashBytesList.BeginUpdate();
+            StashBytesList.Items.AddRange(objects);
+            StashBytesList.EndUpdate();
+        }
+
+        private void LoadStashFileIntoList(string stashFileLocation)
+        {
+            StashBytesList.BeginUpdate();
+            StashBytesList.Items.Clear();
+            int count = 0;
+            foreach (var item in File.ReadLines(stashFileLocation))
+            {
+                if (++count > StashDisplayLimit)
                 {
+                    StashBytesList.Items.Clear();
                     StashBytesList.Items.Add("LargeStash");
+                    break;
                 }
-                else
-                {
-                    // take a snapshot so the background thread works on a stable collection
-                    var snapshot = InternalStashItems.ToArray();
-
-                    // run conversion/packing off the UI thread
-                    Task.Run(() =>
-                    {
-                        var objects = Array.ConvertAll(snapshot, item => (object)item);
-
-                        // marshal the minimal UI work back to the UI thread
-                        StashBytesList.BeginInvoke(new Action(() =>
-                        {
-                            StashBytesList.BeginUpdate();
-                            StashBytesList.Items.AddRange(objects);
-                            StashBytesList.EndUpdate();
-                        }));
-                    });
-                }
+                StashBytesList.Items.Add(item);
             }
-        }
-
-        private void UpdateByteViewIfEnabled()
-        {
-            if (ByteViewupdateWhenCorruptedChkBox.Checked)
-            {
-                if (CorruptionCore.FINROM == null)
-                {
-                    TraceLogger.Log("FINROM is null. Unable to convert ROM to ByteView image.", StatusSeverityType.Error);
-                    return;
-                }
-                Bitmap? img = ByteView.ConvertByteToImage(CorruptionCore.FINROM, byteViewColourChkbox.Checked);
-                if (img == null)
-                {
-                    TraceLogger.Log("ByteView conversion failed: no image produced. This likely means there was an error in the conversion process or the corrupted data is not suitable for image representation.", StatusSeverityType.Error, true);
-                }
-                else
-                {
-                    if (flipVerticalChkbox.Checked || flipHorizontalChkbox.Checked)
-                    {
-                        img = ByteView.FlipImage(img, flipHorizontalChkbox.Checked, flipVerticalChkbox.Checked);
-                    }
-                    ByteViewPictureBox.Image = img;
-                }
-            }
+            StashBytesList.EndUpdate();
         }
 
         private void CorruptButtonColorChanger_Tick(object sender, EventArgs e)
         {
-            CorruptButton.BackColor = Color.FromArgb(255, 32, 32, 32);
+            CorruptButton.BackColor = Color.FromArgb(255, 29, 32, 32);
             CorruptButtonColorChanger.Stop(); //On tick, change the corrupt button colour back to normal and stop the timer.
         }
+
+        #endregion
+
+        #region Drag and drop
 
         private void Form1_DragDrop(object sender, DragEventArgs e)
         {
             AttentionPictureBox.Hide();
-            var data = e.Data?.GetData(DataFormats.FileDrop);
-
-            if (data == null)
+            if (_busy) return;
+            if (e.Data?.GetData(DataFormats.FileDrop) is not string[] files || files.Length == 0)
                 return;
 
-            string[] files = (string[])data;
-
-            if (files.Length > 1)
+            if (files.Length > 1 || Directory.Exists(files[0]))
             {
                 CorruptionQueueChkbox.Checked = true;
                 foreach (var item in files)
                 {
-                    TraceLogger.Log($"File added to corruption queue via drag and drop: {item}");
-                    CorruptionQueueFormSettings.CorruptionQueueList.Items.Add(item);
+                    TraceLogger.Log($"Added to corruption queue via drag and drop: {item}");
+                    CorruptionQueueFormSettings.AddFiles(Directory.Exists(item) ? Directory.GetFiles(item) : [item]);
                 }
                 CorruptionQueueFormSettings.TopMost = true;
                 CorruptionQueueFormSettings.ShowDialog();
@@ -678,68 +784,90 @@ namespace LunarROMCorruptor
             }
             else
             {
-                foreach (var path in files)
+                string path = files[0];
+                if (Path.GetExtension(path).Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Path.GetExtension(path).ToLower() == ".exe")
+                    var result = MessageBox.Show(
+                        "This file is an executable. Do you want to use it as an emulator?",
+                        "Executable File Detected",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question);
+
+                    if (result == DialogResult.Yes)
                     {
-                        var result = MessageBox.Show(
-                            "This file is an executable. Do you want to use it as an emulator?",
-                            "Executable File Detected",
-                            MessageBoxButtons.YesNo,
-                            MessageBoxIcon.Question);
-
-                        if (result == DialogResult.Yes)
-                        {
-                            EmulatorLocationtxt.Text = path;
-                            Settings.Default.EmulatorPath = path;
-                            Settings.Default.Save();
-                            return;
-                        }
+                        EmulatorLocationtxt.Text = path;
+                        Settings.Default.EmulatorPath = path;
+                        Settings.Default.Save();
+                        return;
                     }
-
-                    TraceLogger.Log($"File dropped onto main form: {path}. Attempting to load this file.");
-                    LoadFile(path);
                 }
+
+                if (CorruptionQueueChkbox.Checked)
+                    CorruptionQueueChkbox.Checked = false;
+                TraceLogger.Log($"File dropped onto main form: {path}. Attempting to load this file.");
+                LoadFile(path);
             }
         }
 
         private void Form1_DragEnter(object sender, DragEventArgs e)
         {
-            var data = e.Data?.GetDataPresent(DataFormats.FileDrop);
-            if (data == null)
+            if (_busy || e.Data == null || !e.Data.GetDataPresent(DataFormats.FileDrop))
                 return;
             AttentionPictureBox.Show();
             e.Effect = DragDropEffects.Copy;
         }
 
-        private void Restorefilebtn_Click(object sender, EventArgs e)
+        private void Form1_DragLeave(object sender, EventArgs e)
         {
-            if (CorruptionCore.ROM == null)
+            AttentionPictureBox.Hide();
+        }
+
+        #endregion
+
+        #region Restore, stash and file saves
+
+        private async void Restorefilebtn_Click(object sender, EventArgs e)
+        {
+            if (_busy) return;
+            if (!CorruptionCore.IsLoaded)
             {
-                TraceLogger.Log("Attempted to restore ROM but ROM is null. This likely means no file is loaded into memory. Please load a file before attempting to restore.", StatusSeverityType.Error, true);
+                TraceLogger.Log("Attempted to restore but no file is loaded. Please load a file before attempting to restore.", StatusSeverityType.Error, true);
                 return;
             }
-            CorruptionCore.RestoreROM(SaveasTxt.Text, CorruptionCore.ROM);
+            string target = SaveasTxt.Text;
+            BeginBusy("Restoring");
+            bool restored;
+            try
+            {
+                restored = await Task.Run(() => CorruptionCore.RestoreROM(target));
+            }
+            finally
+            {
+                EndBusy();
+            }
+            if (restored)
+            {
+                MessageBox.Show("ROM restored successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                UpdateByteViewIfEnabled();
+            }
         }
 
         private void TransferStash_Click(object sender, EventArgs e) //This saves the stash
         {
-            IOManager.TransferStash(StashBytesList, StashFileList, InternalStashItems, FileSelectiontxt.Text, rnd);
+            IOManager.TransferStash(CorruptionCore.Stash, StashFileList, FileSelectiontxt.Text, rnd);
         }
 
         private void StashEditorbtn_Click(object sender, EventArgs e)
         {
-            StashEditor frm1 = new();
+            //Reuse one editor window (it hides instead of closing), the old code created a new hidden window on every click.
+            if (_stashEditor == null || _stashEditor.IsDisposed)
+                _stashEditor = new StashEditor();
             if (StashFileList.SelectedItems.Count > 0)
             {
-                try
-                {
-                    TraceLogger.Log("Attempting to load stash file into stash editor");
-                    frm1.AttemptStashLoad(Application.StartupPath + "\\CorruptionStashList\\" + StashFileList.SelectedItems[0]!.ToString());
-                }
-                catch { }
+                TraceLogger.Log("Attempting to load stash file into stash editor");
+                _stashEditor.AttemptStashLoad(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)));
             }
-            frm1.ShowDialog();
+            _stashEditor.ShowDialog();
         }
 
         private void RenameStash_Click(object sender, EventArgs e)
@@ -790,126 +918,54 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("Attempted to corrupt using stash file but no stash file is selected. Please select a stash file before attempting to corrupt.", StatusSeverityType.Error, true);
                 return;
             }
-            CorruptUsingStashFile(Application.StartupPath + "\\CorruptionStashList\\" + StashFileList.GetItemText(StashFileList.SelectedItem));
-
+            CorruptUsingStashFile(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)));
         }
 
-        public void CorruptUsingStashFile(string StashFileLocation)
+        /// <summary>
+        /// Applies a stash file to a fresh copy of the loaded file and saves it to the save location.
+        /// </summary>
+        public async void CorruptUsingStashFile(string StashFileLocation)
         {
-            string[] separator = [".", "("];
-            string[] separatorArray = ["(", ")"];
-
-            //Check if ROM isn't null before running code
-            if (CorruptionCore.ROM == null)
+            if (_busy) return;
+            if (!File.Exists(StashFileLocation))
             {
-                TraceLogger.Log("Attempted to corrupt using stash file but ROM is null. This likely means no file is loaded into memory. Please load a file before attempting to corrupt using a stash file.", StatusSeverityType.Error, true);
+                TraceLogger.Log($"Stash file not found: {StashFileLocation}", StatusSeverityType.Error, true);
                 return;
             }
-            if (CorruptionCore.ROM.Clone() is not byte[] FinROM)
-            {
-                TraceLogger.Log("Unexpected error: ROM clone failed and returned null when corrupting using stash file. This indicates a critical issue with the ROM data in memory. Corruption process has been aborted.", StatusSeverityType.Fatal, true);
-                return;
-            }
-            foreach (var line in File.ReadAllLines(StashFileLocation))
-            {
-                Object[] splitStrings;
-                Object[] Instructions;
-                try
-                {
-                    splitStrings = line.Split(separatorArray, StringSplitOptions.None);
-                    Instructions = line.Split(separator, StringSplitOptions.None);
-                }
-                catch (Exception ex)
-                {
-                    TraceLogger.Log($"Error splitting line from stash file: {line}. Exception: {ex}", StatusSeverityType.Error, true);
-                    return;
-                }
-                Object i; //Location of byte to be changed
-                Object result; //The value that the byte needs to be set to
-                try
-                {
-                    i = splitStrings[1];
-                }
-                catch (Exception ex)
-                {
-                    TraceLogger.Log($"Error parsing byte location from line: {line}. Exception: {ex}", StatusSeverityType.Error, true);
-                    return;
-                }
-                try
-                {
-                    result = splitStrings[3];
-                }
-                catch (Exception ex)
-                {
-                    TraceLogger.Log($"Error parsing byte value from line: {line}. Exception: {ex}", StatusSeverityType.Error, true);
-                    return;
-                }
-                //Check if the byte location is within the correct margins. If not, throw an error.
-                if (Convert.ToInt32(i) > FinROM.Length)
-                {
-                    TraceLogger.Log($"Byte location is out of bounds for line: {line}. Byte location: {i}, ROM size: {FinROM.Length}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
-                    return;
-                }
-                //Check if byte value is out of bounds
-                bool isByteValid = byte.TryParse(result.ToString(), out byte output);
-                if (isByteValid == false)
-                {
-                    TraceLogger.Log($"Byte value is out of bounds for line: {line}. Byte value: {result}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
-                    return;
-                }
-                try
-                {
-                    // Better approach - check for null before parsing
-                    string? iString = i?.ToString();
-                    string? resultString = result?.ToString();
+            if (!ValidateSingleFileSelection()) return;
 
-                    if (string.IsNullOrEmpty(iString) || string.IsNullOrEmpty(resultString))
-                    {
-                        TraceLogger.Log($"Invalid stash item data - null or empty values found for line: {line}. i: {i}, result: {result}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
-                        return;
-                    }
-
-                    FinROM[int.Parse(iString)] = (byte)int.Parse(resultString);
-                }
-                catch (IndexOutOfRangeException ex1)
-                {
-                    TraceLogger.Log($"Stash item location index is out of bounds for line: {line}. Byte location: {i}, ROM size: {FinROM.Length}. Exception: {ex1}. This indicates that the stash file contains invalid data that cannot be applied to the current ROM. Corruption process has been aborted.", StatusSeverityType.Error, true);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    TraceLogger.Log($"Unexpected error applying stash item from line: {line}. i: {i}, result: {result}. Exception: {ex}. This indicates a critical issue with the data in the stash file or the ROM data in memory. Corruption process has been aborted.", StatusSeverityType.Fatal, true);
-                    return;
-                }
-            }
-            TraceLogger.Log($"Finished applying stash file: {StashFileLocation}. Attempting to save the corrupted ROM with stash changes applied. Total stash items applied: {StashBytesList.Items.Count}");
+            string outputPath = SaveasTxt.Text;
+            BeginBusy("Applying stash");
+            CorruptionResult result;
             try
             {
-                CorruptionCore.SaveROM(FinROM, SaveasTxt.Text);
-                TraceLogger.Log($"Corrupted file with stash file successfully saved: {SaveasTxt.Text}");
+                var token = _corruptionCts!.Token;
+                var progress = CreateProgress("Applying stash");
+                result = await Task.Run(() => CorruptionCore.ApplyStashFile(StashFileLocation, outputPath, token, progress));
+            }
+            finally
+            {
+                EndBusy();
+            }
+            if (result != CorruptionResult.Success)
+            {
+                if (result == CorruptionResult.Failed) StartFailureFeedback();
+                return;
+            }
 
-                CorruptButton.BackColor = Color.Green;
-                if (!SilentCorruptionchbox.Checked)
-                {
-                    using var soundPlayer = new SoundPlayer(Resources.success3);
-                    soundPlayer.Play();
-                }
-                CorruptButtonColorChanger.Start();
-                if (Runemulatorchbox.Checked && !string.IsNullOrEmpty(EmulatorLocationtxt.Text))
-                {
-                    CommandRunner.StartEmulator(ReopenChbox.Checked, EmulatorLocationtxt.Text, SaveasTxt.Text, OverrideArgumentschbox.Checked, OverrideArguments.Text);
-                }
+            TraceLogger.Log($"Corrupted file with stash file successfully saved: {outputPath}");
+            StartSuccessFeedback();
+            RunEmulatorIfEnabled(outputPath);
+            try
+            {
                 //Set StashByteList to the files contents, each line is each item on the list
-                StashBytesList.Items.Clear();
-                foreach (var item in File.ReadAllLines(StashFileLocation))
-                {
-                    StashBytesList.Items.Add(item);
-                }
+                LoadStashFileIntoList(StashFileLocation);
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Failed to save corrupted file with stash changes applied: {SaveasTxt.Text}. Exception: {ex}", StatusSeverityType.Error, true);
+                TraceLogger.Log($"Unable to show the stash file contents: {ex.Message}", StatusSeverityType.Warning);
             }
+            UpdateByteViewIfEnabled();
         }
 
         private void EnableStashSavesChkbox_CheckedChanged(object sender, EventArgs e)
@@ -921,21 +977,6 @@ namespace LunarROMCorruptor
             Settings.Default.Save();
         }
 
-        private void StartByteNumb_ValueChanged(object sender, EventArgs e)
-        {
-            StartByteTrackBar.Value = (int)StartByteNumb.Value;
-        }
-
-        private void EndByteNumb_ValueChanged(object sender, EventArgs e)
-        {
-            EndByteTrackbar.Value = (int)EndByteNumb.Value;
-        }
-
-        private void Form1_DragLeave(object sender, EventArgs e)
-        {
-            AttentionPictureBox.Hide();
-        }
-
         private void StashList_MouseDown(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
@@ -943,6 +984,43 @@ namespace LunarROMCorruptor
                 StashFileList.SelectedIndex = StashFileList.IndexFromPoint(e.X, e.Y);
                 contextStripStash.Show(Cursor.Position);
             }
+        }
+
+        #endregion
+
+        #region Settings checkboxes
+
+        private void BrowseEmulatorbutton_Click(object sender, EventArgs e)
+        {
+            if (EmulatorFileDialog.ShowDialog() != DialogResult.Cancel)
+            {
+                EmulatorLocationtxt.Text = EmulatorFileDialog.FileName;
+                //Save selected path to settings
+                Settings.Default.EmulatorPath = EmulatorFileDialog.FileName;
+                Settings.Default.Save();
+            }
+        }
+
+        private void OverrideArgumentschbox_CheckedChanged(object sender, EventArgs e)
+        {
+            OverrideArguments.Enabled = OverrideArgumentschbox.Checked;
+        }
+
+        private void Runemulatorchbox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (Runemulatorchbox.Checked)
+            {
+                EmulatorLocationtxt.BackColor = Color.White;
+                BrowseEmulatorbutton.Enabled = true;
+            }
+            else
+            {
+                EmulatorLocationtxt.BackColor = Color.Gray;
+                BrowseEmulatorbutton.Enabled = false;
+            }
+            //Save changes to settings
+            Settings.Default.RunEmulator = Runemulatorchbox.Checked;
+            Settings.Default.Save();
         }
 
         private void SilentCorruptionchbox_CheckedChanged(object sender, EventArgs e)
@@ -974,11 +1052,19 @@ namespace LunarROMCorruptor
                 Openfilebtn.Text = "Edit Queue...";
                 EnableStashSavesChkbox.Checked = false;
                 FilesaveEnableAutoSaves.Checked = false;
+                CorruptButton.Text = "Corrupt Files";
             }
             else
             {
                 Openfilebtn.Text = "Open File";
                 Openfilebtn.Image = Resources.upload;
+                CorruptButton.Text = _corruptButtonIdleText;
+                if (FileSelectiontxt.Text == MultipleFilesText)
+                {
+                    //Go back to the single file that is loaded (if any)
+                    FileSelectiontxt.Text = CorruptionCore.SourcePath ?? "No file selected.";
+                    SaveasTxt.Text = CorruptionCore.SourcePath != null ? Path.Combine(Path.GetDirectoryName(CorruptionCore.SourcePath) ?? "", "CorruptedFile" + Path.GetExtension(CorruptionCore.SourcePath)) : "No save location set.";
+                }
             }
             //Disable the ability to change the checkboxes
             EnableStashSavesChkbox.Enabled = !CorruptionQueueChkbox.Checked;
@@ -995,8 +1081,27 @@ namespace LunarROMCorruptor
 
         private void FileSaveOpenLocationBtn_Click(object sender, EventArgs e)
         {
-            CommandRunner.OpenFolderInExplorer(Application.StartupPath + @"\Saves\");
+            CommandRunner.OpenFolderInExplorer(Path.Combine(Application.StartupPath, "Saves"));
         }
+
+        private void AttemptProtectedFileOverrideChkBox_CheckedChanged(object sender, EventArgs e)
+        {
+            if (AttemptProtectedFileOverrideChkBox.Checked == true && Settings.Default.AttemptProtectedFileOverride == false) //User has enabled this option and it hasn't been saved to settings, so this is not the program setting it up via LoadSettings
+            {
+                if (MessageBox.Show("WARNING: You are about to enable ownership override. When LRC can't read or write a file (or create a file in a folder), it will take ownership of it and give your account full control (a UAC prompt will appear if LRC isn't running as admin). This can allow corruption of critical protected system files if you select the wrong file(s). Ensure you understand the implications before proceeding.\nDo you wish to enable this?", "WARNING - Critical Action", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
+                {
+                    TraceLogger.Log("User declined to enable protected file override after warning prompt. Protected file override will remain disabled.");
+                    AttemptProtectedFileOverrideChkBox.Checked = false;
+                }
+            }
+            CorruptionCore.AttemptOverrideOnWrite = AttemptProtectedFileOverrideChkBox.Checked;
+            Settings.Default.AttemptProtectedFileOverride = AttemptProtectedFileOverrideChkBox.Checked;
+            Settings.Default.Save();
+        }
+
+        #endregion
+
+        #region Automation
 
         private void StartAutomationBtn_Click(object sender, EventArgs e)
         {
@@ -1005,14 +1110,21 @@ namespace LunarROMCorruptor
             {
                 StartAutomationBtn.Text = "Stop Automation";
                 StartAutomationBtn.ForeColor = Color.OrangeRed;
+                TraceLogger.SuppressMessageBoxes = true; //Errors go to the log instead of stacking up message boxes
                 AutomationTimer.Start();
             }
             else
             {
-                StartAutomationBtn.Text = "Start Automation";
-                StartAutomationBtn.ForeColor = Color.SpringGreen;
-                AutomationTimer.Stop();
+                StopAutomation();
             }
+        }
+
+        private void StopAutomation()
+        {
+            StartAutomationBtn.Text = "Start Automation";
+            StartAutomationBtn.ForeColor = Color.SpringGreen;
+            AutomationTimer.Stop();
+            TraceLogger.SuppressMessageBoxes = false;
         }
 
         private void RemoveTaskBtn_Click(object sender, EventArgs e)
@@ -1032,138 +1144,104 @@ namespace LunarROMCorruptor
         private void DelayInAutomationNUD_ValueChanged(object sender, EventArgs e)
         {
             //Converts the NumericUpDown number from seconds to miliseconds to use on the timer
-            AutomationTimer.Interval = (int)DelayInAutomationNUD.Value * 1000;
+            AutomationTimer.Interval = (int)Math.Max(1, DelayInAutomationNUD.Value * 1000);
         }
 
-        private void AutomationTimer_Tick(object sender, EventArgs e)
+        private long RandomDecimal(decimal min, decimal max) => rnd.NextInt64((long)min, (long)max + 1);
+
+        private async void AutomationTimer_Tick(object sender, EventArgs e)
         {
-            //For each task on the automation list, execute.
-            foreach (var item in AutomationList.Items)
-            {
-                //Switch statement: Corrupt, Randomize Intensity, Randomize Start Byte, Randomize End Byte, Randomize both Start byte and End byte
-                switch (item)
-                {
-                    case "Run Corruption":
-                        //Click Corrupt Button
-                        CorruptButton.PerformClick();
-                        break;
-                    case "Randomize Intensity":
-                        //Check if nth Intensity is enabled
-                        if (CorruptEverynthByteRadioBtn.Checked)
-                        {
-                            if (AllowLargeIntensity.Checked)
-                            {
-                                CorrupteverynthbyteTrackbar.Value = rnd.Next(1, 99999);
-                                EveryNthByte.Value = rnd.Next(1, 99999);
-                            }
-                            else
-                            {
-                                CorrupteverynthbyteTrackbar.Value = rnd.Next(1, 1000);
-                                EveryNthByte.Value = rnd.Next(1, 1000);
-                            }
-                        }
-                        else
-                        {
-                            //If allow large intensity is checked, make the max random larger
-                            if (AllowLargeIntensity.Checked)
-                            {
-                                IntensityTrackbar.Value = rnd.Next(1, 99999);
-                                Intensity.Value = rnd.Next(1, 99999);
-                            }
-                            else
-                            {
-                                IntensityTrackbar.Value = rnd.Next(1, 1000);
-                                Intensity.Value = rnd.Next(1, 1000);
-                            }
-                        }
-
-                        break;
-                    case "Randomize Start Byte":
-                        //Randomizes Start byte by the maximum value of the trackbar
-                        StartByteTrackBar.Value = rnd.Next(1, StartByteTrackBar.Maximum);
-                        StartByteNumb.Value = rnd.Next(1, StartByteTrackBar.Maximum);
-                        break;
-                    case "Randomize End Byte":
-                        EndByteTrackbar.Value = rnd.Next(1, EndByteTrackbar.Maximum);
-                        EndByteNumb.Value = rnd.Next(1, EndByteTrackbar.Maximum);
-                        break;
-                    case "Randomize both Start byte and End byte":
-                        //Randomizes both start byte and end byte, but making sure that the start byte is not higher than the end byte
-
-                        StartByteTrackBar.Value = rnd.Next(1, StartByteTrackBar.Maximum);
-                        EndByteTrackbar.Value = rnd.Next(StartByteTrackBar.Value, EndByteTrackbar.Maximum);
-
-                        StartByteNumb.Value = rnd.Next(1, StartByteTrackBar.Maximum);
-                        EndByteNumb.Value = rnd.Next(StartByteTrackBar.Value, EndByteTrackbar.Maximum);
-
-                        break;
-                    case "Randomize Corruption Engine":
-                        //Select a random item in the CorruptionEngineComboBox
-                        //Is Combobox NULL??
-                        if (CorruptionEngineComboBox?.Items != null && CorruptionEngineComboBox.Items.Count > 0)
-                        {
-                            var selectedItem = CorruptionEngineComboBox.Items[rnd.Next(0, CorruptionEngineComboBox.Items.Count)];
-                            CorruptionEngineComboBox.Text = selectedItem?.ToString() ?? EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
-                        }
-                        else
-                        {
-                            TraceLogger.Log("Corruption Engine ComboBox is empty or null when attempting to randomize corruption engine. Aborting automation process.", StatusSeverityType.Fatal, true);
-                            AutomationTimer.Stop();
-                            return;
-                        }
-                        if (CorruptionEngineComboBox.Text == EngineParser.GetEngineDisplayName(CorruptionEngineType.MergeEngine) && Program.Form.MergeEngineFrame.MergeFileLocationTxt.Text == null) // Prevents corruption from halting if there is no file in the Merge Engine while in Automation mode.
-                        {
-                            CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(CorruptionEngineType.NightmareEngine);
-                        }
-                        break;
-                }
-            }
-        }
-        private void MoveTaskUpBtn_Click(object sender, EventArgs e)
-        {
+            if (_busy || _automationTickRunning) return; //Don't stack corruptions if the previous one is still running
+            _automationTickRunning = true;
             try
             {
-                //Moves selected item on automation list up
-                if (AutomationList.SelectedIndex > 0)
+                //Snapshot the task list, the user can change it while a corruption is running
+                var tasks = AutomationList.Items.Cast<object>().Select(i => i?.ToString() ?? "").ToList();
+                foreach (var item in tasks)
                 {
-                    int index = AutomationList.SelectedIndex;
-                    object? item = AutomationList.SelectedItem;
-                    //is item null??
-                    if (item == null)
-                        return;
-                    AutomationList.Items.Remove(item);
-                    AutomationList.Items.Insert(index - 1, item);
-                    AutomationList.SelectedIndex = index - 1;
+                    if (!AutomationTimer.Enabled) break;
+                    switch (item)
+                    {
+                        case "Run Corruption":
+                            var result = await RunCorruptionAsync();
+                            if (result == null || result == CorruptionResult.Failed)
+                            {
+                                StopAutomation();
+                                TraceLogger.Log("Automation stopped because the corruption couldn't run. Check the log for the reason.", StatusSeverityType.Error, true);
+                                return;
+                            }
+                            break;
+                        case "Randomize Intensity":
+                            if (CorruptEverynthByteRadioBtn.Checked)
+                                EveryNthByte.Value = RandomDecimal(EveryNthByte.Minimum, EveryNthByte.Maximum);
+                            else
+                                Intensity.Value = RandomDecimal(Intensity.Minimum, Intensity.Maximum);
+                            break;
+                        case "Randomize Start Byte":
+                            //Keeps the start byte at or below the end byte
+                            StartByteNumb.Value = RandomDecimal(StartByteNumb.Minimum, EndByteNumb.Value);
+                            break;
+                        case "Randomize End Byte":
+                            EndByteNumb.Value = RandomDecimal(StartByteNumb.Value, EndByteNumb.Maximum);
+                            break;
+                        case "Randomize both Start byte and End byte":
+                            {
+                                long start = RandomDecimal(StartByteNumb.Minimum, StartByteNumb.Maximum);
+                                long end = rnd.NextInt64(start, (long)EndByteNumb.Maximum + 1);
+                                StartByteNumb.Value = Math.Min(start, (long)StartByteNumb.Maximum);
+                                EndByteNumb.Value = Math.Min(end, (long)EndByteNumb.Maximum);
+                            }
+                            break;
+                        case "Randomize Corruption Engine":
+                            {
+                                //Only byte engines are randomized. Merge needs a merge file and the Source Code Engine only makes sense for text files.
+                                var engines = new List<CorruptionEngineType> { CorruptionEngineType.NightmareEngine, CorruptionEngineType.LerpEngine, CorruptionEngineType.LogicEngine, CorruptionEngineType.ManualEngine, CorruptionEngineType.ExclusionEngine, CorruptionEngineType.VectorEngine };
+                                if (File.Exists(MergeEngineFrame.MergeFileLocationTxt.Text))
+                                    engines.Add(CorruptionEngineType.MergeEngine);
+                                CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engines[rnd.Next(engines.Count)]);
+                            }
+                            break;
+                    }
                 }
             }
-            catch (ArgumentNullException)
+            catch (Exception ex)
             {
-                Console.WriteLine("LRC Move Task Up - Insert cannot be null");
+                StopAutomation();
+                TraceLogger.Log($"Automation stopped because of an error: {ex.Message}", StatusSeverityType.Error, true);
+            }
+            finally
+            {
+                _automationTickRunning = false;
+            }
+        }
+
+        private void MoveTaskUpBtn_Click(object sender, EventArgs e)
+        {
+            //Moves selected item on automation list up
+            if (AutomationList.SelectedIndex > 0 && AutomationList.SelectedItem is object item)
+            {
+                int index = AutomationList.SelectedIndex;
+                AutomationList.Items.RemoveAt(index);
+                AutomationList.Items.Insert(index - 1, item);
+                AutomationList.SelectedIndex = index - 1;
             }
         }
 
         private void MoveTaskDownBtn_Click(object sender, EventArgs e)
         {
-            try
+            //Moves selected item on automation list down
+            if (AutomationList.SelectedIndex >= 0 && AutomationList.SelectedIndex < AutomationList.Items.Count - 1 && AutomationList.SelectedItem is object item)
             {
-                //Moves selected item on automation list down
-                if (AutomationList.SelectedIndex < AutomationList.Items.Count - 1)
-                {
-                    int index = AutomationList.SelectedIndex;
-                    object? item = AutomationList.SelectedItem;
-                    //is item null??
-                    if (item == null)
-                        return;
-                    AutomationList.Items.Remove(item);
-                    AutomationList.Items.Insert(index + 1, item);
-                    AutomationList.SelectedIndex = index + 1;
-                }
-            }
-            catch (ArgumentNullException)
-            {
-                Console.WriteLine("LRC Move Task Down - Insert cannot be null");
+                int index = AutomationList.SelectedIndex;
+                AutomationList.Items.RemoveAt(index);
+                AutomationList.Items.Insert(index + 1, item);
+                AutomationList.SelectedIndex = index + 1;
             }
         }
+
+        #endregion
+
+        #region Help, ByteView, logs and misc
 
         private void RandomByteCorruptRadioBtn_CheckedChanged(object sender, EventArgs e)
         {
@@ -1177,7 +1255,7 @@ namespace LunarROMCorruptor
 
         private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour)", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\").", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteModeHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -1187,7 +1265,7 @@ namespace LunarROMCorruptor
 
         private void ByteViewHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            MessageBox.Show($"ByteView is a utility that offers users a visual representation of binary content. ByteView allows users to see their corruptions to the byte data, ByteView is particularly useful for those seeking a non-intrusive approach to examining the underlying byte information within files. Covert/Update will convert the file that is currently loaded in LRC to grayscale or colour bytes that you can see.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            MessageBox.Show($"ByteView is a utility that offers users a visual representation of binary content. ByteView allows users to see their corruptions to the byte data, ByteView is particularly useful for those seeking a non-intrusive approach to examining the underlying byte information within files. Covert/Update will convert the latest corrupted file (or the loaded file if nothing has been corrupted yet) to grayscale or colour bytes that you can see. Large files are downsampled.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteViewSaveImageBtn_Click(object sender, EventArgs e)
@@ -1200,31 +1278,75 @@ namespace LunarROMCorruptor
 
                 if (saveFileDialog.ShowDialog() == DialogResult.OK)
                 {
-                    // Get the Bitmap from the PictureBox
-                    Bitmap imageToSave = new(ByteViewPictureBox.Image);
-
-                    // Save the image to the specified path
-                    imageToSave.Save(saveFileDialog.FileName);
-
-                    // Dispose the image to free up resources
-                    imageToSave.Dispose();
+                    try
+                    {
+                        using Bitmap imageToSave = new(ByteViewPictureBox.Image);
+                        var format = Path.GetExtension(saveFileDialog.FileName).ToLowerInvariant() is ".jpg" or ".jpeg" ? System.Drawing.Imaging.ImageFormat.Jpeg : System.Drawing.Imaging.ImageFormat.Png;
+                        imageToSave.Save(saveFileDialog.FileName, format);
+                    }
+                    catch (Exception ex)
+                    {
+                        TraceLogger.Log($"Unable to save the ByteView image: {ex.Message}", StatusSeverityType.Error, true);
+                    }
                 }
             }
         }
 
         private void ByteViewRefreshBtn_Click(object sender, EventArgs e)
         {
-            if (CorruptionCore.ROM == null)
+            if (!CorruptionCore.IsLoaded)
             {
-                TraceLogger.Log("Attempted to refresh ByteView but ROM is null. This likely means no file is loaded into memory. Please load a file before attempting to use ByteView.", StatusSeverityType.Error, true);
+                TraceLogger.Log("Attempted to refresh ByteView but no file is loaded. Please load a file before attempting to use ByteView.", StatusSeverityType.Error, true);
                 return;
             }
-            ByteViewPictureBox.Image = ByteView.ConvertByteToImage(CorruptionCore.ROM, byteViewColourChkbox.Checked);
-            if (flipVerticalChkbox.Checked || flipHorizontalChkbox.Checked)
+            UpdateByteView();
+        }
+
+        private void UpdateByteViewIfEnabled()
+        {
+            if (ByteViewupdateWhenCorruptedChkBox.Checked)
+                UpdateByteView();
+        }
+
+        /// <summary>
+        /// Renders the latest corrupted file (or the loaded file if nothing has been corrupted yet) in ByteView on a background thread.
+        /// </summary>
+        private async void UpdateByteView()
+        {
+            string? path = CorruptionCore.LastOutputPath != null && File.Exists(CorruptionCore.LastOutputPath) ? CorruptionCore.LastOutputPath : CorruptionCore.SourcePath;
+            if (path == null) return;
+            bool colour = byteViewColourChkbox.Checked, flipH = flipHorizontalChkbox.Checked, flipV = flipVerticalChkbox.Checked;
+            ByteViewRefreshBtn.Enabled = false;
+            try
             {
-                ByteViewPictureBox.Image = ByteView.FlipImage((Bitmap)ByteViewPictureBox.Image!, flipHorizontalChkbox.Checked, flipVerticalChkbox.Checked);
+                var img = await Task.Run(() =>
+                {
+                    var image = ByteView.ConvertFileToImage(path, colour);
+                    if (image != null && (flipH || flipV))
+                    {
+                        var flipped = ByteView.FlipImage(image, flipH, flipV);
+                        image.Dispose();
+                        image = flipped;
+                    }
+                    return image;
+                });
+                if (img == null)
+                {
+                    TraceLogger.Log("ByteView conversion failed: no image produced.", StatusSeverityType.Error);
+                    return;
+                }
+                var old = ByteViewPictureBox.Image;
+                ByteViewPictureBox.Image = img;
+                old?.Dispose();
             }
-            GC.Collect(); //Forces Garbage collection
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"ByteView failed: {ex.Message}", StatusSeverityType.Error);
+            }
+            finally
+            {
+                ByteViewRefreshBtn.Enabled = !_busy;
+            }
         }
 
         private void ByteViewColourChkbox_CheckedChanged(object sender, EventArgs e)
@@ -1236,20 +1358,6 @@ namespace LunarROMCorruptor
         private void ByteViewupdateWhenCorruptedChkBox_CheckedChanged(object sender, EventArgs e)
         {
             Settings.Default.ByteViewUpdateOnCorruption = ByteViewupdateWhenCorruptedChkBox.Checked;
-            Settings.Default.Save();
-        }
-
-        private void AttemptProtectedFileOverrideChkBox_CheckedChanged(object sender, EventArgs e)
-        {
-            if (AttemptProtectedFileOverrideChkBox.Checked == true && Settings.Default.AttemptProtectedFileOverride == false) //User has enabled this option and it hasn't been saved to settings, so this is not the program setting it up via LoadSettings
-            {
-                if (MessageBox.Show("WARNING: You are about to enable ownership override. This action can potentially allow corruption of critical protected system files if you select the wrong file(s). Ensure you understand the implications before proceeding.\nDo you wish to enable this?", "WARNING - Critical Action", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.No)
-                {
-                    TraceLogger.Log("User declined to enable protected file override after warning prompt. Protected file override will remain disabled.");
-                    AttemptProtectedFileOverrideChkBox.Checked = false;
-                }
-            }
-            Settings.Default.AttemptProtectedFileOverride = AttemptProtectedFileOverrideChkBox.Checked;
             Settings.Default.Save();
         }
 
@@ -1287,5 +1395,34 @@ namespace LunarROMCorruptor
         {
             CommandRunner.TerminateEmulator(EmulatorLocationtxt.Text);
         }
+
+        private void MainCorruptionForm_FormClosing(object? sender, FormClosingEventArgs e)
+        {
+            if (_busy)
+            {
+                //Wait for the background corruption to stop (and revert the output) before closing, so files aren't left half written.
+                e.Cancel = true;
+                if (_closeAfterBusy || MessageBox.Show("A corruption is still running. Cancel it and exit?", nameof(LunarROMCorruptor), MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+                {
+                    _closeAfterBusy = true;
+                    _corruptionCts?.Cancel();
+                    StopAutomation();
+                }
+                return;
+            }
+            if (CorruptionCore.HasUnrestoredInPlaceChanges && CorruptionCore.SourcePath != null)
+            {
+                var answer = MessageBox.Show($"{CorruptionCore.SourcePath} was corrupted in place.\n\nRestore the original file before exiting? (The undo data is deleted when LRC closes.)", $"{nameof(LunarROMCorruptor)} - Restore before exit?", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Warning);
+                if (answer == DialogResult.Cancel)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+                if (answer == DialogResult.Yes)
+                    CorruptionCore.RestoreROM(CorruptionCore.SourcePath);
+            }
+        }
+
+        #endregion
     }
 }

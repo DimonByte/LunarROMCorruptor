@@ -10,7 +10,7 @@
     <ErrorReportUrlHistory />
     <FallbackCulture>en-US</FallbackCulture>
     <VerifyUploadedFiles>false</VerifyUploadedFiles>
-    <_LastSelectedProfileId>C:\Users\Mori\Desktop\rb\LunarROMCorruptor\LunarROMCorruptor\Properties\PublishProfiles\FolderProfile.pubxml</_LastSelectedProfileId>
+    <_LastSelectedProfileId>C:\Users\Mori\Desktop\rb\LunarROMCorruptor\LunarROMCorruptor\Properties\PublishProfiles\x32.pubxml</_LastSelectedProfileId>
   </PropertyGroup>
   <ItemGroup>
     <Compile Update="EngineControls\ExclusionEngineControl.cs">
@@ -29,6 +29,9 @@
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="EngineControls\NightmareEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="EngineControls\SourceCodeEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="EngineControls\VectorEngineControl.cs">

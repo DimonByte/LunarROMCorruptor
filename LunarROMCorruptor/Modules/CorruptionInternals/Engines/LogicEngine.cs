@@ -20,78 +20,70 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
-    internal class LogicEngine
+    public class LogicEngine
     {
-        public static byte[] CorruptByte(byte[] ROM, CorruptionOptions CorruptOption, long i, int bitwiseval)
+        public sealed class Settings
         {
-            byte BitVal = Convert.ToByte(bitwiseval);
-            switch (CorruptOption)
+            public CorruptionOptions Option = CorruptionOptions.XOR;
+            public int Value = 1; //Bitwise value (0-255)
+            public bool RandomizeType;
+            public bool RandomizeValue;
+            public int ValueMin = 0;
+            public int ValueMax = 255;
+        }
+
+        private static readonly CorruptionOptions[] AllOperations =
+        [
+            CorruptionOptions.AND, CorruptionOptions.OR, CorruptionOptions.XOR, CorruptionOptions.NOT,
+            CorruptionOptions.NAND, CorruptionOptions.NOR, CorruptionOptions.SWAP, CorruptionOptions.SHIFT
+        ];
+
+        public static void CorruptByte(CorruptionContext ctx, Settings s, long i)
+        {
+            //Randomizing is done per byte on local values instead of changing the UI controls for every byte.
+            CorruptionOptions option = s.RandomizeType ? AllOperations[ctx.Rnd.Next(AllOperations.Length)] : s.Option;
+            int value = s.RandomizeValue ? ctx.Rnd.Next(Math.Min(s.ValueMin, s.ValueMax), Math.Max(s.ValueMin, s.ValueMax) + 1) : s.Value;
+            byte bitVal = (byte)Math.Clamp(value, 0, 255);
+            byte current = ctx.Get(i);
+
+            switch (option)
             {
                 case CorruptionOptions.AND:
-                    ROM[i] = (byte)(ROM[i] & BitVal);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] AND trigger");
+                    ctx.Set(i, (byte)(current & bitVal));
                     break;
                 case CorruptionOptions.OR:
-                    ROM[i] = (byte)(ROM[i] | BitVal);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] OR trigger");
+                    ctx.Set(i, (byte)(current | bitVal));
                     break;
                 case CorruptionOptions.XOR:
-                    ROM[i] = (byte)(ROM[i] ^ BitVal);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] XOR trigger");
+                    ctx.Set(i, (byte)(current ^ bitVal));
                     break;
                 case CorruptionOptions.NOT:
-                    ROM[i] = (byte)~(ROM[i]);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] NOT trigger");
+                    ctx.Set(i, (byte)~current);
                     break;
                 case CorruptionOptions.NAND:
-                    ROM[i] = (byte)~(ROM[i] & BitVal);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] NAND trigger");
+                    ctx.Set(i, (byte)~(current & bitVal));
                     break;
                 case CorruptionOptions.NOR:
-                    ROM[i] = (byte)~(ROM[i] | BitVal);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] NOR trigger");
+                    ctx.Set(i, (byte)~(current | bitVal));
                     break;
                 case CorruptionOptions.SWAP:
-                    byte swap1 = ROM[i];
-                    byte swap2;
-                    //Console.WriteLine("[x] SWAP trigger");
-                    try
-                    {
-                        swap2 = ROM[i + 1];
-                    }
-                    catch (IndexOutOfRangeException)
-                    {
-                        //Console.WriteLine("[x] Error: Index out of range.");
-                        break;
-                    }
-                    //Console.WriteLine("[x] Passed check");
-                    ROM[i] = swap2;
-                    ROM[i + 1] = swap1;
-                    int i1 = (int)(i + BitVal);
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + swap2 + ")");
-                    Program.Form.InternalStashItems.Add("[x] File(" + i1 + ").SET(" + swap1 + ")");
+                    //Swaps this byte with the next byte. Skipped at the end of the file.
+                    if (!ctx.InFile(i + 1)) break;
+                    byte next = ctx.Get(i + 1);
+                    ctx.Set(i, next);
+                    ctx.Set(i + 1, current);
                     break;
                 case CorruptionOptions.SHIFT:
-                    ROM[i] = ROM[i + BitVal];
-                    Program.Form.InternalStashItems.Add("[x] File(" + i + ").SET(" + ROM[i] + ")");
-                    //Console.WriteLine("[x] SHIFT trigger");
+                    //Copies the byte that is <value> bytes ahead into this byte. Skipped if that would go past the end of the file.
+                    if (!ctx.InFile(i + bitVal)) break;
+                    ctx.Set(i, ctx.Get(i + bitVal));
                     break;
                 default:
-                    if (MessageBox.Show("The Logic Engine returned a result that wasn't expected! Click yes to close this program or no to continue anyway.", "ERROR", MessageBoxButtons.YesNo) == DialogResult.Yes)
-                    {
-                        Application.Exit();
-                    }
-                    break;
+                    throw new InvalidOperationException($"The Logic Engine doesn't support the operation {option}.");
             }
-            return ROM;
         }
     }
 }

@@ -30,7 +30,9 @@ LunarROMCorruptor is a advanced tool designed to corrupt binary data through var
 
 | Feature | Description |
 | :--- | :--- |
-| **Multi-Engine Support** | Switch between Nightmare, Merge, Logic, and Lerp engines seamlessly. |
+| **Multi-Engine Support** | Switch between Nightmare, Merge, Logic, Lerp, Manual, Exclusion, Vector2 and Source Code engines seamlessly. |
+| **Any File Size** | Files are no longer loaded into memory, only the changed bytes are written. There is no 2 GB limit anymore. |
+| **Background Corruption** | Corruption runs in the background with a progress bar, click the corrupt button again to cancel (the output is reverted). |
 | **Precision Control** | Use "Every Nth Byte" or "Intensity Mode" for predictable or chaotic corruption. |
 | **Smart Saving** | Use **File Saves** for full copies or **Stash Saves** (address-only) to save massive amounts of space. |
 | **Stash Editor** | Fine-tune specific corrupted bytes without re-running the entire process. |
@@ -48,9 +50,12 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 | :--- | :--- | :--- |
 | **Nightmare** | Random/Tilt | Classic, chaotic bit-flipping and value shifting. |
 | **Merge** | Pattern Injection |  Injection	Overwriting random ROM addresses with data from any source file (e.g., injecting video noise into a ROM). |
-| **Logic** | Bitwise Ops | Advanced manipulation using `AND`, `OR`, `XNOR`, `SHIFT`, etc. |
+| **Logic** | Bitwise Ops | Advanced manipulation using `AND`, `OR`, `XOR`, `NAND`, `NOR`, `SWAP`, `SHIFT`, etc. |
 | **Lerp** | Interpolation | Smooth, gradient-based transitions between byte values. |
 | **Manual** | User Defined | Complete manual control over every single operation. |
+| **Exclusion** | Header Protection | Nightmare-style corruption that never touches the headers/vectors of the selected platform or file format (NES, SNES, N64, GB, GBA, NDS, GameCube, Wii, PS1, PS2, Genesis, SMS/GG, Saturn, Dreamcast, PC Engine, Atari, EXE, ELF, BMP, WAV, JPEG and more). |
+| **Vector2** | Float Corruption | Finds 32-bit floats (positions, speeds, sizes) and nudges, negates, swaps or replaces them. |
+| **Source Code** | Text Literals | Corrupts values in source/text files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 
 #### The Nightmare Engine Modes:
 *   `RANDOM`: Sets selected bytes to a random value (0-255).
@@ -62,6 +67,14 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 *   `Replace byte with the byte at the same position`: The merge file and the ROM will be checked to see if there is a byte in the random address LRC chose. If there is the merge file byte will override the ROM byte at the ROM byte address selected.
 *   `Corruption Type`: NONE or RANGE.
 *   `MOD 256`
+
+#### Stash format:
+*   Byte engines: `[x] File(offset).SET(value)`
+*   Source Code Engine: `[x] File(offset).VARLINE("name",line).SET("new value")`
+
+#### Restore:
+*   If the save location is a different file, the original is never modified and Restore copies the original back.
+*   If the save location is the original file, the original bytes are kept in a temporary undo journal so Restore works while LRC is open.
 
 #### The Lerp Engine Modes:
 *   `Split Value`: Sets the interpolation value.

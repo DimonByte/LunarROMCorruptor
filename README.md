@@ -61,31 +61,7 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 | **Vector2** | Float Corruption | Finds 32-bit floats (positions, speeds, sizes) and nudges, negates, swaps or replaces them. |
 | **Source Code** | Text Literals | Corrupts values in source/text files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 
-#### The Nightmare Engine Modes:
-*   `RANDOM`: Sets selected bytes to a random value (0-255).
-*   `RANDOMTILT`: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
-*   `TILT`: Adds or subtracts a fixed mathematical shift (e.g., `Value + 10`).
-
-#### The Merge Engine Modes:
-*   `File Selection`: The file that will have its bytes copied from. This file wont be changed.
-*   `Replace byte with the byte at the same position`: The merge file and the ROM will be checked to see if there is a byte in the random address LRC chose. If there is the merge file byte will override the ROM byte at the ROM byte address selected.
-*   `Corruption Type`: NONE or RANGE.
-*   `MOD 256`
-
-#### Stash format:
-*   Byte engines: `[x] File(offset).SET(value)`
-*   Source Code Engine: `[x] File(offset).VARLINE("name",line).SET("new value")`
-*   Datamosh Engine: `[x] File(offset).FRAME(frame).SET(DROP|REPLACE|REPEAT,n)`
-
-#### Restore:
-*   If the save location is a different file, the original is never modified and Restore copies the original back.
-*   If the save location is the original file, the original bytes are kept in a temporary undo journal so Restore works while LRC is open.
-
-#### The Lerp Engine Modes:
-*   `Split Value`: Sets the interpolation value.
-
-#### The Logic Engine Modes:
-*   `Operation Type`: AND, OR, XOR, NOT, NAND, NOR, SWAP, SHIFT
+See [Corruption Engine Settings](#Corruption-Engine-Settings) for detailed settings for each corruption engine.
 
 ---
 
@@ -109,6 +85,10 @@ The built-in **ByteView** transforms binary data into a visual image. By mapping
 *   **Anti-Cheat Risk:** Using this tool on online games or protected software **will likely result in permanent account bans**. 
 *   **No Warranty:** This software is provided **"AS IS"**. The developer is not responsible for any data loss, hardware instability (BSOD), or loss of access to digital accounts.
 
+#### Restore:
+*   If the save location is a different file, the original is never modified and Restore copies the original back.
+*   If the save location is the original file, the original bytes are kept in a temporary undo journal so Restore works while LRC is open.
+
 ---
 
 ## Technical Requirements
@@ -116,6 +96,168 @@ The built-in **ByteView** transforms binary data into a visual image. By mapping
 *   **Runtime:** `.NET Core 10.0`
 *   **Development Environment:** `Microsoft Visual Studio 2026` (Recommended)
 *   **Platform:** Windows
+
+## Corruption Engine Settings
+
+#### Manual Engine
+*   `Increment Byte`
+*   `Do math operations on byte`: (*,/,^ byte by (number))
+*   `Repeat Byte`
+*   `Shift Right X bytes`
+*   `Paste byte to random place`:
+*   `Make byte equal`: (Number)
+*   `Replace`: (Number) with (Number)
+
+#### Nightmare Engine
+*   `RANDOM`: Sets selected bytes to a random value (0-255).
+*   `RANDOMTILT`: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
+*   `TILT`: Adds or subtracts a fixed mathematical shift (e.g., `Value + 10`).
+
+#### The Merge Engine
+*   `File Selection`: The file that will have its bytes copied from. This file wont be changed.
+*   `Replace byte with the byte at the same position`: The merge file and the ROM will be checked to see if there is a byte in the random address LRC chose. If there is the merge file byte will override the ROM byte at the ROM byte address selected.
+*   `Corruption Type`: NONE or RANGE.
+*   `MOD 256`
+
+#### The Lerp Engine
+*   `Split Value`: Sets the interpolation value.
+
+#### The Logic Engine
+*   `Operation Type`: AND, OR, XOR, NOT, NAND, NOR, SWAP, SHIFT
+
+#### The Exclusion Engine
+Has Nightmare engine internals but has an exclusion list the user can select to exclude certain bytes from being corrupted. 
+
+- RANDOM: Sets selected bytes to a random value (0-255).
+- RANDOMTILT: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
+- TILT: Adds or subtracts a fixed mathematical shift (e.g., Value + 10).
+
+`Exclusion Type`: Tells the engine via the exclusion type what byte locations to ignore when corrupting to get more creative corruptions with less crashes.
+
+The exclusion type list is:
+- NES
+- SNES
+- N64
+- N64 (STRICT CRC)
+- GAMEBOY
+- GBA
+- NDS
+- GAMECUBE
+- WII
+- PS1
+- PS2
+- SEGA
+- SMS/GG
+- SEGA CD/SATURN
+- DREAMCAST
+- PC ENGINE
+- ATARI 2600
+- ATARI 7800
+- ATARI LYNX
+- VIRTUAL BOY
+- WONDERSWAN
+- EXE
+- ELF
+- BIOS
+- BMP
+- WAV
+- JPEG
+
+#### Vector2 Engine
+The Vector2 Engine looks for 32-bit floats (positions, velocities, sizes, colours) and corrupts them. Only values inside the min/max magnitude are treated as floats, which avoids corrupting code and empty data. In 'Every Nth' mode N counts floats/vectors instead of bytes. Most PC/PS1/PS2/DS/3DS/Switch data is little-endian.
+
+`Corruption Type`:
+- REPLACE
+- NUDGE
+- NEGATE
+- RANDOM
+- SWAPXY
+
+`Replacement Values`
+
+`Nudge Amount (%)`
+
+`Only floats from`
+
+`Up to (magnitude)`
+
+#### Blocks Engine
+Works on whole blocks instead of single bytes, like pixel sorting and data moshing in glitch art. SORT orders the elements by value, REVERSE/SHUFFLE/ROTATE move them around, SMEAR repeats one element across the block and ECHO mixes the block with the data that came earlier. Intensity = number of random blocks, Every Nth = every Nth block from the start byte. Tip: use ByteView to find image/audio data and drag over it to target it. For compressed video (MP4/AVI) use the Datamosh Engine instead, Blocks only gives a datamosh look on uncompressed video or raw images.
+
+Element size: 1 = bytes, 2 = 16-bit audio samples, 3 = 24-bit RGB pixels, 4 = 32-bit values/RGBA pixels.
+
+`Block operation`:
+- RANDOM
+- SORT
+- REVERSE
+- SHUFFLE
+- ROTATE
+- SMEAR
+- ECHO
+
+`Block size (bytes)`
+
+`Element Size (bytes)`
+
+`Echo distance (bytes)`
+
+`Sort descending` (Checkbox)
+
+#### Datamosh Engine
+
+Datamoshing for AVI videos (Xvid/DivX/MPEG-4 works best; H.264 AVIs work with DUPLICATE_FRAMES, but players may skip frames after removed keyframes). REMOVE_KEYFRAMES deletes keyframes so the motion of the next frames smears over the old picture (the classic melt). DUPLICATE_FRAMES repeats motion frames so the movement keeps pushing the pixels (bloom). Every Nth = every Nth keyframe/frame (Every Nth = 1 removes them all), Intensity = that many random ones.
+
+Preset: convert your video first with ffmpeg -i input.mp4 -c:v mpeg4 -vtag XVID -q:v 2 -g 600 -bf 0 -c:a libmp3lame output.avi (few keyframes, no B-frames). Then use REMOVE_KEYFRAMES + Every Nth Byte = 1 + Keep first keyframes = 1. Play the result in VLC/mpv or bake it with ffmpeg -i moshed.avi -c:v libx264 -crf 18 final.mp4
+
+`Mosh type:`
+- REMOVE_KEYFRAMES
+- DUPLICATE_FRAMES
+- BOTH
+
+`Keep first keyframe`
+
+`Repeat each frame (times)`
+
+#### Source Code Engine
+The most interesting one in my opinion; reads source code as text and corrupts values instead of raw bytes, e.g. true becomes false, 3.14 becomes 4, strings get shuffled. Comments are skipped (AUTO picks the comment style from the file extension). Intensity = how many values to corrupt, Every Nth = every Nth value. Each change is saved to the stash as File(offset).VARLINE("name",line).SET("value").
+
+Values to corrupt (checkboxes):
+- Booleans (true/false)
+- Integers (10, 0xFF)
+- Decimals (3.14)
+- Strings ("Text")
+- Null values (null/nil/None)
+- Operators (== < + &)
+- Variable Names (Swap)
+
+`Number corruption`:
+- RANDOM
+- NUDGE
+- SCALE
+- SIGNFLIP
+- MAGIC
+- DIGITS
+
+`Strength (%)`
+
+`String Corruption`:
+- RANDOM
+- SHUFFLE
+- REVERSE
+- TRUNCATE
+- SWAP
+- SUBSTITUTE
+- REPEAT
+
+`Comment Style`:
+- AUTO
+- CLIKE
+- HASH
+- DASHDASH
+- SEMICOLON
+- XML
+- BASIC
+- NONE
 
 ## Contributing
 

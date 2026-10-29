@@ -21,7 +21,7 @@
 LunarROMCorruptor is a advanced tool designed to corrupt binary data through various algorithmic engines. While optimized for ROM hacking, its capabilities extend to **any file format**. Whether you are looking for random bit-flips or complex mathematical interpolation, LunarROMCorruptor provides the precision tools needed for high-quality glitch art.
 
 <div align="center">
-    <img src="https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/MainInterface.png" alt="Main Interface Screenshot" width="60%" />
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/MainInterface.png" alt="Main Interface Screenshot" width="60%" />
 </div>
 
 ---
@@ -41,6 +41,11 @@ LunarROMCorruptor is a advanced tool designed to corrupt binary data through var
 | **ByteView Targeting** | Drag over the ByteView image to set the Start/End byte to exactly that area of the file. |
 | **Automation** | Automate randomization of intensity, byte ranges, and engine selection. |
 | **Batch Processing** | Drag-and-drop entire folders or multiple files for mass corruption. Every file is restored before each blast and Restore puts all of them back. |
+
+<div align="center">
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/CorruptionHistory.png" alt="Example of Corruption History" width="40%" />
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/MultiFile.png" alt="Example of Multi File" width="40%" />
+</div>
 
 ---
 
@@ -70,7 +75,7 @@ See [Corruption Engine Settings](#Corruption-Engine-Settings) for detailed setti
 The built-in **ByteView** transforms binary data into a visual image. By mapping byte values to RGB or grayscale pixels, you can observe patterns that are invisible in a standard hex editor. The view updates in real-time as you apply corruption engines.
 
 <div align="center">
-    <img src="https://raw.githubusercontent.com/lloyd99901/LunarROMCorruptor/master/static/images/ByteView.png" alt="ByteView Screenshot" width="50%" />
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/ByteView.png" alt="ByteView Screenshot" width="50%" />
 </div>
 
 ---

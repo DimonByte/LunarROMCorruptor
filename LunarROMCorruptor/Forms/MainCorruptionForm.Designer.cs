@@ -90,9 +90,9 @@
             ByteViewHelp = new LinkLabel();
             byteViewColourChkbox = new CheckBox();
             ByteViewLbl = new Label();
-            ByteViewPictureBox = new PictureBox();
             ByteViewModeComboBox = new ComboBox();
             ByteViewInfoLbl = new Label();
+            ByteViewPictureBox = new PictureBox();
             AutomationPage = new TabPage();
             AutomationLbl = new Label();
             AutoCorruptPanel = new Panel();
@@ -786,21 +786,6 @@
             IntensityTrackbar.Value = 1;
             IntensityTrackbar.Scroll += IntensityTrackbar_Scroll;
             // 
-            // CorruptionHistoryBtn
-            // 
-            CorruptionHistoryBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            CorruptionHistoryBtn.BackColor = Color.FromArgb(52, 60, 111);
-            CorruptionHistoryBtn.FlatAppearance.BorderSize = 0;
-            CorruptionHistoryBtn.FlatStyle = FlatStyle.Flat;
-            CorruptionHistoryBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionHistoryBtn.Location = new Point(384, 257);
-            CorruptionHistoryBtn.Margin = new Padding(2, 3, 2, 3);
-            CorruptionHistoryBtn.Name = "CorruptionHistoryBtn";
-            CorruptionHistoryBtn.Size = new Size(134, 27);
-            CorruptionHistoryBtn.TabIndex = 180;
-            CorruptionHistoryBtn.Text = "Corruption History ▾";
-            CorruptionHistoryBtn.UseVisualStyleBackColor = false;
-            // 
             // StashBytesList
             // 
             StashBytesList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
@@ -816,6 +801,21 @@
             StashBytesList.Name = "StashBytesList";
             StashBytesList.Size = new Size(134, 229);
             StashBytesList.TabIndex = 158;
+            // 
+            // CorruptionHistoryBtn
+            // 
+            CorruptionHistoryBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            CorruptionHistoryBtn.BackColor = Color.FromArgb(52, 60, 111);
+            CorruptionHistoryBtn.FlatAppearance.BorderSize = 0;
+            CorruptionHistoryBtn.FlatStyle = FlatStyle.Flat;
+            CorruptionHistoryBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            CorruptionHistoryBtn.Location = new Point(384, 257);
+            CorruptionHistoryBtn.Margin = new Padding(2, 3, 2, 3);
+            CorruptionHistoryBtn.Name = "CorruptionHistoryBtn";
+            CorruptionHistoryBtn.Size = new Size(134, 27);
+            CorruptionHistoryBtn.TabIndex = 180;
+            CorruptionHistoryBtn.Text = "Corruption History ▾";
+            CorruptionHistoryBtn.UseVisualStyleBackColor = false;
             // 
             // EnableStashSavesChkbox
             // 
@@ -1139,7 +1139,6 @@
             ByteViewModeComboBox.Name = "ByteViewModeComboBox";
             ByteViewModeComboBox.Size = new Size(111, 23);
             ByteViewModeComboBox.TabIndex = 9;
-            ByteViewModeComboBox.SelectedIndex = 0;
             // 
             // ByteViewInfoLbl
             // 

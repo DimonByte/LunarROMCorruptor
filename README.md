@@ -67,7 +67,7 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 | **Blocks** | Glitch Art | Sorts, reverses, shuffles, rotates, smears or echoes whole blocks of data (pixel sorting / data moshing). Element size keeps RGB pixels or audio samples intact. |
 | **Datamosh** | Video | Classic datamoshing for AVI videos: removes keyframes (melt) or repeats motion frames (bloom). Convert first with `ffmpeg -i in.mp4 -c:v mpeg4 -vtag XVID -q:v 2 -g 600 -bf 0 -c:a libmp3lame out.avi`. |
 | **Vector2** | Float Corruption | Finds 32-bit floats (positions, speeds, sizes) and nudges, negates, swaps or replaces them. |
-| **Source Code** | Code Variables | Corrupts variables (e.g. booleans, integers, strings, etc) in source/text files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
+| **Source Code** | Code Variables | Targets and corrupts variables (e.g. booleans, integers, strings, variable names, etc) in source code files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 
 See [Corruption Engine Settings](#Corruption-Engine-Settings) for detailed parameters for each corruption engine.
 

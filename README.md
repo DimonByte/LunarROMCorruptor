@@ -11,6 +11,7 @@
 [![GitHub license](https://img.shields.io/github/license/DimonByte/LunarROMCorruptor)](https://github.com/lloyd99901/LunarROMCorruptor/blob/master/LICENSE)
 ![GitHub CodeQL](https://github.com/DimonByte/LunarROMCorruptor/actions/workflows/codeql.yml/badge.svg)
 ![GitHub DOTNET](https://github.com/DimonByte/LunarROMCorruptor/actions/workflows/dotnet-desktop.yml/badge.svg)
+[![Download LunarROMCorruptor](https://img.shields.io/sourceforge/dt/lunarromcorruptor.svg)](https://github.com/DimonByte/LunarROMCorruptor/releases/)
 
 </div>
 

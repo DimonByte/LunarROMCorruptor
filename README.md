@@ -32,16 +32,18 @@ LunarROMCorruptor is a advanced tool designed to corrupt binary data through var
 | Feature | Description |
 | :--- | :--- |
 | **Multi-Engine Support** | Switch between Nightmare, Merge, Logic, Lerp, Manual, Exclusion, Vector2 and Source Code engines seamlessly. |
-| **Any File Size** | Files are no longer loaded into memory, only the changed bytes are written. There is no 2 GB limit anymore. |
-| **Background Corruption** | Corruption runs in the background with a progress bar, click the corrupt button again to cancel (the output is reverted). |
+| **Large File Size Support** | Files aren't loaded into memory, only the changed bytes are written. Meaning corruption is possible on 50GB+ files |
+| **Background Corruption** | Corruption runs in the background with a progress bar, click the corrupt button again to cancel. |
 | **Precision Control** | Use "Every Nth Byte" or "Intensity Mode" for predictable or chaotic corruption. |
-| **Smart Saving** | Use **File Saves** for full copies or **Stash Saves** (address-only) to save massive amounts of space. |
+| **Smart Saving (File Saves and Stash Saves)** | Use **File Saves** for full copies or **Stash Saves** (address-only) to save massive amounts of space. |
 | **Stash Editor** | Fine-tune specific corrupted bytes without re-running the entire process. **Mutate** makes variations of a corruption (random value, nudge value or move address), plus append, sort and remove duplicates. |
 | **Corruption History** | The stashes of the last 3 corruptions are kept so you can re-apply or save one you liked. |
 | **ByteView** | Visualize binary data as RGB/Grayscale pixels to "see" the bytes change. **Diff** mode highlights every changed byte, **Entropy** mode shows where text, tables, code and compressed data are. |
 | **ByteView Targeting** | Drag over the ByteView image to set the Start/End byte to exactly that area of the file. |
 | **Automation** | Automate randomization of intensity, byte ranges, and engine selection. |
 | **Batch Processing** | Drag-and-drop entire folders or multiple files for mass corruption. Every file is restored before each blast and Restore puts all of them back. |
+| **Force File Ownership** | Use "Take File Ownership" to force a file that is protected to be corrupted. (Caution: With great power comes great responsibility... and tested backups.) |
+| **Run Emulator after Corruption** | Run emulator/program after corruption. By default it runs with the corrupted file as the argument, but you can override the arguments for something custom. |
 
 <div align="center">
     <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/CorruptionHistory.png" alt="Example of Corruption History" width="40%" />
@@ -65,15 +67,16 @@ LunarROMCorruptor utilizes distinct algorithms to achieve different "flavors" of
 | **Blocks** | Glitch Art | Sorts, reverses, shuffles, rotates, smears or echoes whole blocks of data (pixel sorting / data moshing). Element size keeps RGB pixels or audio samples intact. |
 | **Datamosh** | Video | Classic datamoshing for AVI videos: removes keyframes (melt) or repeats motion frames (bloom). Convert first with `ffmpeg -i in.mp4 -c:v mpeg4 -vtag XVID -q:v 2 -g 600 -bf 0 -c:a libmp3lame out.avi`. |
 | **Vector2** | Float Corruption | Finds 32-bit floats (positions, speeds, sizes) and nudges, negates, swaps or replaces them. |
-| **Source Code** | Text Literals | Corrupts values in source/text files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
+| **Source Code** | Code Variables | Corrupts variables (e.g. booleans, integers, strings, etc) in source/text files: `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 
-See [Corruption Engine Settings](#Corruption-Engine-Settings) for detailed settings for each corruption engine.
+See [Corruption Engine Settings](#Corruption-Engine-Settings) for detailed parameters for each corruption engine.
 
 ---
 
 ## Visualizing Data with ByteView
 
 The built-in **ByteView** transforms binary data into a visual image. By mapping byte values to RGB or grayscale pixels, you can observe patterns that are invisible in a standard hex editor. The view updates in real-time as you apply corruption engines.
+You can also drag and select the start and end bytes you want to corrupt in the ByteView mode, which will draw a yellow box around them.
 
 <div align="center">
     <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/ByteView.png" alt="ByteView Screenshot" width="50%" />
@@ -119,19 +122,19 @@ The built-in **ByteView** transforms binary data into a visual image. By mapping
 *   `RANDOMTILT`: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
 *   `TILT`: Adds or subtracts a fixed mathematical shift (e.g., `Value + 10`).
 
-#### The Merge Engine
+#### Merge Engine
 *   `File Selection`: The file that will have its bytes copied from. This file wont be changed.
 *   `Replace byte with the byte at the same position`: The merge file and the ROM will be checked to see if there is a byte in the random address LRC chose. If there is the merge file byte will override the ROM byte at the ROM byte address selected.
 *   `Corruption Type`: NONE or RANGE.
 *   `MOD 256`
 
-#### The Lerp Engine
+#### Lerp Engine
 *   `Split Value`: Sets the interpolation value.
 
-#### The Logic Engine
+#### Logic Engine
 *   `Operation Type`: AND, OR, XOR, NOT, NAND, NOR, SWAP, SHIFT
 
-#### The Exclusion Engine
+#### Exclusion Engine
 Has Nightmare engine internals but has an exclusion list the user can select to exclude certain bytes from being corrupted. 
 
 - RANDOM: Sets selected bytes to a random value (0-255).

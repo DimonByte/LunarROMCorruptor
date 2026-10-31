@@ -42,8 +42,8 @@ namespace LunarROMCorruptor.Modules
         private static DateTime _lastDateCheck = DateTime.MinValue;
         private static readonly bool EnableDiskLogging = false;
         private static bool _isDirectoryCreated = false;
-        public static Action<string, StatusSeverityType>? OnLogEntryAdded;
-        public static volatile bool SuppressMessageBoxes; //Set while automation is running so errors don't stack up modal dialogs
+        internal static Action<string, StatusSeverityType>? OnLogEntryAdded;
+        internal static volatile bool SuppressMessageBoxes; //Set while automation is running so errors don't stack up modal dialogs
         static TraceLogger()
         {
             EnsureLogDirectoryExists();

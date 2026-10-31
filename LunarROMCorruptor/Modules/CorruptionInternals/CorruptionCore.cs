@@ -49,13 +49,13 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
     /// </summary>
     public class CorruptionCore
     {
-        public static string? SourcePath; //The file that is loaded into LRC. In single file mode this file is only written to when the save location is the same file.
-        public static long SourceLength; //The size of the loaded file in bytes
-        public static long MaxByte; //This stores the maximum byte index of the file that is loaded (SourceLength - 1)
-        public static double rawFileSize; //This stores the file size of the loaded ROM, used for displaying the size
-        public static string? fileSizeUnit; //This stores the unit of the file size (E.g. MB, GB)
-        public static string? LastOutputPath; //The last file that was written by a corruption (used by ByteView)
-        public static readonly StashLog Stash = new(); //Records every byte that the engines change (replaces the old InternalStashItems string list)
+        internal static string? SourcePath; //The file that is loaded into LRC. In single file mode this file is only written to when the save location is the same file.
+        internal static long SourceLength; //The size of the loaded file in bytes
+        internal static long MaxByte; //This stores the maximum byte index of the file that is loaded (SourceLength - 1)
+        internal static double rawFileSize; //This stores the file size of the loaded ROM, used for displaying the size
+        internal static string? fileSizeUnit; //This stores the unit of the file size (E.g. MB, GB)
+        internal static string? LastOutputPath; //The last file that was written by a corruption (used by ByteView)
+        internal static readonly StashLog Stash = new(); //Records every byte that the engines change (replaces the old InternalStashItems string list)
 
         public static bool IsLoaded => SourcePath != null;
 
@@ -597,7 +597,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         /// <summary>
         /// Set from the "Take File Ownership" checkbox. When true, the permission override is attempted if a file can't be read/written.
         /// </summary>
-        public static bool AttemptOverrideOnWrite = false;
+        internal static bool AttemptOverrideOnWrite = false;
 
         /// <summary>
         /// Checks the output can be written to (or created), attempting the permission override if enabled.
@@ -948,16 +948,10 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             public LinkedListNode<Page>? Node;
         }
 
-        /// <summary>
-        /// Default cache budget: a quarter of the available memory, between 64 MB and 2 GB.
-        /// </summary>
-        public static long? BudgetOverrideBytes; //Only used for testing the large-file (LRU) code path
-
         public static long DefaultBudgetBytes
         {
             get
             {
-                if (BudgetOverrideBytes.HasValue) return BudgetOverrideBytes.Value;
                 long available = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
                 if (available <= 0) available = 4L * 1024 * 1024 * 1024;
                 return Math.Clamp(available / 4, 64L * 1024 * 1024, 2L * 1024 * 1024 * 1024);

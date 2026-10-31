@@ -403,7 +403,7 @@ namespace LunarROMCorruptor.Modules
         public const long MaxStashEntries = 2_000_000; //Bigger stashes aren't written to the history (they'd be hundreds of MB)
         private static readonly Lock _lock = new();
         private static readonly List<CorruptionHistoryEntry> _entries = []; //Newest first
-        public static string HistoryDirectory = Path.Combine(AppContext.BaseDirectory, "CorruptionHistory");
+        internal static string HistoryDirectory = Path.Combine(AppContext.BaseDirectory, "CorruptionHistory");
 
         public static IReadOnlyList<CorruptionHistoryEntry> Entries
         {

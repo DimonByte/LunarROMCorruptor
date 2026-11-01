@@ -30,7 +30,8 @@ namespace LunarROMCorruptor.Modules
     {
         Normal, //3 bytes = 1 RGB (or grey) pixel
         Diff, //Grey image with every changed byte highlighted in red
-        Entropy //Heatmap of how random each block of the file is (padding = dark, text/tables = blue/green, code = yellow, compressed = red)
+        Entropy, //Heatmap of how random each block of the file is (padding = dark, text/tables = blue/green, code = yellow, compressed = red)
+        Regions //Dimmed grey image with the named regions of the file (header, code, data, compressed blocks, excluded ranges) drawn over it
     }
 
     /// <summary>
@@ -88,6 +89,7 @@ namespace LunarROMCorruptor.Modules
             {
                 ByteViewMode.Entropy => RenderEntropy(path, length, enableColour, token),
                 ByteViewMode.Diff => RenderDiff(path, length, originalPath, changedOffsets, token),
+                ByteViewMode.Regions => RenderDimmed(path, length, token),
                 _ => RenderNormal(path, length, enableColour, token)
             };
             result.FileLength = length;
@@ -136,6 +138,20 @@ namespace LunarROMCorruptor.Modules
         {
             byte grey = (byte)((r + g + b) / 3);
             return (grey, grey, grey);
+        }
+
+        /// <summary>
+        /// Dimmed grey image (Regions mode): the region colours are drawn over it by the form.
+        /// </summary>
+        private static ByteViewImage RenderDimmed(string path, long length, CancellationToken token)
+        {
+            var (width, height, step) = RgbLayout(length);
+            var image = DrawRgb(path, width, height, step, (r, g, b, _) =>
+            {
+                byte grey = (byte)((r + g + b) / 3 * 0.45 + 15);
+                return (grey, grey, grey);
+            }, token);
+            return new ByteViewImage { Image = image, Width = width, Height = height, BytesPerPixel = step * BytesPerRgbPixel };
         }
 
         private static ByteViewImage RenderDiff(string path, long length, string? originalPath, IEnumerable<long>? changedOffsets, CancellationToken token)

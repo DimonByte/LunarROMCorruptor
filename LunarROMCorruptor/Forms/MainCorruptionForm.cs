@@ -31,6 +31,7 @@
 using LunarROMCorruptor.EngineControls;
 using LunarROMCorruptor.Modules;
 using LunarROMCorruptor.Modules.CorruptionInternals;
+using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
 using LunarROMCorruptor.Modules.Helpers;
 using LunarROMCorruptor.Properties;
 using System.Media;
@@ -53,6 +54,8 @@ namespace LunarROMCorruptor
         public readonly SourceCodeEngineControl SourceCodeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly DatamoshEngineControl DatamoshEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly BlocksEngineControl BlocksEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly PointerEngineControl PointerEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
+        public readonly CompressionEngineControl CompressionEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         #endregion
 
         private const int StashDisplayLimit = 50000; //More stash entries than this are not shown in the list (a "LargeStash" placeholder is shown instead)
@@ -73,6 +76,9 @@ namespace LunarROMCorruptor
         private long _byteViewDragStart;
         private long _byteViewDragEnd;
         private int _byteViewRenderVersion;
+        private List<ExclusionEngine.NamedRegion>? _byteViewRegions; //Regions mode: the named regions of the shown file
+        private string? _byteViewRegionProfile; //Regions mode: the profile the regions were read with
+        private LunarROMCorruptor.Forms.BisectForm? _bisectForm;
 
         public MainCorruptionForm()
         {
@@ -84,15 +90,53 @@ namespace LunarROMCorruptor
             ByteViewPictureBox.MouseMove += ByteViewPictureBox_MouseMove;
             ByteViewPictureBox.MouseUp += ByteViewPictureBox_MouseUp;
             ByteViewPictureBox.Paint += ByteViewPictureBox_Paint;
-            ByteViewPictureBox.Resize += (_, _) => ByteViewPictureBox.Invalidate();
-            ByteViewModeComboBox.SelectedIndexChanged += (_, _) => { if (CorruptionCore.IsLoaded && _byteViewInfo != null) UpdateByteView(ByteViewPictureBox); };
+            ByteViewPictureBox.Resize += (_, _) =>
+            {
+                if (_byteViewInfo != null) ClampByteViewPan(_byteViewInfo);
+                ByteViewPictureBox.Invalidate();
+            };
+            //Zoom: scroll wheel, middle mouse drag to move, double-click to reset (ByteView tab only, not the small preview)
+            ByteViewPictureBox.MouseWheel += ByteViewPictureBox_MouseWheel;
+            ByteViewPictureBox.DoubleClick += (_, _) =>
+            {
+                ResetByteViewZoom();
+                if (_byteViewInfo != null) ByteViewInfoLbl.Text = DescribeByteView(_byteViewInfo);
+                ByteViewPictureBox.Invalidate();
+            };
+            ByteViewRegionProfileComboBox.Items.Add("Auto");
+            foreach (string profile in ExclusionEngine.Profiles.Keys) ByteViewRegionProfileComboBox.Items.Add(profile);
+            ByteViewRegionProfileComboBox.SelectedIndex = 0;
+            ByteViewRegionProfileComboBox.SelectedIndexChanged += (_, _) => { if (CorruptionCore.IsLoaded && SelectedByteViewMode == ByteViewMode.Regions) UpdateByteView(); };
+            CorruptionCore.Exclusions.Changed += OnExclusionsChanged;
+            //The small ByteView preview on the main tab shows the same start/end range overlay
+            ByteViewCloneImage.Paint += ByteViewPictureBox_Paint;
+            ByteViewCloneImage.Resize += (_, _) => ByteViewCloneImage.Invalidate();
+            ByteViewModeComboBox.SelectedIndexChanged += (_, _) =>
+            {
+                ByteViewRegionProfileComboBox.Visible = SelectedByteViewMode == ByteViewMode.Regions;
+                if (CorruptionCore.IsLoaded && _byteViewInfo != null) UpdateByteView();
+            };
             FormClosed += (_, _) =>
             {
                 TraceLogger.OnLogEntryAdded -= OnTraceLogEntryAdded;
+                CorruptionCore.Exclusions.Changed -= OnExclusionsChanged;
                 CorruptionCore.ResetSession();
                 CorruptionCore.ResetQueueSession();
                 CorruptionHistory.Clear();
             };
+        }
+
+        /// <summary>
+        /// Excluded ranges changed (Bisect Mode, a stash with EXCLUDE lines or a reset): redraw them in red and update the details.
+        /// </summary>
+        private void OnExclusionsChanged()
+        {
+            if (IsDisposed || !IsHandleCreated) return;
+            BeginInvoke(() =>
+            {
+                InvalidateByteViewOverlays();
+                GenerateSelectedByteDetails();
+            });
         }
 
         private void OnTraceLogEntryAdded(string logEntry, LunarROMCorruptor.Modules.StatusSeverityType severity)
@@ -175,6 +219,8 @@ namespace LunarROMCorruptor
             byteViewColourChkbox.Checked = Settings.Default.ByteViewColourMode;
             ByteViewupdateWhenCorruptedChkBox.Checked = Settings.Default.ByteViewUpdateOnCorruption;
             AttemptProtectedFileOverrideChkBox.Checked = Settings.Default.AttemptProtectedFileOverride;
+            FixChecksumsChkBox.Checked = Settings.Default.FixChecksums;
+            CorruptionCore.FixChecksums = FixChecksumsChkBox.Checked;
             CorruptionCore.AttemptOverrideOnWrite = AttemptProtectedFileOverrideChkBox.Checked;
         }
 
@@ -244,7 +290,7 @@ namespace LunarROMCorruptor
                 {
                     NumberOfBytesToCorrupt = (int)Intensity.Value;
                 }
-                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value})\nEnd: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value})\nLength: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\nNumber of Stash Items: {StashBytesList.Items.Count}\nNumber of Bytes to Corrupt: {NumberOfBytesToCorrupt}";
+                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value})\nEnd: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value})\nLength: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\nNumber of Stash Items: {StashBytesList.Items.Count}\nNumber of Bytes to Corrupt: {NumberOfBytesToCorrupt}{(CorruptionCore.Exclusions.Count > 0 ? $"\nExcluded Ranges: {CorruptionCore.Exclusions.Count} ({FormatByteCount(CorruptionCore.Exclusions.TotalBytes)})" : "")}";
             }
             catch (Exception ex)
             {
@@ -313,14 +359,14 @@ namespace LunarROMCorruptor
         private void StartByteNumb_ValueChanged(object sender, EventArgs e)
         {
             StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
-            ByteViewPictureBox.Invalidate(); //Redraw the range overlay
+            InvalidateByteViewOverlays(); //Redraw the range overlay
             GenerateSelectedByteDetails();
         }
 
         private void EndByteNumb_ValueChanged(object sender, EventArgs e)
         {
             EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
-            ByteViewPictureBox.Invalidate();
+            InvalidateByteViewOverlays();
             GenerateSelectedByteDetails();
         }
 
@@ -442,6 +488,16 @@ namespace LunarROMCorruptor
                     newControl.Name = "BlocksEngineControl";
                     break;
 
+                case CorruptionEngineType.PointerEngine:
+                    newControl = PointerEngineFrame;
+                    newControl.Name = "PointerEngineControl";
+                    break;
+
+                case CorruptionEngineType.CompressionEngine:
+                    newControl = CompressionEngineFrame;
+                    newControl.Name = "CompressionEngineControl";
+                    break;
+
                 case CorruptionEngineType.SourceCodeEngine:
                     newControl = SourceCodeEngineFrame;
                     newControl.Name = "SourceCodeEngineControl";
@@ -484,7 +540,9 @@ namespace LunarROMCorruptor
                 //In queue mode every file has a different size, "end of file" is kept as "end of each file"
                 EndByte = queueMode && EndByteNumb.Value == EndByteNumb.Maximum ? long.MaxValue : (long)EndByteNumb.Value,
                 EveryNth = CorruptEverynthByteRadioBtn.Checked,
-                Intensity = CorruptEverynthByteRadioBtn.Checked ? (long)EveryNthByte.Value : (long)Intensity.Value
+                Intensity = CorruptEverynthByteRadioBtn.Checked ? (long)EveryNthByte.Value : (long)Intensity.Value,
+                //Excluded ranges belong to the loaded file, so they aren't used for the corruption queue
+                Excluded = queueMode ? null : CorruptionCore.Exclusions.Snapshot()
             };
             try
             {
@@ -500,6 +558,8 @@ namespace LunarROMCorruptor
                     case CorruptionEngineType.SourceCodeEngine: settings.SourceCode = SourceCodeEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.BlocksEngine: settings.Blocks = BlocksEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.DatamoshEngine: settings.Datamosh = DatamoshEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.PointerEngine: settings.Pointer = PointerEngineFrame.GetSettings(); break;
+                    case CorruptionEngineType.CompressionEngine: settings.Compression = CompressionEngineFrame.GetSettings(); break;
                 }
             }
             catch (InvalidOperationException ex)
@@ -1442,32 +1502,31 @@ namespace LunarROMCorruptor
         private void ByteViewHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             MessageBox.Show($"ByteView shows the bytes of a file as an image. Convert/Update shows the latest corrupted file (or the loaded file if nothing has been corrupted yet). Large files are downsampled.{Environment.NewLine}{Environment.NewLine}" +
-                $"Modes:{Environment.NewLine}- Normal: every 3 bytes are one pixel (colour or greyscale).{Environment.NewLine}- Diff: the file in grey with every byte changed by the last corruption in red.{Environment.NewLine}- Entropy: how random each part of the file is. Dark = empty/padding, blue/green = tables and text, yellow = code, red = compressed or encrypted data.{Environment.NewLine}{Environment.NewLine}" +
-                $"Targeting: drag over the image to set the Start/End byte to that area (e.g. drag over the graphics you see in Normal mode or a blue area in Entropy mode). The current range is highlighted in yellow. Right-click to reset the range to the whole file. Hover to see the offset under the mouse.",
+                $"Modes:{Environment.NewLine}- Normal: every 3 bytes are one pixel (colour or greyscale).{Environment.NewLine}- Diff: the file in grey with every byte changed by the last corruption in red.{Environment.NewLine}- Entropy: how random each part of the file is. Dark = empty/padding, blue/green = tables and text, yellow = code, red = compressed or encrypted data.{Environment.NewLine}" +
+                $"- Regions: the named parts of the file for its type (picked automatically or with the list under the mode). Orange = header/boot (protected by the Exclusion Engine), blue = code, green = data, pink = graphics, purple = compressed blocks. Hover to see the name of a region.{Environment.NewLine}{Environment.NewLine}" +
+                $"Excluded ranges (from Bisect Mode or EXCLUDE stash lines) are always shown in red: no engine changes them.{Environment.NewLine}{Environment.NewLine}" +
+                $"Targeting: drag over the image to set the Start/End byte to that area. The current range is highlighted in yellow. Right-click to reset the range to the whole file. Hover to see the offset under the mouse.{Environment.NewLine}{Environment.NewLine}" +
+                $"Zoom: use the scroll wheel over the image, drag with the middle mouse button to move around, double-click to reset the zoom.",
                 $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteViewSaveImageBtn_Click(object sender, EventArgs e)
         {
-            if (ByteViewPictureBox.Image != null)
+            var view = _byteViewInfo;
+            if (view == null) return;
+            using SaveFileDialog saveFileDialog = new();
+            saveFileDialog.Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|All Files (*.*)|*.*";
+            saveFileDialog.Title = "Save Image";
+            if (saveFileDialog.ShowDialog() != DialogResult.OK) return;
+            try
             {
-                using SaveFileDialog saveFileDialog = new();
-                saveFileDialog.Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|All Files (*.*)|*.*";
-                saveFileDialog.Title = "Save Image";
-
-                if (saveFileDialog.ShowDialog() == DialogResult.OK)
-                {
-                    try
-                    {
-                        using Bitmap imageToSave = new(ByteViewPictureBox.Image);
-                        var format = Path.GetExtension(saveFileDialog.FileName).ToLowerInvariant() is ".jpg" or ".jpeg" ? System.Drawing.Imaging.ImageFormat.Jpeg : System.Drawing.Imaging.ImageFormat.Png;
-                        imageToSave.Save(saveFileDialog.FileName, format);
-                    }
-                    catch (Exception ex)
-                    {
-                        TraceLogger.Log($"Unable to save the ByteView image: {ex.Message}", StatusSeverityType.Error, true);
-                    }
-                }
+                using Bitmap imageToSave = new(view.Image);
+                var format = Path.GetExtension(saveFileDialog.FileName).ToLowerInvariant() is ".jpg" or ".jpeg" ? System.Drawing.Imaging.ImageFormat.Jpeg : System.Drawing.Imaging.ImageFormat.Png;
+                imageToSave.Save(saveFileDialog.FileName, format);
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to save the ByteView image: {ex.Message}", StatusSeverityType.Error, true);
             }
         }
 
@@ -1478,27 +1537,37 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("Attempted to refresh ByteView but no file is loaded. Please load a file before attempting to use ByteView.", StatusSeverityType.Error, true);
                 return;
             }
-            UpdateByteView(ByteViewPictureBox);
+            UpdateByteView();
         }
 
         private void UpdateByteViewIfEnabled()
         {
             if (ByteViewupdateWhenCorruptedChkBox.Checked)
             {
-                UpdateByteView(ByteViewPictureBox);
+                UpdateByteView();
             }
         }
 
+        private ByteViewMode SelectedByteViewMode => ByteViewModeComboBox.SelectedIndex switch
+        {
+            1 => ByteViewMode.Diff,
+            2 => ByteViewMode.Entropy,
+            3 => ByteViewMode.Regions,
+            _ => ByteViewMode.Normal
+        };
+
         /// <summary>
         /// Renders the latest corrupted file (or the loaded file if nothing has been corrupted yet) in ByteView on a background thread.
+        /// In Regions mode the named regions of the file are read at the same time.
         /// </summary>
-        private async void UpdateByteView(PictureBox RenderpictureBox)
+        private async void UpdateByteView()
         {
             string? path = CorruptionCore.LastOutputPath != null && File.Exists(CorruptionCore.LastOutputPath) ? CorruptionCore.LastOutputPath : CorruptionCore.SourcePath;
             if (path == null) return;
             bool colour = byteViewColourChkbox.Checked, flipH = flipHorizontalChkbox.Checked, flipV = flipVerticalChkbox.Checked;
-            var mode = ByteViewModeComboBox.SelectedIndex switch { 1 => ByteViewMode.Diff, 2 => ByteViewMode.Entropy, _ => ByteViewMode.Normal };
+            var mode = SelectedByteViewMode;
             string? original = CorruptionCore.SourcePath;
+            string profileChoice = ByteViewRegionProfileComboBox.Text;
             //For in-place corruption the original isn't on disk anymore, so the Diff uses the stash instead
             long[]? stashOffsets = mode == ByteViewMode.Diff && CorruptionCore.PathsEqual(path, original) && CorruptionCore.Stash.Count > 0 ? [.. CorruptionCore.Stash.ByteOffsets] : null;
             int version = ++_byteViewRenderVersion;
@@ -1506,7 +1575,21 @@ namespace LunarROMCorruptor
             ByteViewInfoLbl.Text = "Rendering...";
             try
             {
-                var rendered = await Task.Run(() => ByteView.Render(path, mode, colour, flipH, flipV, original, stashOffsets));
+                var (rendered, regions, profile) = await Task.Run(() =>
+                {
+                    var image = ByteView.Render(path, mode, colour, flipH, flipV, original, stashOffsets);
+                    List<ExclusionEngine.NamedRegion>? list = null;
+                    string? detected = null;
+                    if (image != null && mode == ByteViewMode.Regions)
+                    {
+                        using var data = FileBuffer.OpenRead(path);
+                        detected = string.IsNullOrEmpty(profileChoice) || profileChoice == "Auto" ? ExclusionEngine.DetectProfile(original ?? path, data) : profileChoice;
+                        list = detected != null ? ExclusionEngine.GetNamedRegions(detected, data) : [];
+                        //Big areas first, so the small ones are drawn on top of them
+                        list = [.. list.OrderByDescending(r => r.End - r.Start)];
+                    }
+                    return (image, list, detected);
+                });
                 if (version != _byteViewRenderVersion || rendered == null)
                 {
                     rendered?.Dispose(); //A newer render was started (or this one failed)
@@ -1514,11 +1597,15 @@ namespace LunarROMCorruptor
                     return;
                 }
                 var old = _byteViewInfo;
+                if (old == null || old.Width != rendered.Width || old.Height != rendered.Height || old.FlipH != rendered.FlipH || old.FlipV != rendered.FlipV)
+                    ResetByteViewZoom(); //Keep the zoom when the same layout is re-rendered (e.g. after a corruption)
                 _byteViewInfo = rendered;
-                RenderpictureBox.Image = rendered.Image;
+                _byteViewRegions = regions;
+                _byteViewRegionProfile = profile;
                 ByteViewCloneImage.Image = rendered.Image;
                 old?.Dispose();
                 ByteViewInfoLbl.Text = DescribeByteView(rendered);
+                InvalidateByteViewOverlays();
             }
             catch (Exception ex)
             {
@@ -1531,13 +1618,17 @@ namespace LunarROMCorruptor
             }
         }
 
-        private static string DescribeByteView(ByteViewImage view)
+        private string DescribeByteView(ByteViewImage view)
         {
             string scale = $"1 px = {view.BytesPerPixel:N0} bytes";
+            if (_byteViewZoom > 1f) scale += $", zoom {_byteViewZoom:0.#}x";
             return view.Mode switch
             {
                 ByteViewMode.Diff when view.ChangedBytes >= 0 => $"{view.ChangedBytes:N0} changed bytes (red). {scale}",
                 ByteViewMode.Entropy => $"Dark = empty, blue/green = text/tables, yellow = code, red = compressed. {scale}",
+                ByteViewMode.Regions => _byteViewRegionProfile == null
+                    ? $"Unknown file type: pick a profile below. {scale}"
+                    : $"{_byteViewRegionProfile}: {(_byteViewRegions?.Count ?? 0)} region(s). Hover for names. {scale}",
                 _ => $"Drag to set the byte range, right-click to reset. {scale}"
             };
         }
@@ -1546,20 +1637,93 @@ namespace LunarROMCorruptor
         {
             _byteViewRenderVersion++;
             ByteViewPictureBox.Image = null;
+            ByteViewCloneImage.Image = null; //Shares the bitmap that is disposed below
             _byteViewInfo?.Dispose();
             _byteViewInfo = null;
+            _byteViewRegions = null;
+            _byteViewRegionProfile = null;
+            ResetByteViewZoom();
+            ByteViewPictureBox.Invalidate();
             ByteViewInfoLbl.Text = "Drag on the image to set the byte range.";
         }
 
         /// <summary>
-        /// Where the image is drawn inside the picture box (SizeMode = Zoom keeps the aspect ratio and centres it).
+        /// Redraws the overlays (range, regions, excluded ranges, bisect) on the ByteView tab and on the small preview on the main tab.
         /// </summary>
-        private RectangleF GetByteViewImageRectangle(ByteViewImage view)
+        internal void InvalidateByteViewOverlays()
+        {
+            ByteViewPictureBox.Invalidate();
+            ByteViewCloneImage.Invalidate();
+        }
+
+        #region ByteView zoom
+
+        private const float MaxByteViewZoom = 64f;
+        private float _byteViewZoom = 1f; //1 = the whole image fits in the picture box
+        private PointF _byteViewPan; //Offset of the zoomed image from its centred position
+        private bool _byteViewPanning;
+        private Point _byteViewPanStart;
+        private PointF _byteViewPanOrigin;
+
+        private void ResetByteViewZoom()
+        {
+            _byteViewZoom = 1f;
+            _byteViewPan = PointF.Empty;
+            _byteViewPanning = false;
+        }
+
+        /// <summary>
+        /// Keeps the zoomed image covering the picture box (no panning past its edges).
+        /// </summary>
+        private void ClampByteViewPan(ByteViewImage view)
         {
             var client = ByteViewPictureBox.ClientSize;
-            float scale = Math.Min((float)client.Width / view.Width, (float)client.Height / view.Height);
+            float scale = Math.Min((float)client.Width / view.Width, (float)client.Height / view.Height) * _byteViewZoom;
+            float halfX = Math.Max(0, (view.Width * scale - client.Width) / 2f), halfY = Math.Max(0, (view.Height * scale - client.Height) / 2f);
+            _byteViewPan = new PointF(Math.Clamp(_byteViewPan.X, -halfX, halfX), Math.Clamp(_byteViewPan.Y, -halfY, halfY));
+        }
+
+        private void ByteViewPictureBox_MouseWheel(object? sender, MouseEventArgs e)
+        {
+            var view = _byteViewInfo;
+            if (view == null) return;
+            var before = GetByteViewImageRectangle(view, ByteViewPictureBox);
+            float ix = Math.Clamp((e.X - before.X) / before.Width, 0f, 1f), iy = Math.Clamp((e.Y - before.Y) / before.Height, 0f, 1f);
+            float zoom = Math.Clamp(_byteViewZoom * (e.Delta > 0 ? 1.25f : 0.8f), 1f, MaxByteViewZoom);
+            if (Math.Abs(zoom - _byteViewZoom) < 0.001f) return;
+            _byteViewZoom = zoom < 1.01f ? 1f : zoom;
+            _byteViewPan = PointF.Empty;
+            if (_byteViewZoom > 1f)
+            {
+                //Keep the point under the mouse in the same place
+                var centred = GetByteViewImageRectangle(view, ByteViewPictureBox);
+                _byteViewPan = new PointF(e.X - ix * centred.Width - centred.X, e.Y - iy * centred.Height - centred.Y);
+                ClampByteViewPan(view);
+            }
+            ByteViewInfoLbl.Text = DescribeByteView(view);
+            ByteViewPictureBox.Invalidate();
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Where the image is drawn inside a picture box: fitted and centred (like SizeMode = Zoom), plus the scroll wheel zoom on the ByteView tab.
+        /// </summary>
+        private RectangleF GetByteViewImageRectangle(ByteViewImage view) => GetByteViewImageRectangle(view, ByteViewPictureBox);
+
+        private RectangleF GetByteViewImageRectangle(ByteViewImage view, PictureBox box)
+        {
+            var client = box.ClientSize;
+            bool zoomed = box == ByteViewPictureBox && _byteViewZoom > 1f;
+            float scale = Math.Min((float)client.Width / view.Width, (float)client.Height / view.Height) * (zoomed ? _byteViewZoom : 1f);
             float w = view.Width * scale, h = view.Height * scale;
-            return new RectangleF((client.Width - w) / 2f, (client.Height - h) / 2f, w, h);
+            float x = (client.Width - w) / 2f, y = (client.Height - h) / 2f;
+            if (zoomed)
+            {
+                x += _byteViewPan.X;
+                y += _byteViewPan.Y;
+            }
+            return new RectangleF(x, y, w, h);
         }
 
         /// <summary>
@@ -1580,7 +1744,19 @@ namespace LunarROMCorruptor
 
         private void ByteViewPictureBox_MouseDown(object? sender, MouseEventArgs e)
         {
-            if (_byteViewInfo == null || !CorruptionCore.IsLoaded || CorruptionQueueChkbox.Checked || _busy) return;
+            if (_byteViewInfo == null) return;
+            if (e.Button == MouseButtons.Middle)
+            {
+                if (_byteViewZoom > 1f)
+                {
+                    _byteViewPanning = true;
+                    _byteViewPanStart = e.Location;
+                    _byteViewPanOrigin = _byteViewPan;
+                    ByteViewPictureBox.Cursor = Cursors.SizeAll;
+                }
+                return;
+            }
+            if (!CorruptionCore.IsLoaded || CorruptionQueueChkbox.Checked || _busy) return;
             if (e.Button == MouseButtons.Right)
             {
                 //Right-click resets the range to the whole file
@@ -1594,13 +1770,36 @@ namespace LunarROMCorruptor
             if (offset < 0) return;
             _byteViewDragging = true;
             _byteViewDragStart = _byteViewDragEnd = offset;
-            ByteViewPictureBox.Invalidate();
+            InvalidateByteViewOverlays();
+        }
+
+        /// <summary>
+        /// The smallest named region that contains an offset (Regions mode hover).
+        /// </summary>
+        private ExclusionEngine.NamedRegion? RegionAt(long offset)
+        {
+            var regions = _byteViewRegions;
+            if (regions == null) return null;
+            ExclusionEngine.NamedRegion? best = null;
+            foreach (var r in regions)
+            {
+                if (offset < r.Start || offset > r.End) continue;
+                if (best == null || r.End - r.Start < best.Value.End - best.Value.Start) best = r;
+            }
+            return best;
         }
 
         private void ByteViewPictureBox_MouseMove(object? sender, MouseEventArgs e)
         {
             var view = _byteViewInfo;
             if (view == null) return;
+            if (_byteViewPanning)
+            {
+                _byteViewPan = new PointF(_byteViewPanOrigin.X + e.X - _byteViewPanStart.X, _byteViewPanOrigin.Y + e.Y - _byteViewPanStart.Y);
+                ClampByteViewPan(view);
+                ByteViewPictureBox.Invalidate();
+                return;
+            }
             if (_byteViewDragging)
             {
                 _byteViewDragEnd = ByteViewOffsetAt(e.Location, true);
@@ -1610,11 +1809,26 @@ namespace LunarROMCorruptor
                 return;
             }
             long offset = ByteViewOffsetAt(e.Location, false);
-            ByteViewInfoLbl.Text = offset >= 0 ? $"Offset 0x{offset:X}\n({offset:N0})\n1 px = {view.BytesPerPixel:N0} bytes" : DescribeByteView(view);
+            if (offset < 0)
+            {
+                ByteViewInfoLbl.Text = DescribeByteView(view);
+                return;
+            }
+            string text = $"Offset 0x{offset:X}\n({offset:N0})";
+            if (ExcludeList.Contains(CorruptionCore.Exclusions.Snapshot(), offset)) text += "\nExcluded (no engine changes it)";
+            else if (view.Mode == ByteViewMode.Regions && RegionAt(offset) is { } region) text += $"\n{region.Name}";
+            else text += $"\n1 px = {view.BytesPerPixel:N0} bytes";
+            ByteViewInfoLbl.Text = text;
         }
 
         private void ByteViewPictureBox_MouseUp(object? sender, MouseEventArgs e)
         {
+            if (_byteViewPanning && e.Button == MouseButtons.Middle)
+            {
+                _byteViewPanning = false;
+                ByteViewPictureBox.Cursor = Cursors.Cross;
+                return;
+            }
             if (!_byteViewDragging || _byteViewInfo == null) return;
             _byteViewDragging = false;
             var view = _byteViewInfo;
@@ -1623,7 +1837,7 @@ namespace LunarROMCorruptor
             if (_byteViewDragStart == _byteViewDragEnd)
             {
                 //A single click just shows the offset, it doesn't change the range
-                ByteViewPictureBox.Invalidate();
+                InvalidateByteViewOverlays();
                 return;
             }
             start = Math.Clamp(start, 0, (long)EndByteNumb.Maximum);
@@ -1641,20 +1855,121 @@ namespace LunarROMCorruptor
             }
             TraceLogger.Log($"ByteView: byte range set to 0x{start:X} - 0x{end:X} ({FormatByteCount(end - start + 1)}).");
             ByteViewInfoLbl.Text = $"Range set:\n0x{start:X} - 0x{end:X}\n({FormatByteCount(end - start + 1)})";
-            ByteViewPictureBox.Invalidate();
+            InvalidateByteViewOverlays();
         }
 
         private static string FormatByteCount(long bytes) => CorruptionCore.FormatSize(bytes, out _, out _);
 
         /// <summary>
-        /// Draws the selected byte range (while dragging) or the current start/end range over the ByteView image.
+        /// The image rectangles (in image pixels, before flips) that cover the bytes a to b.
+        /// </summary>
+        private static List<Rectangle> RangeRects(ByteViewImage view, long a, long b)
+        {
+            long pixels = (long)view.Width * view.Height;
+            long pa = Math.Clamp(a / view.BytesPerPixel, 0, pixels - 1);
+            long pb = Math.Clamp(b / view.BytesPerPixel, pa, pixels - 1);
+            long ra = pa / view.Width, rb = pb / view.Width;
+            var rects = new List<Rectangle>(3);
+            if (ra == rb)
+            {
+                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(pb - pa + 1), 1));
+            }
+            else
+            {
+                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(view.Width - pa % view.Width), 1));
+                if (rb - ra > 1) rects.Add(new Rectangle(0, (int)ra + 1, view.Width, (int)(rb - ra - 1)));
+                rects.Add(new Rectangle(0, (int)rb, (int)(pb % view.Width + 1), 1));
+            }
+            return rects;
+        }
+
+        private static void DrawRange(Graphics g, ByteViewImage view, RectangleF area, long a, long b, Brush fill, Pen? outline)
+        {
+            if (b < 0 || a >= view.FileLength) return;
+            float sx = area.Width / view.Width, sy = area.Height / view.Height;
+            foreach (var r in RangeRects(view, Math.Max(0, a), Math.Min(b, view.FileLength - 1)))
+            {
+                int x = view.FlipH ? view.Width - (r.X + r.Width) : r.X;
+                int y = view.FlipV ? view.Height - (r.Y + r.Height) : r.Y;
+                var rf = new RectangleF(area.X + x * sx, area.Y + y * sy, Math.Max(1f, r.Width * sx), Math.Max(1f, r.Height * sy));
+                g.FillRectangle(fill, rf);
+                if (outline != null) g.DrawRectangle(outline, rf.X, rf.Y, rf.Width, rf.Height);
+            }
+        }
+
+        private static Color RegionColour(ExclusionEngine.RegionKind kind) => kind switch
+        {
+            ExclusionEngine.RegionKind.Protected => Color.FromArgb(130, 255, 140, 0),
+            ExclusionEngine.RegionKind.Code => Color.FromArgb(70, 60, 140, 255),
+            ExclusionEngine.RegionKind.Graphics => Color.FromArgb(85, 255, 90, 200),
+            ExclusionEngine.RegionKind.Compressed => Color.FromArgb(110, 170, 80, 255),
+            ExclusionEngine.RegionKind.Excluded => Color.FromArgb(140, 255, 30, 30),
+            _ => Color.FromArgb(45, 60, 220, 120)
+        };
+
+        /// <summary>
+        /// Draws the ByteView image (ByteView tab only, with zoom) and the overlays: regions (Regions mode), excluded ranges (red),
+        /// the half left out of the current bisect test (cyan) and the selected/current byte range (yellow).
         /// </summary>
         private void ByteViewPictureBox_Paint(object? sender, PaintEventArgs e)
         {
             var view = _byteViewInfo;
-            if (view == null || ByteViewPictureBox.Image == null) return;
+            var box = sender as PictureBox ?? ByteViewPictureBox; //Used by both the ByteView tab and the small preview (ByteViewCloneImage)
+            if (view == null) return;
+            var g = e.Graphics;
+            var area = GetByteViewImageRectangle(view, box);
+            if (box == ByteViewPictureBox)
+            {
+                //Only the visible part of the image is drawn, with sharp pixels once a pixel is bigger than a screen pixel
+                float sx = area.Width / view.Width, sy = area.Height / view.Height;
+                var client = box.ClientRectangle;
+                int x0 = (int)Math.Clamp(Math.Floor((client.Left - area.X) / sx), 0, view.Width - 1);
+                int y0 = (int)Math.Clamp(Math.Floor((client.Top - area.Y) / sy), 0, view.Height - 1);
+                int x1 = (int)Math.Clamp(Math.Ceiling((client.Right - area.X) / sx), x0 + 1, view.Width);
+                int y1 = (int)Math.Clamp(Math.Ceiling((client.Bottom - area.Y) / sy), y0 + 1, view.Height);
+                var dest = new RectangleF(area.X + x0 * sx, area.Y + y0 * sy, (x1 - x0) * sx, (y1 - y0) * sy);
+                if (sx >= 1f)
+                {
+                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
+                }
+                g.DrawImage(view.Image, dest, new RectangleF(x0, y0, x1 - x0, y1 - y0), GraphicsUnit.Pixel);
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Default;
+            }
+            else if (box.Image == null) return;
+
+            //Regions
+            var regions = _byteViewRegions;
+            if (view.Mode == ByteViewMode.Regions && regions != null)
+            {
+                foreach (var r in regions)
+                {
+                    using var fill = new SolidBrush(RegionColour(r.Kind));
+                    DrawRange(g, view, area, r.Start, r.End, fill, null);
+                }
+            }
+
+            //Excluded ranges are always shown
+            var excluded = CorruptionCore.Exclusions.Snapshot();
+            if (excluded.Length > 0)
+            {
+                using var fill = new SolidBrush(RegionColour(ExclusionEngine.RegionKind.Excluded));
+                using var outline = new Pen(Color.FromArgb(230, 255, 60, 60));
+                foreach (var r in excluded) DrawRange(g, view, area, r.Start, r.End, fill, outline);
+            }
+
+            //Bisect: the half that the current test leaves out
+            if (_bisectForm is { Visible: true, Session: { TestPending: true, RemovedSpan: { } removed } })
+            {
+                using var fill = new SolidBrush(Color.FromArgb(70, 0, 220, 255));
+                using var outline = new Pen(Color.FromArgb(220, 0, 220, 255));
+                DrawRange(g, view, area, removed.Start, removed.End, fill, outline);
+            }
+
+            //Selected byte range
             long a, b;
-            if (_byteViewDragging)
+            if (_byteViewDragging && box == ByteViewPictureBox)
             {
                 a = Math.Min(_byteViewDragStart, _byteViewDragEnd);
                 b = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1;
@@ -1666,35 +1981,81 @@ namespace LunarROMCorruptor
                 b = (long)EndByteNumb.Value;
                 if (a == 0 && b >= view.FileLength - 1) return; //Whole file selected, nothing to highlight
             }
+            using (var fill = new SolidBrush(Color.FromArgb(_byteViewDragging ? 110 : 70, 255, 230, 0)))
+            using (var outline = new Pen(Color.FromArgb(220, 255, 230, 0)))
+                DrawRange(g, view, area, a, b, fill, outline);
+        }
 
-            long pixels = (long)view.Width * view.Height;
-            long pa = Math.Clamp(a / view.BytesPerPixel, 0, pixels - 1);
-            long pb = Math.Clamp(b / view.BytesPerPixel, pa, pixels - 1);
-            long ra = pa / view.Width, rb = pb / view.Width;
-            var rects = new List<Rectangle>();
-            if (ra == rb)
+        private void FixChecksumsChkBox_CheckedChanged(object? sender, EventArgs e)
+        {
+            CorruptionCore.FixChecksums = FixChecksumsChkBox.Checked;
+            Settings.Default.FixChecksums = FixChecksumsChkBox.Checked;
+            Settings.Default.Save();
+        }
+
+        private void BisectModeChkBox_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (BisectModeChkBox.Checked)
             {
-                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(pb - pa + 1), 1));
+                if (_bisectForm == null || _bisectForm.IsDisposed)
+                {
+                    _bisectForm = new LunarROMCorruptor.Forms.BisectForm(this);
+                    _bisectForm.ClosedByUser += () => BisectModeChkBox.Checked = false;
+                    var screen = Screen.FromControl(this).WorkingArea;
+                    _bisectForm.Location = new Point(Math.Clamp(Right - 30, screen.Left, screen.Right - _bisectForm.Width), Math.Clamp(Top + 80, screen.Top, screen.Bottom - _bisectForm.Height));
+                }
+                if (!_bisectForm.Visible) _bisectForm.Show(this);
+                _bisectForm.Activate();
             }
             else
             {
-                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(view.Width - pa % view.Width), 1));
-                if (rb - ra > 1) rects.Add(new Rectangle(0, (int)ra + 1, view.Width, (int)(rb - ra - 1)));
-                rects.Add(new Rectangle(0, (int)rb, (int)(pb % view.Width + 1), 1));
+                _bisectForm?.Hide();
             }
+            InvalidateByteViewOverlays();
+        }
 
-            var area = GetByteViewImageRectangle(view);
-            float sx = area.Width / view.Width, sy = area.Height / view.Height;
-            using var fill = new SolidBrush(Color.FromArgb(_byteViewDragging ? 110 : 70, 255, 230, 0));
-            using var outline = new Pen(Color.FromArgb(220, 255, 230, 0));
-            foreach (var r in rects)
+        /// <summary>
+        /// Applies one Bisect test (a subset of the stash) to the save location, then runs the emulator and refreshes the stash list and ByteView.
+        /// </summary>
+        internal async Task<bool> ApplyEntriesForBisectAsync(IReadOnlyList<(long Offset, byte Value)> entries, string status)
+        {
+            if (_busy)
             {
-                int x = view.FlipH ? view.Width - (r.X + r.Width) : r.X;
-                int y = view.FlipV ? view.Height - (r.Y + r.Height) : r.Y;
-                var rf = new RectangleF(area.X + x * sx, area.Y + y * sy, Math.Max(1f, r.Width * sx), Math.Max(1f, r.Height * sy));
-                e.Graphics.FillRectangle(fill, rf);
-                e.Graphics.DrawRectangle(outline, rf.X, rf.Y, rf.Width, rf.Height);
+                TraceLogger.Log("A corruption is still running, wait for it to finish first.", StatusSeverityType.Warning, true);
+                return false;
             }
+            if (CorruptionQueueChkbox.Checked)
+            {
+                TraceLogger.Log("Bisect Mode only works with a single file, turn off Multi-File first.", StatusSeverityType.Warning, true);
+                return false;
+            }
+            if (!ValidateSingleFileSelection()) return false;
+            string outputPath = SaveasTxt.Text;
+            StashBytesList.Items.Clear();
+            BeginBusy(status);
+            CorruptionResult result;
+            try
+            {
+                var token = _corruptionCts!.Token;
+                var progress = CreateProgress(status);
+                result = await Task.Run(() => CorruptionCore.ApplyByteEntries(entries, outputPath, token, progress));
+            }
+            finally
+            {
+                EndBusy();
+            }
+            if (result != CorruptionResult.Success)
+            {
+                if (result == CorruptionResult.Failed) StartFailureFeedback();
+                return false;
+            }
+            TraceLogger.Log($"{status}: applied {CorruptionCore.Stash.ByteEntries.Count:N0} change(s) to {outputPath}.");
+            RunEmulatorIfEnabled(outputPath);
+            await HandleStashSavingAsync();
+            UpdateByteViewIfEnabled();
+            InvalidateByteViewOverlays();
+            GenerateSelectedByteDetails();
+            return true;
         }
 
         private void ByteViewColourChkbox_CheckedChanged(object sender, EventArgs e)

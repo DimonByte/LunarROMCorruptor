@@ -16,6 +16,9 @@
     <Compile Update="EngineControls\BlocksEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="EngineControls\CompressionEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="EngineControls\DatamoshEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -37,11 +40,17 @@
     <Compile Update="EngineControls\NightmareEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Update="EngineControls\PointerEngineControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Update="EngineControls\SourceCodeEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Update="EngineControls\VectorEngineControl.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Forms\BisectForm.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Update="Forms\CorruptionQueueForm.cs">
       <SubType>Form</SubType>

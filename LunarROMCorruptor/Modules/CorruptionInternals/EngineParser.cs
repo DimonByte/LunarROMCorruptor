@@ -34,6 +34,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         SourceCodeEngine,
         BlocksEngine,
         DatamoshEngine,
+        PointerEngine,
+        CompressionEngine,
         INVALID
     }
     internal class EngineParser
@@ -53,6 +55,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 CorruptionEngineType.SourceCodeEngine => "Source Code Engine",
                 CorruptionEngineType.BlocksEngine => "Blocks Engine",
                 CorruptionEngineType.DatamoshEngine => "Datamosh Engine",
+                CorruptionEngineType.PointerEngine => "Pointer Engine",
+                CorruptionEngineType.CompressionEngine => "Compression Engine",
                 _ => engineType.ToString()
             };
         }
@@ -72,6 +76,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 "Source Code Engine" => CorruptionEngineType.SourceCodeEngine,
                 "Blocks Engine" => CorruptionEngineType.BlocksEngine,
                 "Datamosh Engine" => CorruptionEngineType.DatamoshEngine,
+                "Pointer Engine" => CorruptionEngineType.PointerEngine,
+                "Compression Engine" => CorruptionEngineType.CompressionEngine,
                 _ => CorruptionEngineType.INVALID // default fallback
             };
         }

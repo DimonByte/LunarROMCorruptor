@@ -58,16 +58,19 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 new(0x7FB0, 0x7FFF, "LoROM internal header + interrupt vectors"),
                 new(0xFFB0, 0xFFFF, "HiROM internal header + interrupt vectors"),
             ],
+            //The boot checksum (CRC1/CRC2) over 0x1000 - 0x100FFF is rewritten after corrupting (see N64Rom), so the normal profile
+            //can corrupt the first 1 MB. STRICT CRC is for ROMs where LRC can't rewrite the checksum (unknown CIC / bad header CRC).
             ["N64"] =
             [
                 new(0x0000, 0x003F, "ROM header (PI settings, entry point, CRC1/CRC2, title, game ID)"),
                 new(0x0040, 0x0FFF, "IPL3 boot code (CIC)"),
+                new(0x1000, 0x10FF, "Game entry point (first code run after IPL3: clears BSS, sets the stack, jumps to the game)"),
             ],
             ["N64 (STRICT CRC)"] =
             [
                 new(0x0000, 0x003F, "ROM header (PI settings, entry point, CRC1/CRC2, title, game ID)"),
                 new(0x0040, 0x0FFF, "IPL3 boot code (CIC)"),
-                new(0x1000, 0x100FFF, "First 1 MB of game code - covered by the boot CRC check"),
+                new(0x1000, 0x100FFF, "First 1 MB of game code - covered by the boot CRC check (only needed if LRC can't update the checksum)"),
             ],
             ["GAMEBOY"] =
             [
@@ -231,6 +234,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 
                 case "N64":
                 case "N64 (STRICT CRC)":
+                    if (N64Rom.DetectByteOrder(d) == null)
+                        TraceLogger.Log("Exclusion Engine: the file doesn't start with an N64 header (.z64/.v64/.n64), the N64 ranges may not match this file.", StatusSeverityType.Warning);
                     break;
 
                 case "NDS":
@@ -413,6 +418,165 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             }
         }
 
+        /// <summary>
+        /// Guesses the Exclusion Engine profile for a file from its header (and the extension when the header has no signature). Returns null when unknown.
+        /// </summary>
+        public static string? DetectProfile(string? path, FileBuffer d)
+        {
+            try
+            {
+                long len = d.Length;
+                if (N64Rom.DetectByteOrder(d) != null) return "N64";
+                if (HasMagic(d, 0, "NES\x1A")) return "NES";
+                if (len >= 0x150 && d[0x104] == 0xCE && d[0x105] == 0xED && d[0x106] == 0x66 && d[0x107] == 0x66) return "GAMEBOY";
+                if (len >= 0xC0 && d[0xB2] == 0x96 && d[0x04] == 0x24 && d[0x05] == 0xFF && d[0x06] == 0xAE) return "GBA";
+                if (len >= 0x200 && d.ReadUInt16(0x15C, false) == 0xCF56) return "NDS";
+                if (len >= 0x440 && d.ReadUInt32(0x1C, true) == 0xC2339F3D) return "GAMECUBE";
+                if (len >= 0x50000 && d.ReadUInt32(0x18, true) == 0x5D1C9EA3) return "WII";
+                if (HasMagic(d, 0x100, "SEGA") || HasMagic(d, 0x101, "SEGA")) return "SEGA";
+                foreach (long headerOffset in new long[] { 0x7FF0, 0x3FF0, 0x1FF0 })
+                    if (HasMagic(d, headerOffset, "TMR SEGA")) return "SMS/GG";
+                if (HasMagic(d, 1, "ATARI7800")) return "ATARI 7800";
+                if (HasMagic(d, 0, "LYNX")) return "ATARI LYNX";
+                if (HasMagic(d, 0, "\x7F" + "ELF")) return "ELF";
+                if (HasMagic(d, 0, "MZ")) return "EXE";
+                if (HasMagic(d, 0, "BM")) return "BMP";
+                if (HasMagic(d, 0, "RIFF") && HasMagic(d, 8, "WAVE")) return "WAV";
+                if (len >= 2 && d.ReadUInt16(0, true) == 0xFFD8) return "JPEG";
+                string ext = Path.GetExtension(path ?? "").ToLowerInvariant();
+                if (IsRawDisc(d)) return ext == ".gdi" || ext == ".cdi" ? "DREAMCAST" : "PS1";
+                return ext switch
+                {
+                    ".sfc" or ".smc" or ".swc" or ".fig" => "SNES",
+                    ".pce" => "PC ENGINE",
+                    ".a26" => "ATARI 2600",
+                    ".vb" => "VIRTUAL BOY",
+                    ".ws" or ".wsc" => "WONDERSWAN",
+                    ".iso" => "PS2",
+                    ".rom" or ".bios" => "BIOS",
+                    _ => null
+                };
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public enum RegionKind
+        {
+            Protected, //Header/boot ranges the Exclusion Engine protects
+            Code,
+            Data,
+            Graphics,
+            Compressed,
+            Excluded //Bisect / EXCLUDE stash ranges
+        }
+
+        public readonly record struct NamedRegion(long Start, long End, string Name, RegionKind Kind);
+
+        /// <summary>
+        /// Named regions of a file for the ByteView Regions mode: the profile's protected ranges plus code/data/graphics areas read from the
+        /// header and any compressed blocks (Yaz0/Yay0/MIO0) found in the file.
+        /// </summary>
+        public static List<NamedRegion> GetNamedRegions(string profile, FileBuffer d, CancellationToken token = default)
+        {
+            var regions = GetProtectedRanges(profile, d).Select(r => new NamedRegion(r.Start, r.End, r.Description, RegionKind.Protected)).ToList();
+            long len = d.Length;
+            void Add(long start, long end, string name, RegionKind kind)
+            {
+                end = Math.Min(end, len - 1);
+                if (start >= 0 && start <= end) regions.Add(new NamedRegion(start, end, name, kind));
+            }
+            try
+            {
+                switch (profile)
+                {
+                    case "N64":
+                    case "N64 (STRICT CRC)":
+                        Add(0x1000, 0x100FFF, "Boot segment: main game code (the first 1 MB, covered by the boot checksum)", RegionKind.Code);
+                        Add(0x101000, len - 1, "Game data / assets", RegionKind.Data);
+                        break;
+                    case "NES":
+                        if (HasMagic(d, 0, "NES\x1A"))
+                        {
+                            long prgStart = 16 + ((d[6] & 0x04) != 0 ? 512 : 0);
+                            long prg = d[4] * 16384L, chr = d[5] * 8192L;
+                            Add(prgStart, prgStart + prg - 1, "PRG-ROM (code + data)", RegionKind.Code);
+                            if (chr > 0) Add(prgStart + prg, prgStart + prg + chr - 1, "CHR-ROM (tile graphics)", RegionKind.Graphics);
+                        }
+                        break;
+                    case "GAMEBOY":
+                        Add(0x150, len - 1, "ROM (code + data)", RegionKind.Code);
+                        break;
+                    case "GBA":
+                        Add(0xE0, len - 1, "ROM (code + data, referenced by 0x08xxxxxx pointers)", RegionKind.Code);
+                        break;
+                    case "NDS":
+                        {
+                            uint arm9 = d.ReadUInt32(0x20, false), arm9Size = d.ReadUInt32(0x2C, false);
+                            uint arm7 = d.ReadUInt32(0x30, false), arm7Size = d.ReadUInt32(0x3C, false);
+                            uint banner = d.ReadUInt32(0x68, false);
+                            uint fatOffset = d.ReadUInt32(0x48, false), fatSize = d.ReadUInt32(0x4C, false);
+                            if (arm9Size > 0) Add(arm9, arm9 + (long)arm9Size - 1, "ARM9 binary (main game code)", RegionKind.Code);
+                            if (arm7Size > 0) Add(arm7, arm7 + (long)arm7Size - 1, "ARM7 binary (sound/wifi code)", RegionKind.Code);
+                            if (banner > 0) Add(banner, banner + 0x83F, "Icon + title banner", RegionKind.Graphics);
+                            if (fatSize >= 8 && fatOffset + (long)fatSize <= len)
+                            {
+                                long first = long.MaxValue, last = -1;
+                                for (long e = fatOffset; e + 8 <= fatOffset + fatSize; e += 8)
+                                {
+                                    uint s = d.ReadUInt32(e, false), en = d.ReadUInt32(e + 4, false);
+                                    if (en <= s || en > len) continue;
+                                    first = Math.Min(first, s);
+                                    last = Math.Max(last, en - 1);
+                                }
+                                if (last >= 0) Add(first, last, "File system data (files from the FAT)", RegionKind.Data);
+                            }
+                        }
+                        break;
+                    case "GAMECUBE":
+                        if (d.ReadUInt32(0x1C, true) == 0xC2339F3D)
+                        {
+                            uint dol = d.ReadUInt32(0x420, true);
+                            if (dol > 0 && dol + 0x100L <= len)
+                            {
+                                long dolEnd = dol + 0x100L;
+                                for (int k = 0; k < 18; k++) //7 text + 11 data sections: offsets at 0x00, sizes at 0x90
+                                {
+                                    uint off = d.ReadUInt32(dol + k * 4, true), size = d.ReadUInt32(dol + 0x90 + k * 4, true);
+                                    if (off > 0 && size > 0) dolEnd = Math.Max(dolEnd, dol + (long)off + size);
+                                }
+                                Add(dol + 0x100, dolEnd - 1, "Main executable (DOL): game code", RegionKind.Code);
+                            }
+                        }
+                        break;
+                }
+                if (profile is "N64" or "N64 (STRICT CRC)" or "GAMECUBE" or "WII" or "NDS" or "GBA")
+                {
+                    var formats = profile switch
+                    {
+                        "NDS" or "GBA" => CompressionEngine.Formats.None, //LZ10/LZ11 have no signature, they're found by the Compression Engine through pointers/FAT
+                        _ => CompressionEngine.Formats.Yaz0 | CompressionEngine.Formats.Yay0 | CompressionEngine.Formats.MIO0
+                    };
+                    if (formats != CompressionEngine.Formats.None)
+                    {
+                        foreach (var block in CompressionEngine.FindBlocks(d, formats, 0, len - 1, token, 4096))
+                            Add(block.Offset, block.Offset + block.CompressedLength - 1, $"{block.Format} compressed block (unpacks to {CorruptionCore.FormatSize(block.DecompressedSize, out _, out _)})", RegionKind.Compressed);
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"ByteView regions: unable to read every region from the {profile} header: {ex.Message}", StatusSeverityType.Warning);
+            }
+            return regions;
+        }
+
         private static bool IsRawDisc(FileBuffer d)
         {
             //Raw CD sectors start with the sync pattern 00 FF FF FF FF FF FF FF FF FF FF 00
@@ -484,6 +648,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         {
             var ranges = GetProtectedRanges(s.Profile, ctx.Data);
             TraceLogger.Log($"Exclusion Engine profile {s.Profile}: {ranges.Count} protected range(s).\n{string.Join("\n", ranges)}");
+            if (ctx.Excluded != null)
+            {
+                //Bisect / EXCLUDE stash ranges are left out of the allowed area too, so every corruption still lands on an allowed byte
+                ranges.AddRange(ctx.Excluded.Select(x => new ProtectedRange(x.Start, x.End, "Excluded (Bisect / stash EXCLUDE)")));
+                ranges.Sort((a, b) => a.Start.CompareTo(b.Start));
+            }
 
             //Build the allowed intervals = [Start, End] minus the protected ranges.
             var allowed = new List<(long Start, long End)>();

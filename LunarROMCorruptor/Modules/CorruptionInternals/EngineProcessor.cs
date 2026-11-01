@@ -35,6 +35,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public long EndByte;
         public bool EveryNth; //True = corrupt every Nth byte, False = intensity (random) mode
         public long Intensity; //Step size in EveryNth mode, number of corruptions in intensity mode
+        public ByteRange[]? Excluded; //Sorted ranges no engine may change (Bisect / EXCLUDE stash lines), null = none
+        public PointerEngine.Settings? Pointer;
+        public CompressionEngine.Settings? Compression;
 
         public NightmareEngine.Settings? Nightmare;
         public LerpEngine.Settings? Lerp;
@@ -73,6 +76,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public readonly StashLog? Stash;
         public readonly CancellationToken Token;
         public readonly IProgress<double>? Progress;
+        public readonly ByteRange[]? Excluded;
+        public long SkippedExcluded; //How many writes were blocked by the excluded ranges
 
         public CorruptionContext(FileBuffer? data, CorruptionSettings settings, Random rnd, StashLog? stash, CancellationToken token, IProgress<double>? progress)
         {
@@ -86,6 +91,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             Stash = stash;
             Token = token;
             Progress = progress;
+            Excluded = settings.Excluded is { Length: > 0 } ? settings.Excluded : null;
         }
 
         public long Length => Data!.Length;
@@ -97,11 +103,21 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         /// </summary>
         public void Set(long i, byte value)
         {
+            if (Excluded != null && ExcludeList.Contains(Excluded, i))
+            {
+                SkippedExcluded++;
+                return;
+            }
             Data![i] = value;
             Stash?.Add(i, value);
         }
 
         public bool InFile(long i) => i >= 0 && i < Data!.Length;
+
+        /// <summary>
+        /// True if any byte of [start, start + length) is excluded. Engines that change several bytes as one value (floats, pointers) use this to skip the whole value.
+        /// </summary>
+        public bool IsExcluded(long start, long length = 1) => Excluded != null && ExcludeList.Overlaps(Excluded, start, start + Math.Max(1, length) - 1);
 
         /// <summary>
         /// Random index between Start and End (both inclusive).
@@ -161,6 +177,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     break;
                 case CorruptionEngineType.BlocksEngine:
                     BlocksEngine.Run(ctx, settings.Blocks ?? throw new InvalidOperationException("Blocks Engine settings missing."));
+                    break;
+                case CorruptionEngineType.PointerEngine:
+                    PointerEngine.Run(ctx, settings.Pointer ?? throw new InvalidOperationException("Pointer Engine settings missing."));
+                    break;
+                case CorruptionEngineType.CompressionEngine:
+                    CompressionEngine.Run(ctx, settings.Compression ?? throw new InvalidOperationException("Compression Engine settings missing."));
                     break;
                 case CorruptionEngineType.SourceCodeEngine:
                 case CorruptionEngineType.DatamoshEngine:

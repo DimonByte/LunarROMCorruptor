@@ -44,6 +44,7 @@
             VectorAlignedChkBox = new CheckBox();
             VectorBigEndianChkBox = new CheckBox();
             VectorIncludeZeroChkBox = new CheckBox();
+            VectorSkipCodeChkBox = new CheckBox();
             VectorHelpLbl = new Label();
             ((System.ComponentModel.ISupportInitialize)VectorNudgeNumericUpDown).BeginInit();
             ((System.ComponentModel.ISupportInitialize)VectorMinNumericUpDown).BeginInit();
@@ -69,6 +70,7 @@
             Vector2EnginePanel.Controls.Add(VectorAlignedChkBox);
             Vector2EnginePanel.Controls.Add(VectorBigEndianChkBox);
             Vector2EnginePanel.Controls.Add(VectorIncludeZeroChkBox);
+            Vector2EnginePanel.Controls.Add(VectorSkipCodeChkBox);
             Vector2EnginePanel.Controls.Add(VectorHelpLbl);
             Vector2EnginePanel.Dock = DockStyle.Fill;
             Vector2EnginePanel.Location = new Point(0, 0);
@@ -250,12 +252,23 @@
             VectorIncludeZeroChkBox.Name = "VectorIncludeZeroChkBox";
             VectorIncludeZeroChkBox.TabIndex = 14;
             // 
+            // VectorSkipCodeChkBox
+            // 
+            VectorSkipCodeChkBox.AutoSize = true;
+            VectorSkipCodeChkBox.ForeColor = Color.White;
+            VectorSkipCodeChkBox.Location = new Point(410, 130);
+            VectorSkipCodeChkBox.Text = "Skip code / compressed data";
+            VectorSkipCodeChkBox.UseVisualStyleBackColor = true;
+            VectorSkipCodeChkBox.Checked = true;
+            VectorSkipCodeChkBox.Name = "VectorSkipCodeChkBox";
+            VectorSkipCodeChkBox.TabIndex = 16;
+            // 
             // VectorHelpLbl
             // 
             VectorHelpLbl.ForeColor = Color.Silver;
             VectorHelpLbl.Location = new Point(24, 172);
             VectorHelpLbl.Size = new Size(600, 90);
-            VectorHelpLbl.Text = "The Vector2 Engine looks for 32-bit floats (positions, velocities, sizes, colours) and corrupts them. Only values inside the min/max magnitude are treated as floats, which avoids corrupting code and empty data. In 'Every Nth' mode N counts floats/vectors instead of bytes. Most PC/PS1/PS2/DS/3DS/Switch data is little-endian.";
+            VectorHelpLbl.Text = "The Vector2 Engine looks for 32-bit floats (positions, velocities, sizes, colours) and corrupts them. Only values inside the min/max magnitude are treated as floats, which avoids corrupting code and empty data. 'Skip code / compressed data' also checks the surrounding words, because a lot of code (e.g. N64 MIPS) and compressed data decode as floats. In 'Every Nth' mode N counts floats/vectors instead of bytes. Most PC/PS1/PS2/DS/3DS/Switch data is little-endian. N64 ROMs (.z64/.v64/.n64) are detected automatically.";
             VectorHelpLbl.Name = "VectorHelpLbl";
             VectorHelpLbl.TabIndex = 15;
             // 
@@ -293,6 +306,7 @@
         internal CheckBox VectorAlignedChkBox;
         internal CheckBox VectorBigEndianChkBox;
         internal CheckBox VectorIncludeZeroChkBox;
+        internal CheckBox VectorSkipCodeChkBox;
         private Label VectorHelpLbl;
     }
 }

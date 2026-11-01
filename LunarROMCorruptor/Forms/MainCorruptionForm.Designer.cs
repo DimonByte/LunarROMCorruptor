@@ -79,6 +79,9 @@
             TransferStash = new Button();
             AttentionPictureBox = new PictureBox();
             SilentCorruptionchbox = new CheckBox();
+            FixChecksumsChkBox = new CheckBox();
+            BisectModeChkBox = new CheckBox();
+            ByteViewRegionProfileComboBox = new ComboBox();
             AttemptProtectedFileOverrideChkBox = new CheckBox();
             MainTabControl = new TabControl();
             CorruptionEngineTab = new TabPage();
@@ -367,7 +370,7 @@
             CorruptionEngineComboBox.Font = new Font("Tahoma", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
-            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Datamosh Engine", "Source Code Engine" });
+            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Pointer Engine", "Compression Engine", "Datamosh Engine", "Source Code Engine" });
             CorruptionEngineComboBox.Location = new Point(437, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
@@ -382,12 +385,12 @@
             CorruptionEnginelbl.AutoSize = true;
             CorruptionEnginelbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline);
             CorruptionEnginelbl.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionEnginelbl.Location = new Point(316, 4);
+            CorruptionEnginelbl.Location = new Point(381, 4);
             CorruptionEnginelbl.Margin = new Padding(2, 0, 2, 0);
             CorruptionEnginelbl.Name = "CorruptionEnginelbl";
-            CorruptionEnginelbl.Size = new Size(117, 17);
+            CorruptionEnginelbl.Size = new Size(52, 17);
             CorruptionEnginelbl.TabIndex = 165;
-            CorruptionEnginelbl.Text = "Corruption Engine:";
+            CorruptionEnginelbl.Text = "Engine:";
             // 
             // CorruptionQueueChkbox
             // 
@@ -412,6 +415,7 @@
             FileCorruptionTab.Controls.Add(CorruptionParametersPanel);
             FileCorruptionTab.Controls.Add(StashBytesList);
             FileCorruptionTab.Controls.Add(CorruptionHistoryBtn);
+            FileCorruptionTab.Controls.Add(BisectModeChkBox);
             FileCorruptionTab.Controls.Add(EnableStashSavesChkbox);
             FileCorruptionTab.Controls.Add(StashFileList);
             FileCorruptionTab.Controls.Add(StashEditorbtn);
@@ -832,7 +836,7 @@
             StashBytesList.Location = new Point(384, 25);
             StashBytesList.Margin = new Padding(2, 3, 2, 3);
             StashBytesList.Name = "StashBytesList";
-            StashBytesList.Size = new Size(134, 354);
+            StashBytesList.Size = new Size(134, 329);
             StashBytesList.TabIndex = 158;
             // 
             // CorruptionHistoryBtn
@@ -864,6 +868,20 @@
             EnableStashSavesChkbox.TabIndex = 168;
             EnableStashSavesChkbox.Text = "Enable Stash Saves";
             EnableStashSavesChkbox.UseVisualStyleBackColor = true;
+            // 
+            // BisectModeChkBox
+            // 
+            BisectModeChkBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            BisectModeChkBox.AutoSize = true;
+            BisectModeChkBox.ForeColor = Color.FromArgb(213, 216, 216);
+            BisectModeChkBox.Location = new Point(384, 358);
+            BisectModeChkBox.Margin = new Padding(2, 3, 2, 3);
+            BisectModeChkBox.Name = "BisectModeChkBox";
+            BisectModeChkBox.Size = new Size(95, 19);
+            BisectModeChkBox.TabIndex = 169;
+            BisectModeChkBox.Text = "Bisect Mode";
+            BisectModeChkBox.UseVisualStyleBackColor = true;
+            BisectModeChkBox.CheckedChanged += BisectModeChkBox_CheckedChanged;
             EnableStashSavesChkbox.CheckedChanged += EnableStashSavesChkbox_CheckedChanged;
             // 
             // StashFileList
@@ -964,6 +982,22 @@
             SilentCorruptionchbox.TabIndex = 172;
             SilentCorruptionchbox.Text = "🔇Mute";
             SilentCorruptionchbox.UseVisualStyleBackColor = false;
+            // 
+            // FixChecksumsChkBox
+            // 
+            FixChecksumsChkBox.AutoSize = true;
+            FixChecksumsChkBox.BackColor = Color.Transparent;
+            FixChecksumsChkBox.Checked = true;
+            FixChecksumsChkBox.CheckState = CheckState.Checked;
+            FixChecksumsChkBox.ForeColor = Color.FromArgb(213, 216, 216);
+            FixChecksumsChkBox.Location = new Point(265, 5);
+            FixChecksumsChkBox.Margin = new Padding(2, 3, 2, 3);
+            FixChecksumsChkBox.Name = "FixChecksumsChkBox";
+            FixChecksumsChkBox.Size = new Size(108, 19);
+            FixChecksumsChkBox.TabIndex = 173;
+            FixChecksumsChkBox.Text = "Fix Checksums";
+            FixChecksumsChkBox.UseVisualStyleBackColor = false;
+            FixChecksumsChkBox.CheckedChanged += FixChecksumsChkBox_CheckedChanged;
             SilentCorruptionchbox.CheckedChanged += SilentCorruptionchbox_CheckedChanged;
             // 
             // AttemptProtectedFileOverrideChkBox
@@ -1040,6 +1074,7 @@
             ByteViewContainer.Panel1.Controls.Add(ByteViewLbl);
             ByteViewContainer.Panel1.Controls.Add(ByteViewModeComboBox);
             ByteViewContainer.Panel1.Controls.Add(ByteViewInfoLbl);
+            ByteViewContainer.Panel1.Controls.Add(ByteViewRegionProfileComboBox);
             ByteViewContainer.Panel1MinSize = 100;
             // 
             // ByteViewContainer.Panel2
@@ -1172,11 +1207,24 @@
             ByteViewModeComboBox.FlatStyle = FlatStyle.Flat;
             ByteViewModeComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             ByteViewModeComboBox.FormattingEnabled = true;
-            ByteViewModeComboBox.Items.AddRange(new object[] { "Normal", "Diff", "Entropy" });
+            ByteViewModeComboBox.Items.AddRange(new object[] { "Normal", "Diff", "Entropy", "Regions" });
             ByteViewModeComboBox.Location = new Point(2, 222);
             ByteViewModeComboBox.Name = "ByteViewModeComboBox";
             ByteViewModeComboBox.Size = new Size(111, 23);
             ByteViewModeComboBox.TabIndex = 9;
+            // 
+            // ByteViewRegionProfileComboBox
+            // 
+            ByteViewRegionProfileComboBox.BackColor = Color.FromArgb(52, 60, 111);
+            ByteViewRegionProfileComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            ByteViewRegionProfileComboBox.FlatStyle = FlatStyle.Flat;
+            ByteViewRegionProfileComboBox.ForeColor = Color.FromArgb(213, 216, 216);
+            ByteViewRegionProfileComboBox.FormattingEnabled = true;
+            ByteViewRegionProfileComboBox.Location = new Point(2, 332);
+            ByteViewRegionProfileComboBox.Name = "ByteViewRegionProfileComboBox";
+            ByteViewRegionProfileComboBox.Size = new Size(111, 23);
+            ByteViewRegionProfileComboBox.TabIndex = 11;
+            ByteViewRegionProfileComboBox.Visible = false;
             // 
             // ByteViewInfoLbl
             // 
@@ -1184,7 +1232,7 @@
             ByteViewInfoLbl.ForeColor = Color.Silver;
             ByteViewInfoLbl.Location = new Point(2, 248);
             ByteViewInfoLbl.Name = "ByteViewInfoLbl";
-            ByteViewInfoLbl.Size = new Size(112, 42);
+            ByteViewInfoLbl.Size = new Size(112, 80);
             ByteViewInfoLbl.TabIndex = 10;
             ByteViewInfoLbl.Text = "Drag on the image to set the byte range.";
             // 
@@ -1672,6 +1720,7 @@
             CheckBoxUpperPanel.Controls.Add(AttemptProtectedFileOverrideChkBox);
             CheckBoxUpperPanel.Controls.Add(CorruptionEnginelbl);
             CheckBoxUpperPanel.Controls.Add(SilentCorruptionchbox);
+            CheckBoxUpperPanel.Controls.Add(FixChecksumsChkBox);
             CheckBoxUpperPanel.Controls.Add(CorruptionEngineComboBox);
             CheckBoxUpperPanel.Location = new Point(186, 54);
             CheckBoxUpperPanel.Margin = new Padding(4, 3, 4, 3);
@@ -2123,6 +2172,9 @@
         private System.Windows.Forms.TabPage ByteViewTab;
         private System.Windows.Forms.SplitContainer ByteViewContainer;
         private System.Windows.Forms.ComboBox ByteViewModeComboBox;
+        private ComboBox ByteViewRegionProfileComboBox;
+        private CheckBox FixChecksumsChkBox;
+        private CheckBox BisectModeChkBox;
         private System.Windows.Forms.Label ByteViewInfoLbl;
         private System.Windows.Forms.Label ByteViewLbl;
         private System.Windows.Forms.CheckBox byteViewColourChkbox;

@@ -30,7 +30,8 @@ namespace LunarROMCorruptor.EngineControls
                 Vector2Pairs = VectorPairsChkBox.Checked,
                 Aligned = VectorAlignedChkBox.Checked,
                 BigEndian = VectorBigEndianChkBox.Checked,
-                IncludeZero = VectorIncludeZeroChkBox.Checked
+                IncludeZero = VectorIncludeZeroChkBox.Checked,
+                SkipCode = VectorSkipCodeChkBox.Checked
             };
         }
     }

@@ -142,5 +142,17 @@ namespace LunarROMCorruptor.Properties {
                 this["AttemptProtectedFileOverride"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool FixChecksums {
+            get {
+                return ((bool)(this["FixChecksums"]));
+            }
+            set {
+                this["FixChecksums"] = value;
+            }
+        }
     }
 }

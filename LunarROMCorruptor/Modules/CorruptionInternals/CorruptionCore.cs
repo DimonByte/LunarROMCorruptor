@@ -56,6 +56,14 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         internal static string? fileSizeUnit; //This stores the unit of the file size (E.g. MB, GB)
         internal static string? LastOutputPath; //The last file that was written by a corruption (used by ByteView)
         internal static readonly StashLog Stash = new(); //Records every byte that the engines change (replaces the old InternalStashItems string list)
+        /// <summary>
+        /// Byte ranges of the loaded file that no engine may change (from Bisect mode or EXCLUDE stash lines). Cleared when a different file is loaded.
+        /// </summary>
+        internal static readonly ExcludeList Exclusions = new();
+        /// <summary>
+        /// Set from the "Fix Checksums" checkbox. When true, known header checksums (N64, GB, GBA, SNES, Genesis, CD sector EDC/ECC) are recalculated after corrupting.
+        /// </summary>
+        internal static bool FixChecksums = true;
 
         public static bool IsLoaded => SourcePath != null;
 
@@ -246,7 +254,13 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             }
             ResetSession();
 
-            SourcePath = Path.GetFullPath(FileLocation);
+            string newPath = Path.GetFullPath(FileLocation);
+            if (Exclusions.Count > 0 && !PathsEqual(newPath, SourcePath))
+            {
+                TraceLogger.Log($"Excluded byte ranges were cleared ({Exclusions.Count} range(s)), they belonged to the previous file.");
+                Exclusions.Clear();
+            }
+            SourcePath = newPath;
             SourceLength = new FileInfo(SourcePath).Length;
             MaxByte = SourceLength - 1;
             FormatSize(SourceLength, out rawFileSize, out string unit);
@@ -316,9 +330,14 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             try
             {
                 buffer = PrepareOutput(outputPath);
+                var checksums = ChecksumFixer.Detect(buffer); //Checked on the original bytes, before the engine runs
                 var ctx = new CorruptionContext(buffer, settings, rnd, recordStash ? Stash : null, token, progress);
                 EngineProcessor.Run(settings, ctx);
                 token.ThrowIfCancellationRequested();
+                Stash.SetExcludes(settings.Excluded);
+                if (ctx.SkippedExcluded > 0)
+                    TraceLogger.Log($"{ctx.SkippedExcluded} change(s) were blocked by the excluded ranges.");
+                checksums?.Fix(buffer);
                 CommitOutput(buffer, outputPath);
                 buffer = null;
                 TraceLogger.Log($"Corruption finished. {Stash.Count} byte changes recorded.");
@@ -437,8 +456,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 buffer = FileBuffer.OpenReadWrite(filePath);
                 buffer.PageFirstModified = journal.Record;
                 var fileSettings = settings.ClampTo(buffer.Length);
+                fileSettings.Excluded = null; //Excluded ranges belong to the loaded file, not to queue files
+                var checksums = ChecksumFixer.Detect(buffer);
                 var ctx = new CorruptionContext(buffer, fileSettings, rnd, null, token, progress);
                 EngineProcessor.Run(fileSettings, ctx);
+                token.ThrowIfCancellationRequested();
+                checksums?.Fix(buffer);
                 buffer.Flush();
                 return CorruptionResult.Success;
             }
@@ -478,6 +501,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             var byteEntries = new List<(long Offset, byte Value)>();
             var textEntries = new List<StashParser.VarLineEntry>();
             var frameEntries = new List<StashParser.FrameEntry>();
+            var excludeEntries = new List<ByteRange>();
             long lineNumber = 0;
             try
             {
@@ -503,6 +527,10 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     {
                         frameEntries.Add(frame);
                     }
+                    else if (StashParser.TryParseExclude(line, out var exclude))
+                    {
+                        excludeEntries.Add(exclude);
+                    }
                     else
                     {
                         TraceLogger.Log($"Stash line {lineNumber} is invalid: '{line}'. Corruption has been aborted.", StatusSeverityType.Error, true);
@@ -518,6 +546,13 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
             Stash.Clear();
             Stash.Enabled = true;
+
+            if (excludeEntries.Count > 0)
+            {
+                //EXCLUDE lines take priority over every SET line and stay active for the following corruptions until they're reset
+                Exclusions.AddRange(excludeEntries);
+                TraceLogger.Log($"The stash has {excludeEntries.Count} EXCLUDE line(s). These ranges are now excluded from every engine until the exclusions are reset.");
+            }
 
             if (frameEntries.Count > 0)
             {
@@ -557,24 +592,55 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 }
             }
 
+            var result = ApplyByteEntries(byteEntries, outputPath, token, progress);
+            if (result == CorruptionResult.Success)
+                TraceLogger.Log($"Finished applying stash file: {stashFileLocation}. Total stash items applied: {Stash.ByteEntries.Count}");
+            return result;
+        }
+
+        /// <summary>
+        /// Writes a list of byte changes to a fresh copy of the loaded file (used by stash files and Bisect mode). Excluded ranges are skipped,
+        /// checksums are fixed if enabled, and the applied entries become the current stash.
+        /// </summary>
+        public static CorruptionResult ApplyByteEntries(IReadOnlyList<(long Offset, byte Value)> entries, string outputPath, CancellationToken token, IProgress<double>? progress)
+        {
+            if (!IsLoaded || SourcePath == null)
+            {
+                TraceLogger.Log("No file is loaded.", StatusSeverityType.Error, true);
+                return CorruptionResult.Failed;
+            }
+            var excluded = Exclusions.Snapshot();
+            Stash.Clear();
+            Stash.Enabled = true;
+            Stash.SetExcludes(excluded);
             FileBuffer? buffer = null;
             try
             {
                 buffer = PrepareOutput(outputPath);
-                for (int n = 0; n < byteEntries.Count; n++)
+                var checksums = ChecksumFixer.Detect(buffer);
+                long skipped = 0;
+                for (int n = 0; n < entries.Count; n++)
                 {
-                    var (offset, value) = byteEntries[n];
+                    var (offset, value) = entries[n];
+                    if (offset < 0 || offset >= buffer.Length) continue;
+                    if (ExcludeList.Contains(excluded, offset))
+                    {
+                        skipped++;
+                        continue;
+                    }
                     buffer[offset] = value;
                     Stash.Add(offset, value);
                     if ((n & 0xFFFF) == 0)
                     {
                         token.ThrowIfCancellationRequested();
-                        progress?.Report((double)n / byteEntries.Count);
+                        progress?.Report((double)n / Math.Max(1, entries.Count));
                     }
                 }
+                if (skipped > 0)
+                    TraceLogger.Log($"{skipped} stash change(s) were skipped because they're inside excluded ranges.");
+                checksums?.Fix(buffer);
                 CommitOutput(buffer, outputPath);
                 buffer = null;
-                TraceLogger.Log($"Finished applying stash file: {stashFileLocation}. Total stash items applied: {byteEntries.Count}");
                 return CorruptionResult.Success;
             }
             catch (OperationCanceledException)
@@ -584,7 +650,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Failed to apply stash: {ex.Message}\n{ex}", StatusSeverityType.Error, true);
+                TraceLogger.Log($"Failed to apply the stash changes: {ex.Message}\n{ex}", StatusSeverityType.Error, true);
                 AbortOutput(buffer, outputPath);
                 return CorruptionResult.Failed;
             }
@@ -939,6 +1005,11 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         /// </summary>
         public Action<long, byte[], int>? PageFirstModified;
 
+        /// <summary>
+        /// Index of every page that has been written to through this buffer (page = offset / <see cref="PageSize"/>).
+        /// </summary>
+        public IReadOnlyCollection<long> ModifiedPages => _notifiedPages;
+
         private sealed class Page
         {
             public long Index;
@@ -998,8 +1069,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 var page = GetPage(position >> PageShift);
                 if (!page.Dirty)
                 {
-                    if (PageFirstModified != null && _notifiedPages.Add(page.Index))
-                        PageFirstModified(page.Index, page.Data, page.Count);
+                    if (_notifiedPages.Add(page.Index))
+                        PageFirstModified?.Invoke(page.Index, page.Data, page.Count);
                     page.Dirty = true;
                 }
                 page.Data[(int)(position & (PageSize - 1))] = value;
@@ -1210,6 +1281,93 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
     }
 
     /// <summary>
+    /// An inclusive range of byte offsets.
+    /// </summary>
+    public readonly record struct ByteRange(long Start, long End)
+    {
+        public long Length => End - Start + 1;
+        public override string ToString() => $"0x{Start:X} - 0x{End:X}";
+    }
+
+    /// <summary>
+    /// Sorted, merged list of byte ranges that the engines are not allowed to change. Engines get an immutable snapshot (see <see cref="Snapshot"/>).
+    /// </summary>
+    public sealed class ExcludeList
+    {
+        private readonly List<ByteRange> _ranges = [];
+        private readonly Lock _lock = new();
+
+        /// <summary>
+        /// Raised (on the thread that made the change) whenever ranges are added or removed.
+        /// </summary>
+        public event Action? Changed;
+
+        public int Count { get { lock (_lock) return _ranges.Count; } }
+
+        public long TotalBytes { get { lock (_lock) return _ranges.Sum(r => r.Length); } }
+
+        public void Add(long start, long end) => AddRange([new ByteRange(Math.Min(start, end), Math.Max(start, end))]);
+
+        public void AddRange(IEnumerable<ByteRange> ranges)
+        {
+            lock (_lock)
+            {
+                _ranges.AddRange(ranges.Where(r => r.Start >= 0 && r.End >= r.Start));
+                var merged = Merge(_ranges);
+                _ranges.Clear();
+                _ranges.AddRange(merged);
+            }
+            Changed?.Invoke();
+        }
+
+        public void Clear()
+        {
+            lock (_lock) _ranges.Clear();
+            Changed?.Invoke();
+        }
+
+        public ByteRange[] Snapshot()
+        {
+            lock (_lock) return [.. _ranges];
+        }
+
+        /// <summary>
+        /// Sorts and merges overlapping/touching ranges.
+        /// </summary>
+        public static List<ByteRange> Merge(IEnumerable<ByteRange> ranges)
+        {
+            var result = new List<ByteRange>();
+            foreach (var r in ranges.OrderBy(r => r.Start))
+            {
+                if (result.Count > 0 && r.Start <= result[^1].End + 1)
+                    result[^1] = result[^1] with { End = Math.Max(result[^1].End, r.End) };
+                else
+                    result.Add(r);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// True if any byte of [start, end] is inside one of the sorted ranges.
+        /// </summary>
+        public static bool Overlaps(ByteRange[]? sorted, long start, long end)
+        {
+            if (sorted == null || sorted.Length == 0) return false;
+            int lo = 0, hi = sorted.Length - 1;
+            while (lo <= hi)
+            {
+                int mid = (lo + hi) >>> 1;
+                if (sorted[mid].End < start) lo = mid + 1;
+                else if (sorted[mid].Start > end) hi = mid - 1;
+                else return true;
+            }
+            return false;
+        }
+
+        public static bool Contains(ByteRange[]? sorted, long position) => Overlaps(sorted, position, position);
+    }
+
+    /// <summary>
     /// Compact record of every byte that has been changed by a corruption. Formatting to the "[x] File(i).SET(v)" text is only done when needed.
     /// </summary>
     public sealed class StashLog
@@ -1217,9 +1375,31 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public const int MaxByteEntries = 10_000_000; //~160 MB of memory, more than that and the stash stops recording.
         private readonly List<(long Offset, byte Value)> _bytes = [];
         private readonly List<string> _lines = [];
+        private readonly List<ByteRange> _excludes = [];
         public bool Enabled = true;
         public bool Overflowed { get; private set; }
-        public long Count => _bytes.Count + _lines.Count;
+        public long Count => _bytes.Count + _lines.Count + _excludes.Count;
+
+        /// <summary>
+        /// The recorded byte changes in the order they were made (Bisect mode works on these).
+        /// </summary>
+        public IReadOnlyList<(long Offset, byte Value)> ByteEntries => _bytes;
+
+        /// <summary>
+        /// True when the stash has Source Code (VARLINE) or Datamosh (FRAME) entries.
+        /// </summary>
+        public bool HasTextEntries => _lines.Count > 0;
+
+        /// <summary>
+        /// The excluded ranges that were active for this corruption. They are written as [x] File.EXCLUDE(start,end) lines at the top of the stash.
+        /// </summary>
+        public IReadOnlyList<ByteRange> Excludes => _excludes;
+
+        public void SetExcludes(IEnumerable<ByteRange>? ranges)
+        {
+            _excludes.Clear();
+            if (ranges != null) _excludes.AddRange(ranges);
+        }
 
         /// <summary>
         /// Offsets of every recorded byte change (used by the ByteView Diff mode for in-place corruption).
@@ -1257,6 +1437,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         {
             _bytes.Clear();
             _lines.Clear();
+            _excludes.Clear();
             if (_bytes.Capacity > 1_000_000) _bytes.TrimExcess();
             Overflowed = false;
         }
@@ -1264,6 +1445,11 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public IEnumerable<string> FormatLines(int max = int.MaxValue)
         {
             int n = 0;
+            foreach (var range in _excludes)
+            {
+                if (n++ >= max) yield break;
+                yield return StashParser.FormatExclude(range.Start, range.End);
+            }
             foreach (var line in _lines)
             {
                 if (n++ >= max) yield break;
@@ -1316,6 +1502,24 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         [GeneratedRegex(@"^\[x\] File\((\d+)\)\.SET\((\d+)\)$")]
         private static partial Regex ByteLineRegex();
 
+        [GeneratedRegex(@"^\[x\] File\.EXCLUDE\((\d+),(\d+)\)$", RegexOptions.IgnoreCase)]
+        private static partial Regex ExcludeLineRegex();
+
+        /// <summary>
+        /// [x] File.EXCLUDE(start,end): no engine may change the bytes from start to end (inclusive). EXCLUDE takes priority over SET lines.
+        /// </summary>
+        public static string FormatExclude(long start, long end) => $"[x] File.EXCLUDE({start},{end})";
+
+        public static bool TryParseExclude(string line, out ByteRange range)
+        {
+            range = default;
+            var m = ExcludeLineRegex().Match(line);
+            if (!m.Success || !long.TryParse(m.Groups[1].Value, out long a) || !long.TryParse(m.Groups[2].Value, out long b))
+                return false;
+            range = new ByteRange(Math.Min(a, b), Math.Max(a, b));
+            return true;
+        }
+
         [GeneratedRegex(@"^\[x\] File\((\d+)\)\.VARLINE\(""((?:[^""\\]|\\.)*)"",(\d+)\)\.SET\(""((?:[^""\\]|\\.)*)""\)$")]
         private static partial Regex VarLineRegex();
 
@@ -1341,7 +1545,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             return true;
         }
 
-        public static bool IsValidStashLine(string line) => TryParseByte(line, out _, out _) || TryParseVarLine(line, out _) || TryParseFrame(line, out _);
+        public static bool IsValidStashLine(string line) => TryParseByte(line, out _, out _) || TryParseVarLine(line, out _) || TryParseFrame(line, out _) || TryParseExclude(line, out _);
 
         public static string Escape(string s)
         {
@@ -1484,5 +1688,642 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             if (StashParser.TryParseFrame(line, out var f)) return "F" + f.Offset;
             return "L" + line;
         }
+    }
+
+    /// <summary>
+    /// N64 ROM helpers. The IPL3 boot code checks a checksum (CRC1/CRC2 at 0x10 in the header) over 0x1000 - 0x100FFF, so corrupting
+    /// anything in the first 1 MB of game data hangs on a black screen on real hardware and on accurate emulators (ares, simple64,
+    /// Gopher64, CEN64, Mupen64Plus with LLE boot...). The checksum is rewritten after corrupting so the ROM still boots.
+    /// Works with .z64 (big-endian), .v64 (byte-swapped) and .n64 (little-endian) dumps.
+    /// </summary>
+    public static class N64Rom
+    {
+        public enum ByteOrder
+        {
+            BigEndian, //.z64
+            ByteSwapped, //.v64 (every 16-bit word swapped)
+            LittleEndian //.n64 (every 32-bit word reversed)
+        }
+
+        public sealed record Info(ByteOrder Order, int Cic);
+
+        public const long BootCodeEnd = 0x1000; //Header (0x00-0x3F) + IPL3 boot code (0x40-0xFFF)
+        private const int ChecksumStart = 0x1000;
+        private const int ChecksumLength = 0x100000;
+
+        public static ByteOrder? DetectByteOrder(FileBuffer d)
+        {
+            if (d.Length < 0x40) return null;
+            return d.ReadUInt32(0, true) switch
+            {
+                0x80371240 => ByteOrder.BigEndian,
+                0x37804012 => ByteOrder.ByteSwapped,
+                0x40123780 => ByteOrder.LittleEndian,
+                _ => null
+            };
+        }
+
+        /// <summary>
+        /// Converts bytes between the file's byte order and big-endian (the conversion is its own inverse). The span must start on a 4 byte boundary of the file.
+        /// </summary>
+        public static void SwapToBigEndian(Span<byte> b, ByteOrder order)
+        {
+            if (order == ByteOrder.ByteSwapped)
+            {
+                for (int k = 0; k + 1 < b.Length; k += 2)
+                    (b[k], b[k + 1]) = (b[k + 1], b[k]);
+            }
+            else if (order == ByteOrder.LittleEndian)
+            {
+                for (int k = 0; k + 3 < b.Length; k += 4)
+                {
+                    (b[k], b[k + 3]) = (b[k + 3], b[k]);
+                    (b[k + 1], b[k + 2]) = (b[k + 2], b[k + 1]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the ROM info when the file is an N64 ROM with a known boot chip (CIC) and a correct checksum. Call this on the original
+        /// (uncorrupted) data: the checksum is only rewritten later if LRC can reproduce the original one, so an unknown/homebrew ROM is never touched.
+        /// </summary>
+        public static Info? Detect(FileBuffer d)
+        {
+            try
+            {
+                var order = DetectByteOrder(d);
+                if (order == null) return null;
+                if (d.Length < ChecksumStart + ChecksumLength)
+                {
+                    TraceLogger.Log("N64 ROM detected, but it's smaller than 1 MB + 4 KB so it has no boot checksum to fix.");
+                    return null;
+                }
+                byte[] rom = ReadBigEndian(d, order.Value);
+                int cic = DetectCic(rom);
+                if (cic == 0)
+                {
+                    TraceLogger.Log("N64 ROM detected, but the boot chip (CIC) is unknown. The boot checksum won't be updated, so corrupting 0x1000 - 0x100FFF may stop it booting on accurate emulators.", StatusSeverityType.Warning);
+                    return null;
+                }
+                var (crc1, crc2) = Calculate(rom, cic);
+                uint h1 = ReadBE(rom, 0x10), h2 = ReadBE(rom, 0x14);
+                if (crc1 != h1 || crc2 != h2)
+                {
+                    TraceLogger.Log($"N64 ROM detected (CIC-{cic}), but its header checksum doesn't match the data (bad dump/hack?). The checksum won't be updated.", StatusSeverityType.Warning);
+                    return null;
+                }
+                TraceLogger.Log($"N64 ROM detected ({order.Value}, CIC-NUS-{cic}).");
+                return new Info(order.Value, cic);
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to check the N64 header: {ex.Message}", StatusSeverityType.Warning);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Recalculates CRC1/CRC2 and writes them to the header (only the bytes that changed are written).
+        /// </summary>
+        public static void FixChecksum(FileBuffer d, Info info)
+        {
+            byte[] rom = ReadBigEndian(d, info.Order);
+            var (crc1, crc2) = Calculate(rom, info.Cic);
+            if (crc1 == ReadBE(rom, 0x10) && crc2 == ReadBE(rom, 0x14))
+                return; //Nothing inside the checksummed area was changed
+            Span<byte> crc = stackalloc byte[8];
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(crc, crc1);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(crc[4..], crc2);
+            SwapToBigEndian(crc, info.Order);
+            for (int k = 0; k < 8; k++)
+            {
+                if (d[0x10 + k] != crc[k])
+                    d[0x10 + k] = crc[k];
+            }
+            TraceLogger.Log($"N64 boot checksum updated: CRC1 = 0x{crc1:X8}, CRC2 = 0x{crc2:X8}.");
+        }
+
+        private static byte[] ReadBigEndian(FileBuffer d, ByteOrder order)
+        {
+            byte[] rom = new byte[ChecksumStart + ChecksumLength];
+            d.Read(0, rom);
+            SwapToBigEndian(rom, order);
+            return rom;
+        }
+
+        private static uint ReadBE(byte[] b, int offset) => System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(b.AsSpan(offset, 4));
+
+        /// <summary>
+        /// Identifies the boot chip from the sum of the IPL3 boot code words (0x40 - 0xFFF), the same way Mupen64Plus does.
+        /// 7101/7102 (PAL) use the 6101/6102 algorithm. Other chips (5101, 5167, 8303...) aren't supported and return 0.
+        /// </summary>
+        private static int DetectCic(byte[] rom)
+        {
+            ulong sum = 0;
+            for (int i = 0x40; i < 0x1000; i += 4)
+                sum += ReadBE(rom, i);
+            return sum switch
+            {
+                0x000000D0027FDF31 or 0x000000CFFB631223 => 6101, //CIC-NUS-6101 / 7102
+                0x000000D057C85244 => 6102, //CIC-NUS-6102 / 7101
+                0x000000D6497E414B => 6103, //CIC-NUS-6103 / 7103
+                0x0000011A49F60E96 => 6105, //CIC-NUS-6105 / 7105
+                0x000000D6D5BE5580 => 6106, //CIC-NUS-6106 / 7106
+                _ => 0
+            };
+        }
+
+        /// <summary>
+        /// The IPL3 checksum algorithm (same as the n64crc tool).
+        /// </summary>
+        private static (uint Crc1, uint Crc2) Calculate(byte[] rom, int cic)
+        {
+            uint seed = cic switch
+            {
+                6103 => 0xA3886759,
+                6105 => 0xDF26F436,
+                6106 => 0x1FEA617A,
+                _ => 0xF8CA4DDC //6101 / 6102
+            };
+            uint t1 = seed, t2 = seed, t3 = seed, t4 = seed, t5 = seed, t6 = seed;
+            for (int i = ChecksumStart; i < ChecksumStart + ChecksumLength; i += 4)
+            {
+                uint d = ReadBE(rom, i);
+                if (unchecked(t6 + d) < t6) t4++;
+                t6 = unchecked(t6 + d);
+                t3 ^= d;
+                uint r = System.Numerics.BitOperations.RotateLeft(d, (int)(d & 0x1F));
+                t5 = unchecked(t5 + r);
+                if (t2 > d) t2 ^= r;
+                else t2 ^= t6 ^ d;
+                if (cic == 6105) t1 = unchecked(t1 + (ReadBE(rom, 0x40 + 0x0710 + (i & 0xFF)) ^ d));
+                else t1 = unchecked(t1 + (t5 ^ d));
+            }
+            return cic switch
+            {
+                6103 => (unchecked((t6 ^ t4) + t3), unchecked((t5 ^ t2) + t1)),
+                6106 => (unchecked(t6 * t4 + t3), unchecked(t5 * t2 + t1)),
+                _ => (t6 ^ t4 ^ t3, t5 ^ t2 ^ t1)
+            };
+        }
+    }
+
+    /// <summary>
+    /// Optional checksum fixing ("Fix Checksums" checkbox). <see cref="Detect"/> runs on the original bytes before the engine; a fixer is only
+    /// used when LRC can reproduce the checksum that's already in the file, so unknown formats, hacks and bad dumps are never touched.
+    /// <see cref="Fix"/> recalculates every detected checksum after the engine has run.
+    /// Supported: N64 (CRC1/CRC2), Game Boy (header + global), GBA (header complement), SNES (internal checksum), Genesis / Mega Drive,
+    /// raw CD images (Mode 1 / Mode 2 sector EDC/ECC for PS1, Saturn, Sega CD... BIN files).
+    /// </summary>
+    public sealed class ChecksumFixer
+    {
+        private readonly List<(string Name, Action<FileBuffer> Fix)> _fixes = [];
+
+        public IEnumerable<string> Names => _fixes.Select(f => f.Name);
+
+        public static ChecksumFixer? Detect(FileBuffer d)
+        {
+            if (!CorruptionCore.FixChecksums) return null;
+            var fixer = new ChecksumFixer();
+            void Try(string name, Func<FileBuffer, Action<FileBuffer>?> detect)
+            {
+                try
+                {
+                    var fix = detect(d);
+                    if (fix != null) fixer._fixes.Add((name, fix));
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Checksum check ({name}) failed: {ex.Message}", StatusSeverityType.Warning);
+                }
+            }
+            Try("N64", DetectN64);
+            Try("Game Boy", DetectGameBoy);
+            Try("GBA", DetectGba);
+            Try("SNES", DetectSnes);
+            Try("Genesis", DetectGenesis);
+            Try("CD sector EDC/ECC", DetectCd);
+            if (fixer._fixes.Count == 0) return null;
+            TraceLogger.Log($"Checksums that will be fixed after corrupting: {string.Join(", ", fixer.Names)}.");
+            return fixer;
+        }
+
+        public void Fix(FileBuffer d)
+        {
+            foreach (var (name, fix) in _fixes)
+            {
+                try
+                {
+                    fix(d);
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Unable to fix the {name} checksum: {ex.Message}", StatusSeverityType.Warning);
+                }
+            }
+        }
+
+        private static bool Magic(FileBuffer d, long offset, ReadOnlySpan<byte> magic)
+        {
+            if (offset < 0 || offset + magic.Length > d.Length) return false;
+            Span<byte> b = stackalloc byte[magic.Length];
+            d.Read(offset, b);
+            return b.SequenceEqual(magic);
+        }
+
+        /// <summary>
+        /// Sum of every byte in [start, end).
+        /// </summary>
+        private static ulong SumBytes(FileBuffer d, long start, long end)
+        {
+            ulong sum = 0;
+            byte[] chunk = new byte[1 << 16];
+            for (long pos = start; pos < end; pos += chunk.Length)
+            {
+                int n = d.Read(pos, chunk.AsSpan(0, (int)Math.Min(chunk.Length, end - pos)));
+                for (int k = 0; k < n; k++) sum += chunk[k];
+                if (n == 0) break;
+            }
+            return sum;
+        }
+
+        private static void WriteIfChanged(FileBuffer d, long offset, byte value)
+        {
+            if (d[offset] != value) d[offset] = value;
+        }
+
+        // ---------------- N64 ----------------
+        private static Action<FileBuffer>? DetectN64(FileBuffer d)
+        {
+            var info = N64Rom.Detect(d);
+            return info == null ? null : b => N64Rom.FixChecksum(b, info);
+        }
+
+        // ---------------- Game Boy / Game Boy Color ----------------
+        private static readonly byte[] GbLogoStart = [0xCE, 0xED, 0x66, 0x66, 0xCC, 0x0D, 0x00, 0x0B];
+
+        private static byte GbHeaderChecksum(FileBuffer d)
+        {
+            byte x = 0;
+            for (long i = 0x134; i <= 0x14C; i++) x = (byte)(x - d[i] - 1);
+            return x;
+        }
+
+        private static ushort GbGlobalChecksum(FileBuffer d) => (ushort)(SumBytes(d, 0, d.Length) - d[0x14E] - d[0x14F]);
+
+        private static Action<FileBuffer>? DetectGameBoy(FileBuffer d)
+        {
+            if (d.Length < 0x8000 || !Magic(d, 0x104, GbLogoStart)) return null;
+            bool header = GbHeaderChecksum(d) == d[0x14D];
+            bool global = GbGlobalChecksum(d) == (ushort)(d[0x14E] << 8 | d[0x14F]);
+            if (!header && !global) return null;
+            return b =>
+            {
+                if (header) WriteIfChanged(b, 0x14D, GbHeaderChecksum(b));
+                if (global)
+                {
+                    ushort g = GbGlobalChecksum(b);
+                    WriteIfChanged(b, 0x14E, (byte)(g >> 8));
+                    WriteIfChanged(b, 0x14F, (byte)g);
+                }
+            };
+        }
+
+        // ---------------- GBA ----------------
+        private static byte GbaComplement(FileBuffer d)
+        {
+            int chk = 0;
+            for (long i = 0xA0; i <= 0xBC; i++) chk -= d[i];
+            return (byte)((chk - 0x19) & 0xFF);
+        }
+
+        private static Action<FileBuffer>? DetectGba(FileBuffer d)
+        {
+            if (d.Length < 0xC0 || d[0xB2] != 0x96 || GbaComplement(d) != d[0xBD]) return null;
+            return b => WriteIfChanged(b, 0xBD, GbaComplement(b));
+        }
+
+        // ---------------- SNES ----------------
+        /// <summary>
+        /// SNES checksum: 16-bit sum of every byte. ROMs that aren't a power of two in size have their last part mirrored up to the next
+        /// power of two (only the common "power of two + smaller power of two" layouts are supported).
+        /// </summary>
+        private static ushort? SnesSum(FileBuffer d, long copier, long headerOffset)
+        {
+            long size = d.Length - copier;
+            long p = 1L << (63 - System.Numerics.BitOperations.LeadingZeroCount((ulong)size)); //Largest power of two <= size
+            long rest = size - p;
+            ulong total;
+            long headerCopies = 1; //How many times the header appears in the mirrored image
+            if (rest == 0)
+            {
+                total = SumBytes(d, copier, d.Length);
+            }
+            else
+            {
+                if ((rest & (rest - 1)) != 0 || p % rest != 0) return null;
+                total = SumBytes(d, copier, copier + p) + SumBytes(d, copier + p, d.Length) * (ulong)(p / rest);
+                if (headerOffset >= p) headerCopies = p / rest;
+            }
+            //Count the checksum + complement bytes as 0xFF + 0xFF (that's what they always add up to once they're written correctly)
+            long h = copier + headerOffset;
+            ulong current = (ulong)d[h + 0x1C] + d[h + 0x1D] + d[h + 0x1E] + d[h + 0x1F];
+            total = total - current * (ulong)headerCopies + 0x1FEul * (ulong)headerCopies;
+            return (ushort)total;
+        }
+
+        private static Action<FileBuffer>? DetectSnes(FileBuffer d)
+        {
+            long copier = d.Length % 1024 == 512 ? 512 : 0;
+            foreach (long header in new long[] { 0x7FC0, 0xFFC0, 0x40FFC0 })
+            {
+                long h = copier + header;
+                if (h + 0x20 > d.Length) continue;
+                ushort complement = d.ReadUInt16(h + 0x1C, false), checksum = d.ReadUInt16(h + 0x1E, false);
+                if ((complement ^ checksum) != 0xFFFF) continue;
+                var sum = SnesSum(d, copier, header);
+                if (sum != checksum) continue;
+                long headerOffset = header;
+                return b =>
+                {
+                    var s = SnesSum(b, copier, headerOffset);
+                    if (s == null) return;
+                    ushort c = s.Value, k = (ushort)(c ^ 0xFFFF);
+                    long at = copier + headerOffset;
+                    WriteIfChanged(b, at + 0x1C, (byte)k);
+                    WriteIfChanged(b, at + 0x1D, (byte)(k >> 8));
+                    WriteIfChanged(b, at + 0x1E, (byte)c);
+                    WriteIfChanged(b, at + 0x1F, (byte)(c >> 8));
+                };
+            }
+            return null;
+        }
+
+        // ---------------- Genesis / Mega Drive ----------------
+        private static ushort GenesisSum(FileBuffer d)
+        {
+            ushort sum = 0;
+            byte[] chunk = new byte[1 << 16];
+            long end = d.Length & ~1L;
+            for (long pos = 0x200; pos < end; pos += chunk.Length)
+            {
+                int n = d.Read(pos, chunk.AsSpan(0, (int)Math.Min(chunk.Length, end - pos))) & ~1;
+                for (int k = 0; k < n; k += 2) sum += (ushort)(chunk[k] << 8 | chunk[k + 1]);
+                if (n == 0) break;
+            }
+            return sum;
+        }
+
+        private static Action<FileBuffer>? DetectGenesis(FileBuffer d)
+        {
+            if (d.Length < 0x400 || !(Magic(d, 0x100, "SEGA"u8) || Magic(d, 0x101, "SEGA"u8))) return null;
+            if (GenesisSum(d) != d.ReadUInt16(0x18E, true)) return null;
+            return b =>
+            {
+                ushort s = GenesisSum(b);
+                WriteIfChanged(b, 0x18E, (byte)(s >> 8));
+                WriteIfChanged(b, 0x18F, (byte)s);
+            };
+        }
+
+        // ---------------- Raw CD sectors (2352 bytes): EDC + ECC ----------------
+        private const int Sector = 2352;
+        private static readonly byte[] EccF = new byte[256], EccB = new byte[256];
+        private static readonly uint[] EdcTable = new uint[256];
+
+        static ChecksumFixer()
+        {
+            for (int i = 0; i < 256; i++)
+            {
+                int j = (i << 1) ^ ((i & 0x80) != 0 ? 0x11D : 0);
+                EccF[i] = (byte)j;
+                EccB[i ^ j] = (byte)i;
+                uint edc = (uint)i;
+                for (int k = 0; k < 8; k++) edc = (edc >> 1) ^ ((edc & 1) != 0 ? 0xD8018001 : 0);
+                EdcTable[i] = edc;
+            }
+        }
+
+        private static uint Edc(ReadOnlySpan<byte> data)
+        {
+            uint edc = 0;
+            foreach (byte b in data) edc = (edc >> 8) ^ EdcTable[(edc ^ b) & 0xFF];
+            return edc;
+        }
+
+        private static void EccBlock(Span<byte> sector, int majorCount, int minorCount, int majorMult, int minorInc, int destOffset)
+        {
+            var src = sector[0xC..];
+            int size = majorCount * minorCount;
+            for (int major = 0; major < majorCount; major++)
+            {
+                int index = (major >> 1) * majorMult + (major & 1);
+                byte a = 0, b = 0;
+                for (int minor = 0; minor < minorCount; minor++)
+                {
+                    byte temp = src[index];
+                    index += minorInc;
+                    if (index >= size) index -= size;
+                    a ^= temp;
+                    b ^= temp;
+                    a = EccF[a];
+                }
+                a = EccB[EccF[a] ^ b];
+                sector[destOffset + major] = a;
+                sector[destOffset + major + majorCount] = (byte)(a ^ b);
+            }
+        }
+
+        private static void Ecc(Span<byte> sector, bool zeroAddress)
+        {
+            Span<byte> address = stackalloc byte[4];
+            sector.Slice(12, 4).CopyTo(address);
+            if (zeroAddress) sector.Slice(12, 4).Clear();
+            EccBlock(sector, 86, 24, 2, 86, 0x81C);
+            EccBlock(sector, 52, 43, 86, 88, 0x8C8);
+            address.CopyTo(sector.Slice(12, 4));
+        }
+
+        private static bool HasSync(ReadOnlySpan<byte> s)
+        {
+            if (s[0] != 0 || s[11] != 0) return false;
+            for (int i = 1; i < 11; i++) if (s[i] != 0xFF) return false;
+            return true;
+        }
+
+        private enum SectorKind { None, Mode1, Mode2Form1, Mode2Form2 }
+
+        private static SectorKind KindOf(ReadOnlySpan<byte> s)
+        {
+            if (!HasSync(s)) return SectorKind.None;
+            if (s[15] == 1) return SectorKind.Mode1;
+            if (s[15] != 2) return SectorKind.None;
+            if (s[0x12] != s[0x16]) return SectorKind.None; //The two subheader copies disagree (the subheader itself was corrupted)
+            return (s[0x12] & 0x20) != 0 ? SectorKind.Mode2Form2 : SectorKind.Mode2Form1;
+        }
+
+        /// <summary>
+        /// Recalculates the EDC (and ECC) of a sector in place. Returns false for sectors without a data header (audio).
+        /// </summary>
+        private static bool RebuildSector(Span<byte> s)
+        {
+            switch (KindOf(s))
+            {
+                case SectorKind.Mode1:
+                    System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(s[0x810..], Edc(s[..0x810]));
+                    s.Slice(0x814, 8).Clear();
+                    Ecc(s, false);
+                    return true;
+                case SectorKind.Mode2Form1:
+                    System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(s[0x818..], Edc(s.Slice(0x10, 0x808)));
+                    Ecc(s, true);
+                    return true;
+                case SectorKind.Mode2Form2:
+                    if (System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(s[0x92C..]) == 0) return true; //No EDC used on this sector
+                    System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(s[0x92C..], Edc(s.Slice(0x10, 0x91C)));
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static Action<FileBuffer>? DetectCd(FileBuffer d)
+        {
+            if (d.Length < Sector * 32 || d.Length % Sector != 0) return null;
+            byte[] s = new byte[Sector], copy = new byte[Sector];
+            d.Read(0, s);
+            if (!HasSync(s)) return null;
+            //Check a few data sectors: the recalculated EDC/ECC must match what's on the disc
+            int checkedSectors = 0;
+            for (long sector = 16; sector < Math.Min(d.Length / Sector, 40) && checkedSectors < 4; sector++)
+            {
+                d.Read(sector * Sector, s);
+                if (KindOf(s) is SectorKind.None or SectorKind.Mode2Form2) continue;
+                s.CopyTo(copy, 0);
+                RebuildSector(copy);
+                if (!s.AsSpan().SequenceEqual(copy)) return null;
+                checkedSectors++;
+            }
+            if (checkedSectors == 0) return null;
+            return b =>
+            {
+                var sectors = b.ModifiedPages.SelectMany(page =>
+                {
+                    long first = page * FileBuffer.PageSize / Sector, last = Math.Min(((page + 1) * FileBuffer.PageSize - 1) / Sector, b.Length / Sector - 1);
+                    return Enumerable.Range(0, (int)(last - first + 1)).Select(k => first + k);
+                }).Distinct().OrderBy(x => x).ToList();
+                byte[] sec = new byte[Sector];
+                int rebuilt = 0;
+                foreach (long sector in sectors)
+                {
+                    long at = sector * Sector;
+                    b.Read(at, sec);
+                    byte[] before = (byte[])sec.Clone();
+                    if (!RebuildSector(sec)) continue;
+                    for (int k = 0; k < Sector; k++)
+                        if (before[k] != sec[k]) b[at + k] = sec[k];
+                    rebuilt++;
+                }
+                if (rebuilt > 0) TraceLogger.Log($"CD sector EDC/ECC recalculated for {rebuilt} sector(s).");
+            };
+        }
+    }
+
+    /// <summary>
+    /// Bisect mode: finds the stash changes that make a corruption crash by halving the suspects each round.
+    /// Each test applies every change except half of the suspects (and except changes already proven not to matter):
+    /// - still crashes: the removed half doesn't matter, the crash is in the other half
+    /// - works: the crash is in the removed half
+    /// When one change is left (or the user stops early), the suspects can be excluded and the rest of the stash re-applied.
+    /// </summary>
+    public sealed class BisectSession
+    {
+        private readonly (long Offset, byte Value)[] _all; //One entry per offset (last value wins), sorted by offset so halves are contiguous areas
+        private List<int> _suspects;
+        private HashSet<int> _cleared = [];
+        private List<int>? _removed; //The half left out of the current test
+        private readonly Stack<(List<int> Suspects, HashSet<int> Cleared)> _history = new();
+
+        public BisectSession(IEnumerable<(long Offset, byte Value)> entries)
+        {
+            var last = new Dictionary<long, byte>();
+            foreach (var (offset, value) in entries) last[offset] = value;
+            _all = [.. last.OrderBy(p => p.Key).Select(p => (p.Key, p.Value))];
+            _suspects = [.. Enumerable.Range(0, _all.Length)];
+        }
+
+        public int Total => _all.Length;
+        public int SuspectCount => _suspects.Count;
+        public int Round => _history.Count + 1;
+        public bool Finished => _suspects.Count <= 1;
+        public bool CanUndo => _history.Count > 0;
+        public bool TestPending => _removed != null;
+        public int RoundsLeft => _suspects.Count <= 1 ? 0 : (int)Math.Ceiling(Math.Log2(_suspects.Count));
+
+        public IEnumerable<(long Offset, byte Value)> Suspects => _suspects.Select(i => _all[i]);
+
+        /// <summary>
+        /// Offset range covered by the suspects (for display).
+        /// </summary>
+        public ByteRange? SuspectSpan => _suspects.Count == 0 ? null : new ByteRange(_all[_suspects[0]].Offset, _all[_suspects[^1]].Offset);
+
+        /// <summary>
+        /// Offset range covered by the half that is left out of the current test.
+        /// </summary>
+        public ByteRange? RemovedSpan => _removed is { Count: > 0 } ? new ByteRange(_all[_removed[0]].Offset, _all[_removed[^1]].Offset) : null;
+
+        /// <summary>
+        /// Every change except the suspects: the stash without whatever makes it crash.
+        /// </summary>
+        public List<(long Offset, byte Value)> WithoutSuspects()
+        {
+            var suspects = new HashSet<int>(_suspects);
+            return [.. Enumerable.Range(0, _all.Length).Where(i => !suspects.Contains(i)).Select(i => _all[i])];
+        }
+
+        /// <summary>
+        /// Picks the half of the suspects to leave out and returns the changes to apply for this test.
+        /// </summary>
+        public List<(long Offset, byte Value)> NextTest()
+        {
+            if (Finished) throw new InvalidOperationException("Bisect has finished, there's only one suspect left.");
+            _removed = _suspects.GetRange(0, _suspects.Count / 2);
+            var skip = new HashSet<int>(_removed);
+            skip.UnionWith(_cleared);
+            return [.. Enumerable.Range(0, _all.Length).Where(i => !skip.Contains(i)).Select(i => _all[i])];
+        }
+
+        /// <summary>
+        /// Records the result of the current test.
+        /// </summary>
+        public void Answer(bool stillCrashes)
+        {
+            if (_removed == null) throw new InvalidOperationException("Run a test before answering.");
+            _history.Push(([.. _suspects], [.. _cleared]));
+            var removed = new HashSet<int>(_removed);
+            if (stillCrashes)
+            {
+                _cleared.UnionWith(_removed); //Not needed for the crash
+                _suspects = [.. _suspects.Where(i => !removed.Contains(i))];
+            }
+            else
+            {
+                _suspects = _removed; //The crash went away when this half was left out
+            }
+            _removed = null;
+        }
+
+        public void Undo()
+        {
+            if (_history.Count == 0) return;
+            (_suspects, _cleared) = _history.Pop();
+            _removed = null;
+        }
+
+        /// <summary>
+        /// Turns offsets into merged ranges. With wordAlign each offset is widened to its 4 byte word (whole instruction/pointer/float).
+        /// </summary>
+        public static List<ByteRange> ToRanges(IEnumerable<long> offsets, bool wordAlign) =>
+            ExcludeList.Merge(offsets.Select(o => wordAlign ? new ByteRange(o & ~3L, (o & ~3L) + 3) : new ByteRange(o, o)));
     }
 }

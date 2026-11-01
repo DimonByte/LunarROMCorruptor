@@ -162,6 +162,7 @@ namespace LunarROMCorruptor.Modules.Helpers
                 var processes = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(EmulatorLocation));
                 if (processes.Length > 0)
                     processes[0].Kill();
+                TraceLogger.Log($"Terminated running emulator: {EmulatorLocation}");
             }
             catch (Exception ex)
             {

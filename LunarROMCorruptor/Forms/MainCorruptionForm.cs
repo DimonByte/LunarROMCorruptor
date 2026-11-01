@@ -148,6 +148,7 @@ namespace LunarROMCorruptor
             IOManager.RefreshCorruptionStashList(StashFileList);
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
+            GenerateSelectedByteDetails();
             AttentionPictureBox.BringToFront();
             //This code under this comment fixes a .net bug where the trackbar allocates a huge amount of memory if the trackbar maximum value is set to a large amount.
             EndByteTrackbar.TickStyle = TickStyle.None;
@@ -209,6 +210,7 @@ namespace LunarROMCorruptor
                 _inPlaceWarningShown = false;
                 ClearByteView();
                 if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
+                GenerateSelectedByteDetails();
                 TraceLogger.Log($"File loaded successfully and UI updated for file: {FileLocation}");
             }
             else
@@ -217,6 +219,23 @@ namespace LunarROMCorruptor
             }
             AttentionPictureBox.Hide();
             AttentionPictureBox.Image = Resources.dragicon;
+        }
+
+        private void GenerateSelectedByteDetails()
+        {
+            //Generate details of the bytes selected in
+            //ByteSelectionDetailsLbl.Text
+            //"Start: 0x00000000 (0) - End: 0x00000000 (0) - Length: 0 bytes (5.00 KB)"
+            //Similar to ByteViewInfoLbl.Text = $"0x{a:X} - 0x{Math.Min(b, view.FileLength - 1):X}\n({FormatByteCount(Math.Min(b, view.FileLength - 1) - a + 1)})";
+            //But with FormatByteCount, that uses long instead of decimal, so use a long for the length calculation
+            try
+            {
+                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value}) - End: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value}) - Length: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}";
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Error generating byte selection details. {ex.Message}", StatusSeverityType.Error);
+            }
         }
 
         /// <summary>
@@ -268,23 +287,27 @@ namespace LunarROMCorruptor
         private void StartByteTrackBar_Scroll(object sender, EventArgs e)
         {
             StartByteNumb.Value = FromTrackValue(StartByteTrackBar, StartByteNumb);
+            GenerateSelectedByteDetails();
         }
 
         private void EndByteTrackbar_Scroll(object sender, EventArgs e)
         {
             EndByteNumb.Value = FromTrackValue(EndByteTrackbar, EndByteNumb);
+            GenerateSelectedByteDetails();
         }
 
         private void StartByteNumb_ValueChanged(object sender, EventArgs e)
         {
             StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
             ByteViewPictureBox.Invalidate(); //Redraw the range overlay
+            GenerateSelectedByteDetails();
         }
 
         private void EndByteNumb_ValueChanged(object sender, EventArgs e)
         {
             EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
             ByteViewPictureBox.Invalidate();
+            GenerateSelectedByteDetails();
         }
 
         private void CorrupteverynthbyteTrackbar_Scroll(object sender, EventArgs e)
@@ -688,11 +711,18 @@ namespace LunarROMCorruptor
             }
         }
 
-        private bool ValidateSingleFileSelection()
+        private bool ValidateSingleFileSelection(bool skipIsInPlaceCheck = false, bool isDoingFolderCheck = false)
         {
             if (string.IsNullOrEmpty(FileSelectiontxt.Text) || FileSelectiontxt.Text == "No file selected." || FileSelectiontxt.Text == MultipleFilesText || !CorruptionCore.IsLoaded || !File.Exists(CorruptionCore.SourcePath))
             {
-                TraceLogger.Log("No valid file selected for corruption. Please select a valid file before attempting to corrupt.", StatusSeverityType.Error, true);
+                if (isDoingFolderCheck)
+                {
+                    TraceLogger.Log("No valid path was detected. Please check your folder selection.", StatusSeverityType.Error, true);
+                }
+                else
+                {
+                    TraceLogger.Log("No valid file selected for corruption. Please select a valid file before attempting to corrupt.", StatusSeverityType.Error, true);
+                }
                 return false;
             }
             if (string.IsNullOrWhiteSpace(SaveasTxt.Text) || SaveasTxt.Text == MultipleFilesSaveText)
@@ -700,7 +730,7 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("No valid save location set. Please choose where the corrupted file should be saved.", StatusSeverityType.Error, true);
                 return false;
             }
-            if (CorruptionCore.IsInPlace(SaveasTxt.Text) && !_inPlaceWarningShown)
+            if (CorruptionCore.IsInPlace(SaveasTxt.Text) && !_inPlaceWarningShown && !skipIsInPlaceCheck)
             {
                 if (MessageBox.Show("The save location is the original file, so the original will be corrupted directly.\n\nRestore can undo this while LRC stays open (the original bytes are kept in a temporary undo journal), but it's still recommended to save to a different file.\n\nContinue?",
                     $"{nameof(LunarROMCorruptor)} - Corrupting the original file", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
@@ -1672,12 +1702,18 @@ namespace LunarROMCorruptor
 
         private void OpenOriginalFolderLocationBtn_Click(object sender, EventArgs e)
         {
-            CommandRunner.OpenFolderInExplorer(FileSelectiontxt.Text);
+            if (ValidateSingleFileSelection(true, true))
+            {
+                CommandRunner.OpenFolderInExplorer(FileSelectiontxt.Text);
+            }
         }
 
         private void OpenSaveFolderLocationBtn_Click(object sender, EventArgs e)
         {
-            CommandRunner.OpenFolderInExplorer(SaveasTxt.Text);
+            if (ValidateSingleFileSelection(true, true))
+            {
+                CommandRunner.OpenFolderInExplorer(SaveasTxt.Text);
+            }
         }
 
         private void OpenEmulatorFolderLocationBtn_Click(object sender, EventArgs e)
@@ -1729,5 +1765,35 @@ namespace LunarROMCorruptor
         }
 
         #endregion
+
+        private void TransferFileLocationToSavePointBtn_Click(object sender, EventArgs e)
+        {
+            if (ValidateSingleFileSelection(true, true))
+            {
+                SaveasTxt.Text = FileSelectiontxt.Text;
+                TraceLogger.Log($"Save location set to the original file: {FileSelectiontxt.Text}");
+            }
+        }
+
+        private void RevertSaveLocationBtn_Click(object sender, EventArgs e)
+        {
+            if (ValidateSingleFileSelection(true, true))
+            {
+                SaveasTxt.Text = Path.Combine(Path.GetDirectoryName(FileSelectiontxt.Text) ?? "", "CorruptedFile" + Path.GetExtension(FileSelectiontxt.Text));
+                TraceLogger.Log($"Save location reverted to default: {SaveasTxt.Text}");
+            }
+        }
+
+        private void FileSelectiontxt_TextChanged(object sender, EventArgs e)
+        {
+            FileSelectiontxt.SelectionStart = FileSelectiontxt.Text.Length;
+            FileSelectiontxt.SelectionLength = 0;
+        }
+
+        private void SaveasTxt_TextChanged(object sender, EventArgs e)
+        {
+            SaveasTxt.SelectionStart = SaveasTxt.Text.Length;
+            SaveasTxt.SelectionLength = 0;
+        }
     }
 }

@@ -51,6 +51,7 @@
             CorruptEverynthByteRadioBtn = new RadioButton();
             RandomByteCorruptRadioBtn = new RadioButton();
             CorruptionParametersPanel = new Panel();
+            ByteSelectionDetailsLbl = new Label();
             ByteModeHelp = new LinkLabel();
             AllowLargeIntensity = new CheckBox();
             UseHexchbox = new CheckBox();
@@ -120,6 +121,8 @@
             SaveasTxt = new TextBox();
             FileSelectPanel = new Panel();
             OpenSaveFolderLocationBtn = new Button();
+            RevertSaveLocationBtn = new Button();
+            TransferFileLocationToSavePointBtn = new Button();
             OpenOriginalFolderLocationBtn = new Button();
             CheckBoxUpperPanel = new Panel();
             Restorefilebtn = new Button();
@@ -145,6 +148,7 @@
             TerminateEmulatorBtn = new Button();
             OpenEmulatorFolderLocationBtn = new Button();
             BrowseEmulatorbutton = new Button();
+            ToolTipHelper = new ToolTip(components);
             FileSaveTab.SuspendLayout();
             FileCorruptionTab.SuspendLayout();
             StashBtnTableLayoutPanel.SuspendLayout();
@@ -362,10 +366,10 @@
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
             CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Datamosh Engine", "Source Code Engine" });
-            CorruptionEngineComboBox.Location = new Point(407, 4);
+            CorruptionEngineComboBox.Location = new Point(437, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
-            CorruptionEngineComboBox.Size = new Size(160, 21);
+            CorruptionEngineComboBox.Size = new Size(130, 21);
             CorruptionEngineComboBox.TabIndex = 166;
             CorruptionEngineComboBox.Text = "Manual Engine";
             CorruptionEngineComboBox.SelectedIndexChanged += CorruptionEngineComboBox_SelectedIndexChanged;
@@ -376,7 +380,7 @@
             CorruptionEnginelbl.AutoSize = true;
             CorruptionEnginelbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Underline);
             CorruptionEnginelbl.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionEnginelbl.Location = new Point(286, 4);
+            CorruptionEnginelbl.Location = new Point(316, 4);
             CorruptionEnginelbl.Margin = new Padding(2, 0, 2, 0);
             CorruptionEnginelbl.Name = "CorruptionEnginelbl";
             CorruptionEnginelbl.Size = new Size(117, 17);
@@ -393,6 +397,7 @@
             CorruptionQueueChkbox.Size = new Size(77, 19);
             CorruptionQueueChkbox.TabIndex = 89;
             CorruptionQueueChkbox.Text = "Multi-File";
+            ToolTipHelper.SetToolTip(CorruptionQueueChkbox, "Enable this if you want to corrupt more than one file.");
             CorruptionQueueChkbox.UseVisualStyleBackColor = true;
             CorruptionQueueChkbox.CheckedChanged += CorruptionQueueChkbox_CheckedChanged;
             // 
@@ -532,6 +537,7 @@
             // 
             CorruptionParametersPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             CorruptionParametersPanel.BackColor = Color.FromArgb(39, 43, 83);
+            CorruptionParametersPanel.Controls.Add(ByteSelectionDetailsLbl);
             CorruptionParametersPanel.Controls.Add(ByteModeHelp);
             CorruptionParametersPanel.Controls.Add(AllowLargeIntensity);
             CorruptionParametersPanel.Controls.Add(UseHexchbox);
@@ -549,6 +555,17 @@
             CorruptionParametersPanel.Size = new Size(373, 277);
             CorruptionParametersPanel.TabIndex = 135;
             CorruptionParametersPanel.Tag = "color:normal";
+            // 
+            // ByteSelectionDetailsLbl
+            // 
+            ByteSelectionDetailsLbl.Dock = DockStyle.Bottom;
+            ByteSelectionDetailsLbl.Font = new Font("Segoe UI", 7.5F);
+            ByteSelectionDetailsLbl.ForeColor = Color.Silver;
+            ByteSelectionDetailsLbl.Location = new Point(0, 250);
+            ByteSelectionDetailsLbl.Name = "ByteSelectionDetailsLbl";
+            ByteSelectionDetailsLbl.Size = new Size(373, 27);
+            ByteSelectionDetailsLbl.TabIndex = 174;
+            ByteSelectionDetailsLbl.TextAlign = ContentAlignment.TopCenter;
             // 
             // ByteModeHelp
             // 
@@ -815,6 +832,7 @@
             CorruptionHistoryBtn.Size = new Size(134, 27);
             CorruptionHistoryBtn.TabIndex = 180;
             CorruptionHistoryBtn.Text = "Corruption History ▾";
+            ToolTipHelper.SetToolTip(CorruptionHistoryBtn, "If stash saves are enabled, the 3 most recent corruption stashes are saved here.");
             CorruptionHistoryBtn.UseVisualStyleBackColor = false;
             // 
             // EnableStashSavesChkbox
@@ -923,7 +941,7 @@
             SilentCorruptionchbox.AutoSize = true;
             SilentCorruptionchbox.BackColor = Color.Transparent;
             SilentCorruptionchbox.ForeColor = Color.FromArgb(213, 216, 216);
-            SilentCorruptionchbox.Location = new Point(216, 5);
+            SilentCorruptionchbox.Location = new Point(195, 5);
             SilentCorruptionchbox.Margin = new Padding(2, 3, 2, 3);
             SilentCorruptionchbox.Name = "SilentCorruptionchbox";
             SilentCorruptionchbox.Size = new Size(66, 19);
@@ -940,9 +958,9 @@
             AttemptProtectedFileOverrideChkBox.Location = new Point(81, 5);
             AttemptProtectedFileOverrideChkBox.Margin = new Padding(2, 3, 2, 3);
             AttemptProtectedFileOverrideChkBox.Name = "AttemptProtectedFileOverrideChkBox";
-            AttemptProtectedFileOverrideChkBox.Size = new Size(131, 19);
+            AttemptProtectedFileOverrideChkBox.Size = new Size(110, 19);
             AttemptProtectedFileOverrideChkBox.TabIndex = 172;
-            AttemptProtectedFileOverrideChkBox.Text = "Take File Ownership";
+            AttemptProtectedFileOverrideChkBox.Text = "Take Ownership";
             AttemptProtectedFileOverrideChkBox.UseVisualStyleBackColor = false;
             AttemptProtectedFileOverrideChkBox.CheckedChanged += AttemptProtectedFileOverrideChkBox_CheckedChanged;
             // 
@@ -1524,15 +1542,18 @@
             SaveasTxt.Location = new Point(186, 31);
             SaveasTxt.Margin = new Padding(2, 3, 2, 3);
             SaveasTxt.Name = "SaveasTxt";
-            SaveasTxt.Size = new Size(536, 23);
+            SaveasTxt.Size = new Size(505, 23);
             SaveasTxt.TabIndex = 85;
             SaveasTxt.Text = "No save location set.";
+            SaveasTxt.TextChanged += SaveasTxt_TextChanged;
             // 
             // FileSelectPanel
             // 
             FileSelectPanel.BackColor = Color.FromArgb(18, 16, 51);
             FileSelectPanel.BackgroundImageLayout = ImageLayout.None;
             FileSelectPanel.Controls.Add(OpenSaveFolderLocationBtn);
+            FileSelectPanel.Controls.Add(RevertSaveLocationBtn);
+            FileSelectPanel.Controls.Add(TransferFileLocationToSavePointBtn);
             FileSelectPanel.Controls.Add(OpenOriginalFolderLocationBtn);
             FileSelectPanel.Controls.Add(CheckBoxUpperPanel);
             FileSelectPanel.Controls.Add(Restorefilebtn);
@@ -1562,8 +1583,47 @@
             OpenSaveFolderLocationBtn.Name = "OpenSaveFolderLocationBtn";
             OpenSaveFolderLocationBtn.Size = new Size(27, 24);
             OpenSaveFolderLocationBtn.TabIndex = 168;
+            ToolTipHelper.SetToolTip(OpenSaveFolderLocationBtn, "Open Folder Location");
             OpenSaveFolderLocationBtn.UseVisualStyleBackColor = false;
             OpenSaveFolderLocationBtn.Click += OpenSaveFolderLocationBtn_Click;
+            // 
+            // RevertSaveLocationBtn
+            // 
+            RevertSaveLocationBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            RevertSaveLocationBtn.BackColor = Color.FromArgb(52, 60, 111);
+            RevertSaveLocationBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            RevertSaveLocationBtn.FlatAppearance.BorderSize = 0;
+            RevertSaveLocationBtn.FlatStyle = FlatStyle.Flat;
+            RevertSaveLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RevertSaveLocationBtn.Image = Properties.Resources.u_turn_arrow_left;
+            RevertSaveLocationBtn.ImageAlign = ContentAlignment.MiddleRight;
+            RevertSaveLocationBtn.Location = new Point(695, 31);
+            RevertSaveLocationBtn.Margin = new Padding(2, 3, 2, 3);
+            RevertSaveLocationBtn.Name = "RevertSaveLocationBtn";
+            RevertSaveLocationBtn.Size = new Size(27, 24);
+            RevertSaveLocationBtn.TabIndex = 168;
+            ToolTipHelper.SetToolTip(RevertSaveLocationBtn, "Revert save point location to CorruptedFile");
+            RevertSaveLocationBtn.UseVisualStyleBackColor = false;
+            RevertSaveLocationBtn.Click += RevertSaveLocationBtn_Click;
+            // 
+            // TransferFileLocationToSavePointBtn
+            // 
+            TransferFileLocationToSavePointBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            TransferFileLocationToSavePointBtn.BackColor = Color.FromArgb(52, 60, 111);
+            TransferFileLocationToSavePointBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            TransferFileLocationToSavePointBtn.FlatAppearance.BorderSize = 0;
+            TransferFileLocationToSavePointBtn.FlatStyle = FlatStyle.Flat;
+            TransferFileLocationToSavePointBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            TransferFileLocationToSavePointBtn.Image = Properties.Resources.Transfer;
+            TransferFileLocationToSavePointBtn.ImageAlign = ContentAlignment.MiddleRight;
+            TransferFileLocationToSavePointBtn.Location = new Point(695, 3);
+            TransferFileLocationToSavePointBtn.Margin = new Padding(2, 3, 2, 3);
+            TransferFileLocationToSavePointBtn.Name = "TransferFileLocationToSavePointBtn";
+            TransferFileLocationToSavePointBtn.Size = new Size(27, 24);
+            TransferFileLocationToSavePointBtn.TabIndex = 168;
+            ToolTipHelper.SetToolTip(TransferFileLocationToSavePointBtn, "Replaces the save point with the same location as the opened file. (WARNING: This will corrupt the original file)");
+            TransferFileLocationToSavePointBtn.UseVisualStyleBackColor = false;
+            TransferFileLocationToSavePointBtn.Click += TransferFileLocationToSavePointBtn_Click;
             // 
             // OpenOriginalFolderLocationBtn
             // 
@@ -1580,6 +1640,7 @@
             OpenOriginalFolderLocationBtn.Name = "OpenOriginalFolderLocationBtn";
             OpenOriginalFolderLocationBtn.Size = new Size(27, 24);
             OpenOriginalFolderLocationBtn.TabIndex = 168;
+            ToolTipHelper.SetToolTip(OpenOriginalFolderLocationBtn, "Open Original Folder Location");
             OpenOriginalFolderLocationBtn.UseVisualStyleBackColor = false;
             OpenOriginalFolderLocationBtn.Click += OpenOriginalFolderLocationBtn_Click;
             // 
@@ -1612,6 +1673,7 @@
             Restorefilebtn.Size = new Size(181, 25);
             Restorefilebtn.TabIndex = 163;
             Restorefilebtn.Text = "Restore File";
+            ToolTipHelper.SetToolTip(Restorefilebtn, "Restored corrupted file to normal");
             Restorefilebtn.UseVisualStyleBackColor = false;
             Restorefilebtn.Click += Restorefilebtn_Click;
             // 
@@ -1629,6 +1691,7 @@
             Changesaveasbtn.Size = new Size(181, 27);
             Changesaveasbtn.TabIndex = 1;
             Changesaveasbtn.Text = "Change Save Point";
+            ToolTipHelper.SetToolTip(Changesaveasbtn, "Change where the corruption is saved");
             Changesaveasbtn.UseVisualStyleBackColor = false;
             Changesaveasbtn.Click += Changesaveasbtn_Click;
             // 
@@ -1660,9 +1723,10 @@
             FileSelectiontxt.Margin = new Padding(2, 3, 2, 3);
             FileSelectiontxt.Name = "FileSelectiontxt";
             FileSelectiontxt.ReadOnly = true;
-            FileSelectiontxt.Size = new Size(536, 23);
+            FileSelectiontxt.Size = new Size(505, 23);
             FileSelectiontxt.TabIndex = 86;
             FileSelectiontxt.Text = "No file selected.";
+            FileSelectiontxt.TextChanged += FileSelectiontxt_TextChanged;
             // 
             // EmulatorFileDialog
             // 
@@ -1857,6 +1921,7 @@
             OpenEmulatorFolderLocationBtn.Name = "OpenEmulatorFolderLocationBtn";
             OpenEmulatorFolderLocationBtn.Size = new Size(27, 24);
             OpenEmulatorFolderLocationBtn.TabIndex = 168;
+            ToolTipHelper.SetToolTip(OpenEmulatorFolderLocationBtn, "Open Emulator Folder Location");
             OpenEmulatorFolderLocationBtn.UseVisualStyleBackColor = false;
             OpenEmulatorFolderLocationBtn.Click += OpenEmulatorFolderLocationBtn_Click;
             // 
@@ -1876,6 +1941,10 @@
             BrowseEmulatorbutton.Text = "Select Program";
             BrowseEmulatorbutton.UseVisualStyleBackColor = false;
             BrowseEmulatorbutton.Click += BrowseEmulatorbutton_Click;
+            // 
+            // ToolTipHelper
+            // 
+            ToolTipHelper.UseAnimation = false;
             // 
             // MainCorruptionForm
             // 
@@ -2063,6 +2132,10 @@
         internal Button OpenEmulatorFolderLocationBtn;
         internal Button TerminateEmulatorBtn;
         private PictureBox pictureBox1;
+        private ToolTip ToolTipHelper;
+        internal Button TransferFileLocationToSavePointBtn;
+        internal Button RevertSaveLocationBtn;
+        private Label ByteSelectionDetailsLbl;
     }
 }
 

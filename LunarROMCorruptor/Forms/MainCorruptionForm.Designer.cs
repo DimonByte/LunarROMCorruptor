@@ -72,6 +72,7 @@
             IntensityTrackbar = new TrackBar();
             StashBytesList = new ListBox();
             CorruptionHistoryBtn = new Button();
+            BisectModeChkBox = new CheckBox();
             EnableStashSavesChkbox = new CheckBox();
             StashFileList = new ListBox();
             StashEditorbtn = new Button();
@@ -80,7 +81,6 @@
             AttentionPictureBox = new PictureBox();
             SilentCorruptionchbox = new CheckBox();
             FixChecksumsChkBox = new CheckBox();
-            BisectModeChkBox = new CheckBox();
             ByteViewRegionProfileComboBox = new ComboBox();
             AttemptProtectedFileOverrideChkBox = new CheckBox();
             MainTabControl = new TabControl();
@@ -388,7 +388,7 @@
             CorruptionEnginelbl.Location = new Point(381, 4);
             CorruptionEnginelbl.Margin = new Padding(2, 0, 2, 0);
             CorruptionEnginelbl.Name = "CorruptionEnginelbl";
-            CorruptionEnginelbl.Size = new Size(52, 17);
+            CorruptionEnginelbl.Size = new Size(50, 17);
             CorruptionEnginelbl.TabIndex = 165;
             CorruptionEnginelbl.Text = "Engine:";
             // 
@@ -574,6 +574,7 @@
             ByteViewCloneImage.SizeMode = PictureBoxSizeMode.Zoom;
             ByteViewCloneImage.TabIndex = 179;
             ByteViewCloneImage.TabStop = false;
+            ToolTipHelper.SetToolTip(ByteViewCloneImage, "Click to view ByteView");
             ByteViewCloneImage.Click += ByteViewCloneImage_Click;
             // 
             // ByteSelectionDetailsLbl
@@ -855,6 +856,21 @@
             ToolTipHelper.SetToolTip(CorruptionHistoryBtn, "If stash saves are enabled, the 3 most recent corruption stashes are saved here.");
             CorruptionHistoryBtn.UseVisualStyleBackColor = false;
             // 
+            // BisectModeChkBox
+            // 
+            BisectModeChkBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            BisectModeChkBox.AutoSize = true;
+            BisectModeChkBox.ForeColor = Color.FromArgb(213, 216, 216);
+            BisectModeChkBox.Location = new Point(384, 358);
+            BisectModeChkBox.Margin = new Padding(2, 3, 2, 3);
+            BisectModeChkBox.Name = "BisectModeChkBox";
+            BisectModeChkBox.Size = new Size(91, 19);
+            BisectModeChkBox.TabIndex = 169;
+            BisectModeChkBox.Text = "Bisect Mode";
+            ToolTipHelper.SetToolTip(BisectModeChkBox, resources.GetString("BisectModeChkBox.ToolTip"));
+            BisectModeChkBox.UseVisualStyleBackColor = true;
+            BisectModeChkBox.CheckedChanged += BisectModeChkBox_CheckedChanged;
+            // 
             // EnableStashSavesChkbox
             // 
             EnableStashSavesChkbox.AutoSize = true;
@@ -868,20 +884,6 @@
             EnableStashSavesChkbox.TabIndex = 168;
             EnableStashSavesChkbox.Text = "Enable Stash Saves";
             EnableStashSavesChkbox.UseVisualStyleBackColor = true;
-            // 
-            // BisectModeChkBox
-            // 
-            BisectModeChkBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-            BisectModeChkBox.AutoSize = true;
-            BisectModeChkBox.ForeColor = Color.FromArgb(213, 216, 216);
-            BisectModeChkBox.Location = new Point(384, 358);
-            BisectModeChkBox.Margin = new Padding(2, 3, 2, 3);
-            BisectModeChkBox.Name = "BisectModeChkBox";
-            BisectModeChkBox.Size = new Size(95, 19);
-            BisectModeChkBox.TabIndex = 169;
-            BisectModeChkBox.Text = "Bisect Mode";
-            BisectModeChkBox.UseVisualStyleBackColor = true;
-            BisectModeChkBox.CheckedChanged += BisectModeChkBox_CheckedChanged;
             EnableStashSavesChkbox.CheckedChanged += EnableStashSavesChkbox_CheckedChanged;
             // 
             // StashFileList
@@ -982,6 +984,7 @@
             SilentCorruptionchbox.TabIndex = 172;
             SilentCorruptionchbox.Text = "🔇Mute";
             SilentCorruptionchbox.UseVisualStyleBackColor = false;
+            SilentCorruptionchbox.CheckedChanged += SilentCorruptionchbox_CheckedChanged;
             // 
             // FixChecksumsChkBox
             // 
@@ -993,12 +996,25 @@
             FixChecksumsChkBox.Location = new Point(265, 5);
             FixChecksumsChkBox.Margin = new Padding(2, 3, 2, 3);
             FixChecksumsChkBox.Name = "FixChecksumsChkBox";
-            FixChecksumsChkBox.Size = new Size(108, 19);
+            FixChecksumsChkBox.Size = new Size(104, 19);
             FixChecksumsChkBox.TabIndex = 173;
             FixChecksumsChkBox.Text = "Fix Checksums";
+            ToolTipHelper.SetToolTip(FixChecksumsChkBox, resources.GetString("FixChecksumsChkBox.ToolTip"));
             FixChecksumsChkBox.UseVisualStyleBackColor = false;
             FixChecksumsChkBox.CheckedChanged += FixChecksumsChkBox_CheckedChanged;
-            SilentCorruptionchbox.CheckedChanged += SilentCorruptionchbox_CheckedChanged;
+            // 
+            // ByteViewRegionProfileComboBox
+            // 
+            ByteViewRegionProfileComboBox.BackColor = Color.FromArgb(52, 60, 111);
+            ByteViewRegionProfileComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            ByteViewRegionProfileComboBox.FlatStyle = FlatStyle.Flat;
+            ByteViewRegionProfileComboBox.ForeColor = Color.FromArgb(213, 216, 216);
+            ByteViewRegionProfileComboBox.FormattingEnabled = true;
+            ByteViewRegionProfileComboBox.Location = new Point(2, 332);
+            ByteViewRegionProfileComboBox.Name = "ByteViewRegionProfileComboBox";
+            ByteViewRegionProfileComboBox.Size = new Size(111, 23);
+            ByteViewRegionProfileComboBox.TabIndex = 11;
+            ByteViewRegionProfileComboBox.Visible = false;
             // 
             // AttemptProtectedFileOverrideChkBox
             // 
@@ -1011,6 +1027,7 @@
             AttemptProtectedFileOverrideChkBox.Size = new Size(110, 19);
             AttemptProtectedFileOverrideChkBox.TabIndex = 172;
             AttemptProtectedFileOverrideChkBox.Text = "Take Ownership";
+            ToolTipHelper.SetToolTip(AttemptProtectedFileOverrideChkBox, resources.GetString("AttemptProtectedFileOverrideChkBox.ToolTip"));
             AttemptProtectedFileOverrideChkBox.UseVisualStyleBackColor = false;
             AttemptProtectedFileOverrideChkBox.CheckedChanged += AttemptProtectedFileOverrideChkBox_CheckedChanged;
             // 
@@ -1212,19 +1229,6 @@
             ByteViewModeComboBox.Name = "ByteViewModeComboBox";
             ByteViewModeComboBox.Size = new Size(111, 23);
             ByteViewModeComboBox.TabIndex = 9;
-            // 
-            // ByteViewRegionProfileComboBox
-            // 
-            ByteViewRegionProfileComboBox.BackColor = Color.FromArgb(52, 60, 111);
-            ByteViewRegionProfileComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            ByteViewRegionProfileComboBox.FlatStyle = FlatStyle.Flat;
-            ByteViewRegionProfileComboBox.ForeColor = Color.FromArgb(213, 216, 216);
-            ByteViewRegionProfileComboBox.FormattingEnabled = true;
-            ByteViewRegionProfileComboBox.Location = new Point(2, 332);
-            ByteViewRegionProfileComboBox.Name = "ByteViewRegionProfileComboBox";
-            ByteViewRegionProfileComboBox.Size = new Size(111, 23);
-            ByteViewRegionProfileComboBox.TabIndex = 11;
-            ByteViewRegionProfileComboBox.Visible = false;
             // 
             // ByteViewInfoLbl
             // 

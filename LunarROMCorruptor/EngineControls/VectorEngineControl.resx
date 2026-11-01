@@ -117,4 +117,8 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="VectorHelpLbl.Text" xml:space="preserve">
+    <value>The Vector2 Engine looks for 32-bit floats (positions, velocities, sizes, colours) and corrupts them. Only values inside the min/max magnitude are treated as floats, which avoids corrupting code and empty data. 'Skip code / compressed data' also checks the surrounding words, because a lot of code (e.g. N64 MIPS) and compressed data decode as floats. In 'Every Nth' mode N counts floats/vectors instead of bytes. Most PC/PS1/PS2/DS/3DS/Switch data is little-endian. 
+The Big-endian setting is automatically detected on N64 ROMs (.z64/.v64/.n64).</value>
+  </data>
 </root>

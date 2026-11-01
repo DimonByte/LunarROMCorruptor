@@ -193,7 +193,7 @@ namespace LunarROMCorruptor
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
             GenerateSelectedByteDetails();
-            ByteViewModeComboBox.Text = "Diff";
+            ByteViewModeComboBox.Text = "Regions";
             AttentionPictureBox.BringToFront();
             //This code under this comment fixes a .net bug where the trackbar allocates a huge amount of memory if the trackbar maximum value is set to a large amount.
             EndByteTrackbar.TickStyle = TickStyle.None;
@@ -259,6 +259,12 @@ namespace LunarROMCorruptor
                 if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
                 GenerateSelectedByteDetails();
                 UpdateByteViewIfEnabled();
+                //If file extension is n64, v64, or z64, enable Big-Endian checkbox in vector2 engine. Actually have a file extension checker for all big-endian ROMS.
+                //CheckForBigEndianROM(FileLocation);
+                //if (Path.GetExtension(FileLocation).ToLower() == ".n64" || Path.GetExtension(FileLocation).ToLower() == ".v64" || Path.GetExtension(FileLocation).ToLower() == ".z64")
+                //{
+                //    VectorEngineFrame.VectorBigEndianChkBox.Enabled = true;
+                //}
                 TraceLogger.Log($"File loaded successfully and UI updated for file: {FileLocation}");
             }
             else
@@ -268,6 +274,17 @@ namespace LunarROMCorruptor
             AttentionPictureBox.Hide();
             AttentionPictureBox.Image = Resources.dragicon;
         }
+
+        //private void CheckForBigEndianROM(string FileLocation)
+        //{
+        //    if (FileLocation == null) return;
+        //    //The following extensions are known to be big-endian ROMs, so enable the Big-Endian checkbox in the Vector2 engine if the file has one of these extensions:
+        //    //.n64, .v64, .z64, .nds, .gba, .gbc, .gb, .sms, .sgb, .smd, .gen, .md, .gg, .pce, .pcecd, .wsw, .wswcd, .wswcd2, .wswcd3
+        //    //if (Path.GetExtension(FileLocation).ToLower() == ".n64" || Path.GetExtension(FileLocation).ToLower() == ".v64" || Path.GetExtension(FileLocation).ToLower() == ".z64")
+        //    //{
+        //    //    VectorEngineFrame.VectorBigEndianChkBox.Enabled = true;
+        //    //}
+        //}
 
         private void GenerateSelectedByteDetails()
         {
@@ -347,18 +364,36 @@ namespace LunarROMCorruptor
         private void StartByteTrackBar_Scroll(object sender, EventArgs e)
         {
             StartByteNumb.Value = FromTrackValue(StartByteTrackBar, StartByteNumb);
+            //If startbyte is greater than endbyte, set endbyte to startbyte
+            if (StartByteNumb.Value > EndByteNumb.Value)
+            {
+                EndByteNumb.Value = StartByteNumb.Value;
+                EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
+            }
             GenerateSelectedByteDetails();
         }
 
         private void EndByteTrackbar_Scroll(object sender, EventArgs e)
         {
             EndByteNumb.Value = FromTrackValue(EndByteTrackbar, EndByteNumb);
+            //If endbyte is less than startbyte, set startbyte to endbyte
+            if (EndByteNumb.Value < StartByteNumb.Value)
+            {
+                StartByteNumb.Value = EndByteNumb.Value;
+                StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
+            }
             GenerateSelectedByteDetails();
         }
 
         private void StartByteNumb_ValueChanged(object sender, EventArgs e)
         {
             StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
+            //If startbyte is greater than endbyte, set endbyte to startbyte
+            if (StartByteNumb.Value > EndByteNumb.Value)
+            {
+                EndByteNumb.Value = StartByteNumb.Value;
+                EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
+            }
             InvalidateByteViewOverlays(); //Redraw the range overlay
             GenerateSelectedByteDetails();
         }
@@ -366,6 +401,12 @@ namespace LunarROMCorruptor
         private void EndByteNumb_ValueChanged(object sender, EventArgs e)
         {
             EndByteTrackbar.Value = ToTrackValue(EndByteNumb.Value, EndByteTrackbar);
+            //If endbyte is less than startbyte, set startbyte to endbyte
+            if (EndByteNumb.Value < StartByteNumb.Value)
+            {
+                StartByteNumb.Value = EndByteNumb.Value;
+                StartByteTrackBar.Value = ToTrackValue(StartByteNumb.Value, StartByteTrackBar);
+            }
             InvalidateByteViewOverlays();
             GenerateSelectedByteDetails();
         }

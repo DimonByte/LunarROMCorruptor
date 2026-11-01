@@ -41,6 +41,7 @@ namespace LunarROMCorruptor.Modules.Helpers
                 string normalizedPath = Path.GetFullPath(folderPath);
                 TraceLogger.Log($"Normalized folder path: {normalizedPath}");
 
+                //Open directory but also select the file if it exists
                 ProcessStartInfo startInfo = new()
                 {
                     FileName = "explorer.exe",
@@ -57,7 +58,7 @@ namespace LunarROMCorruptor.Modules.Helpers
                         return;
                     }
                     TraceLogger.Log($"The specified path is a file. Attempting to open its directory: {directoryPath}");
-                    startInfo.Arguments = $"\"{directoryPath}\"";
+                    startInfo.Arguments = $"/select,\"{normalizedPath}\"";
                 }
                 else if (Directory.Exists(normalizedPath))
                 {

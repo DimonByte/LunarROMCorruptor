@@ -120,6 +120,22 @@
   <metadata name="ToolTipHelper.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>990, 17</value>
   </metadata>
+  <metadata name="ToolTipHelper.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>990, 17</value>
+  </metadata>
+  <data name="BisectModeChkBox.ToolTip" xml:space="preserve">
+    <value>Bisect Mode opens a small always-on-top window.
+After a emulator/game crash, press Start. Each round leaves out half of the suspect stash changes, applies the rest and starts your emulator. You answer “Still crashes” or “Works now”. The left-out half is shown in cyan on ByteView.
+When it’s done (about 17 rounds for 100,000 changes), use “Exclude + apply the rest” to keep the corruption without the crash. You can also stop and exclude the remaining suspects early.
+It also has undo, re-test, and reset exclusions.</value>
+  </data>
+  <data name="FixChecksumsChkBox.ToolTip" xml:space="preserve">
+    <value>It covers N64, Game Boy, GBA, SNES, Genesis, and the per-sector error-check data in raw CD images (PS1/Saturn/Sega CD .bin).
+It only rewrites a checksum it can reproduce from the original file first, so hacks and unknown formats are left alone.</value>
+  </data>
+  <data name="AttemptProtectedFileOverrideChkBox.ToolTip" xml:space="preserve">
+    <value>This will attempt to take file ownership of the file that is getting corrupted. Useful for files that are protected by the operating system. However, note that is can result in a broken system if you're not careful. Use with caution.</value>
+  </data>
   <data name="LicenseRTB.Text" xml:space="preserve">
     <value>MIT License
 

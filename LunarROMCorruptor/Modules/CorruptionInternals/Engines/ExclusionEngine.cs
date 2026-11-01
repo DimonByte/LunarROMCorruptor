@@ -234,8 +234,15 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 
                 case "N64":
                 case "N64 (STRICT CRC)":
-                    if (N64Rom.DetectByteOrder(d) == null)
+                    var byteOrder = N64Rom.DetectByteOrder(d);
+                    if (byteOrder == null)
+                    {
                         TraceLogger.Log("Exclusion Engine: the file doesn't start with an N64 header (.z64/.v64/.n64), the N64 ranges may not match this file.", StatusSeverityType.Warning);
+                    }
+                    else
+                    {
+                        TraceLogger.Log($"Exclusion Engine: the file has a valid N64 header, the N64 ranges will be used. {byteOrder}", StatusSeverityType.Information);
+                    }
                     break;
 
                 case "NDS":

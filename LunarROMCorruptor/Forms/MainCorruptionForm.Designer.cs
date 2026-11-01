@@ -51,6 +51,7 @@
             CorruptEverynthByteRadioBtn = new RadioButton();
             RandomByteCorruptRadioBtn = new RadioButton();
             CorruptionParametersPanel = new Panel();
+            ByteViewCloneImage = new PictureBox();
             ByteSelectionDetailsLbl = new Label();
             ByteModeHelp = new LinkLabel();
             AllowLargeIntensity = new CheckBox();
@@ -153,6 +154,7 @@
             FileCorruptionTab.SuspendLayout();
             StashBtnTableLayoutPanel.SuspendLayout();
             CorruptionParametersPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)ByteViewCloneImage).BeginInit();
             ((System.ComponentModel.ISupportInitialize)EndByteNumb).BeginInit();
             ((System.ComponentModel.ISupportInitialize)EndByteTrackbar).BeginInit();
             ((System.ComponentModel.ISupportInitialize)StartByteNumb).BeginInit();
@@ -238,7 +240,7 @@
             FileSaveTab.Location = new Point(4, 24);
             FileSaveTab.Margin = new Padding(2, 3, 2, 3);
             FileSaveTab.Name = "FileSaveTab";
-            FileSaveTab.Size = new Size(750, 294);
+            FileSaveTab.Size = new Size(750, 445);
             FileSaveTab.TabIndex = 4;
             FileSaveTab.Text = "💾 File Saves";
             // 
@@ -341,7 +343,7 @@
             FilesaveList.Location = new Point(7, 31);
             FilesaveList.Margin = new Padding(2, 3, 2, 3);
             FilesaveList.Name = "FilesaveList";
-            FilesaveList.Size = new Size(566, 253);
+            FilesaveList.Size = new Size(566, 411);
             FilesaveList.TabIndex = 155;
             // 
             // FilesaveEnableAutoSaves
@@ -420,7 +422,7 @@
             FileCorruptionTab.Margin = new Padding(2, 3, 2, 3);
             FileCorruptionTab.Name = "FileCorruptionTab";
             FileCorruptionTab.Padding = new Padding(2, 3, 2, 3);
-            FileCorruptionTab.Size = new Size(750, 294);
+            FileCorruptionTab.Size = new Size(750, 445);
             FileCorruptionTab.TabIndex = 0;
             FileCorruptionTab.Text = "🎯 Target Parameters";
             // 
@@ -434,7 +436,7 @@
             StashBtnTableLayoutPanel.Controls.Add(RenameStashBtn, 0, 0);
             StashBtnTableLayoutPanel.Controls.Add(DeleteStashBtn, 2, 0);
             StashBtnTableLayoutPanel.Controls.Add(RefreshStashBtn, 1, 0);
-            StashBtnTableLayoutPanel.Location = new Point(544, 253);
+            StashBtnTableLayoutPanel.Location = new Point(544, 404);
             StashBtnTableLayoutPanel.Margin = new Padding(0);
             StashBtnTableLayoutPanel.Name = "StashBtnTableLayoutPanel";
             StashBtnTableLayoutPanel.RowCount = 1;
@@ -537,6 +539,7 @@
             // 
             CorruptionParametersPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             CorruptionParametersPanel.BackColor = Color.FromArgb(39, 43, 83);
+            CorruptionParametersPanel.Controls.Add(ByteViewCloneImage);
             CorruptionParametersPanel.Controls.Add(ByteSelectionDetailsLbl);
             CorruptionParametersPanel.Controls.Add(ByteModeHelp);
             CorruptionParametersPanel.Controls.Add(AllowLargeIntensity);
@@ -552,19 +555,34 @@
             CorruptionParametersPanel.Location = new Point(7, 7);
             CorruptionParametersPanel.Margin = new Padding(2, 3, 2, 3);
             CorruptionParametersPanel.Name = "CorruptionParametersPanel";
-            CorruptionParametersPanel.Size = new Size(373, 277);
+            CorruptionParametersPanel.Size = new Size(373, 428);
             CorruptionParametersPanel.TabIndex = 135;
             CorruptionParametersPanel.Tag = "color:normal";
+            // 
+            // ByteViewCloneImage
+            // 
+            ByteViewCloneImage.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            ByteViewCloneImage.BackColor = Color.Black;
+            ByteViewCloneImage.Cursor = Cursors.Hand;
+            ByteViewCloneImage.Location = new Point(0, 251);
+            ByteViewCloneImage.Margin = new Padding(2);
+            ByteViewCloneImage.Name = "ByteViewCloneImage";
+            ByteViewCloneImage.Size = new Size(373, 150);
+            ByteViewCloneImage.SizeMode = PictureBoxSizeMode.Zoom;
+            ByteViewCloneImage.TabIndex = 179;
+            ByteViewCloneImage.TabStop = false;
+            ByteViewCloneImage.Click += ByteViewCloneImage_Click;
             // 
             // ByteSelectionDetailsLbl
             // 
             ByteSelectionDetailsLbl.Dock = DockStyle.Bottom;
             ByteSelectionDetailsLbl.Font = new Font("Segoe UI", 7.5F);
             ByteSelectionDetailsLbl.ForeColor = Color.Silver;
-            ByteSelectionDetailsLbl.Location = new Point(0, 250);
+            ByteSelectionDetailsLbl.Location = new Point(0, 401);
             ByteSelectionDetailsLbl.Name = "ByteSelectionDetailsLbl";
             ByteSelectionDetailsLbl.Size = new Size(373, 27);
             ByteSelectionDetailsLbl.TabIndex = 174;
+            ByteSelectionDetailsLbl.Text = "Start: 0x";
             ByteSelectionDetailsLbl.TextAlign = ContentAlignment.TopCenter;
             // 
             // ByteModeHelp
@@ -816,7 +834,7 @@
             StashBytesList.Location = new Point(384, 25);
             StashBytesList.Margin = new Padding(2, 3, 2, 3);
             StashBytesList.Name = "StashBytesList";
-            StashBytesList.Size = new Size(134, 229);
+            StashBytesList.Size = new Size(134, 380);
             StashBytesList.TabIndex = 158;
             // 
             // CorruptionHistoryBtn
@@ -826,7 +844,7 @@
             CorruptionHistoryBtn.FlatAppearance.BorderSize = 0;
             CorruptionHistoryBtn.FlatStyle = FlatStyle.Flat;
             CorruptionHistoryBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionHistoryBtn.Location = new Point(384, 257);
+            CorruptionHistoryBtn.Location = new Point(384, 408);
             CorruptionHistoryBtn.Margin = new Padding(2, 3, 2, 3);
             CorruptionHistoryBtn.Name = "CorruptionHistoryBtn";
             CorruptionHistoryBtn.Size = new Size(134, 27);
@@ -863,7 +881,7 @@
             StashFileList.Margin = new Padding(2, 3, 2, 3);
             StashFileList.Name = "StashFileList";
             StashFileList.SelectionMode = SelectionMode.MultiExtended;
-            StashFileList.Size = new Size(201, 198);
+            StashFileList.Size = new Size(201, 349);
             StashFileList.TabIndex = 158;
             StashFileList.MouseDown += StashList_MouseDown;
             // 
@@ -895,7 +913,7 @@
             Corruptusingstashbtn.ForeColor = Color.FromArgb(213, 216, 216);
             Corruptusingstashbtn.Image = Properties.Resources.arrow_up_circle_solid;
             Corruptusingstashbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            Corruptusingstashbtn.Location = new Point(544, 225);
+            Corruptusingstashbtn.Location = new Point(544, 376);
             Corruptusingstashbtn.Margin = new Padding(2, 3, 2, 3);
             Corruptusingstashbtn.Name = "Corruptusingstashbtn";
             Corruptusingstashbtn.Size = new Size(202, 27);
@@ -915,7 +933,7 @@
             TransferStash.Location = new Point(520, 25);
             TransferStash.Margin = new Padding(2, 3, 2, 3);
             TransferStash.Name = "TransferStash";
-            TransferStash.Size = new Size(22, 259);
+            TransferStash.Size = new Size(22, 410);
             TransferStash.TabIndex = 0;
             TransferStash.Tag = "";
             TransferStash.Text = "4";
@@ -930,7 +948,7 @@
             AttentionPictureBox.Location = new Point(2, 3);
             AttentionPictureBox.Margin = new Padding(4, 3, 4, 3);
             AttentionPictureBox.Name = "AttentionPictureBox";
-            AttentionPictureBox.Size = new Size(746, 288);
+            AttentionPictureBox.Size = new Size(746, 439);
             AttentionPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             AttentionPictureBox.TabIndex = 164;
             AttentionPictureBox.TabStop = false;
@@ -978,7 +996,7 @@
             MainTabControl.Margin = new Padding(2, 3, 2, 3);
             MainTabControl.Name = "MainTabControl";
             MainTabControl.SelectedIndex = 0;
-            MainTabControl.Size = new Size(758, 322);
+            MainTabControl.Size = new Size(758, 473);
             MainTabControl.TabIndex = 143;
             // 
             // CorruptionEngineTab
@@ -988,7 +1006,7 @@
             CorruptionEngineTab.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineTab.Name = "CorruptionEngineTab";
             CorruptionEngineTab.Padding = new Padding(2, 3, 2, 3);
-            CorruptionEngineTab.Size = new Size(750, 294);
+            CorruptionEngineTab.Size = new Size(750, 445);
             CorruptionEngineTab.TabIndex = 1;
             CorruptionEngineTab.Text = "🛠️ Corruption Engine";
             // 
@@ -998,7 +1016,7 @@
             ByteViewTab.Location = new Point(4, 24);
             ByteViewTab.Margin = new Padding(2);
             ByteViewTab.Name = "ByteViewTab";
-            ByteViewTab.Size = new Size(750, 294);
+            ByteViewTab.Size = new Size(750, 445);
             ByteViewTab.TabIndex = 8;
             ByteViewTab.Text = "\U0001fa9f ByteView";
             ByteViewTab.UseVisualStyleBackColor = true;
@@ -1029,7 +1047,7 @@
             // ByteViewContainer.Panel2
             // 
             ByteViewContainer.Panel2.Controls.Add(ByteViewPictureBox);
-            ByteViewContainer.Size = new Size(750, 294);
+            ByteViewContainer.Size = new Size(750, 445);
             ByteViewContainer.SplitterDistance = 116;
             ByteViewContainer.SplitterWidth = 6;
             ByteViewContainer.TabIndex = 177;
@@ -1097,6 +1115,8 @@
             // ByteViewupdateWhenCorruptedChkBox
             // 
             ByteViewupdateWhenCorruptedChkBox.AutoSize = true;
+            ByteViewupdateWhenCorruptedChkBox.Checked = true;
+            ByteViewupdateWhenCorruptedChkBox.CheckState = CheckState.Checked;
             ByteViewupdateWhenCorruptedChkBox.ForeColor = Color.FromArgb(213, 216, 216);
             ByteViewupdateWhenCorruptedChkBox.Location = new Point(8, 130);
             ByteViewupdateWhenCorruptedChkBox.Margin = new Padding(4, 3, 4, 3);
@@ -1123,6 +1143,8 @@
             // byteViewColourChkbox
             // 
             byteViewColourChkbox.AutoSize = true;
+            byteViewColourChkbox.Checked = true;
+            byteViewColourChkbox.CheckState = CheckState.Checked;
             byteViewColourChkbox.ForeColor = Color.FromArgb(213, 216, 216);
             byteViewColourChkbox.Location = new Point(8, 104);
             byteViewColourChkbox.Margin = new Padding(4, 3, 4, 3);
@@ -1175,9 +1197,9 @@
             ByteViewPictureBox.Location = new Point(0, 0);
             ByteViewPictureBox.Margin = new Padding(2);
             ByteViewPictureBox.Name = "ByteViewPictureBox";
-            ByteViewPictureBox.Size = new Size(626, 292);
+            ByteViewPictureBox.Size = new Size(626, 443);
             ByteViewPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
-            ByteViewPictureBox.TabIndex = 176;
+            ByteViewPictureBox.TabIndex = 178;
             ByteViewPictureBox.TabStop = false;
             // 
             // AutomationPage
@@ -1188,7 +1210,7 @@
             AutomationPage.Location = new Point(4, 24);
             AutomationPage.Margin = new Padding(4, 3, 4, 3);
             AutomationPage.Name = "AutomationPage";
-            AutomationPage.Size = new Size(750, 294);
+            AutomationPage.Size = new Size(750, 445);
             AutomationPage.TabIndex = 6;
             AutomationPage.Text = "⏱️ Automation";
             // 
@@ -1220,7 +1242,7 @@
             AutoCorruptPanel.Location = new Point(8, 31);
             AutoCorruptPanel.Margin = new Padding(2, 3, 2, 3);
             AutoCorruptPanel.Name = "AutoCorruptPanel";
-            AutoCorruptPanel.Size = new Size(733, 257);
+            AutoCorruptPanel.Size = new Size(733, 411);
             AutoCorruptPanel.TabIndex = 137;
             AutoCorruptPanel.Tag = "color:normal";
             // 
@@ -1253,7 +1275,7 @@
             AutomationList.Location = new Point(0, 0);
             AutomationList.Margin = new Padding(2, 3, 2, 3);
             AutomationList.Name = "AutomationList";
-            AutomationList.Size = new Size(548, 257);
+            AutomationList.Size = new Size(548, 565);
             AutomationList.TabIndex = 167;
             // 
             // DelayInSecLbl
@@ -1379,7 +1401,7 @@
             AboutTab.Margin = new Padding(4, 3, 4, 3);
             AboutTab.Name = "AboutTab";
             AboutTab.Padding = new Padding(4, 3, 4, 3);
-            AboutTab.Size = new Size(750, 294);
+            AboutTab.Size = new Size(750, 445);
             AboutTab.TabIndex = 5;
             AboutTab.Text = "ℹ️ About";
             // 
@@ -1394,7 +1416,7 @@
             AboutPanel.Location = new Point(8, 7);
             AboutPanel.Margin = new Padding(2, 3, 2, 3);
             AboutPanel.Name = "AboutPanel";
-            AboutPanel.Size = new Size(733, 281);
+            AboutPanel.Size = new Size(733, 432);
             AboutPanel.TabIndex = 136;
             AboutPanel.Tag = "color:normal";
             // 
@@ -1408,7 +1430,7 @@
             LicenseRTB.Margin = new Padding(4, 3, 4, 3);
             LicenseRTB.Name = "LicenseRTB";
             LicenseRTB.ReadOnly = true;
-            LicenseRTB.Size = new Size(544, 208);
+            LicenseRTB.Size = new Size(544, 359);
             LicenseRTB.TabIndex = 159;
             LicenseRTB.Text = resources.GetString("LicenseRTB.Text");
             // 
@@ -1453,7 +1475,7 @@
             LogsTabPage.Controls.Add(SaveLogBtn);
             LogsTabPage.Location = new Point(4, 24);
             LogsTabPage.Name = "LogsTabPage";
-            LogsTabPage.Size = new Size(750, 294);
+            LogsTabPage.Size = new Size(750, 445);
             LogsTabPage.TabIndex = 9;
             LogsTabPage.Text = "🗒️ Logs";
             LogsTabPage.UseVisualStyleBackColor = true;
@@ -1464,7 +1486,7 @@
             TraceLoggerTxtBox.Location = new Point(0, 0);
             TraceLoggerTxtBox.Name = "TraceLoggerTxtBox";
             TraceLoggerTxtBox.ReadOnly = true;
-            TraceLoggerTxtBox.Size = new Size(750, 267);
+            TraceLoggerTxtBox.Size = new Size(750, 418);
             TraceLoggerTxtBox.TabIndex = 3;
             TraceLoggerTxtBox.Text = "";
             TraceLoggerTxtBox.WordWrap = false;
@@ -1478,7 +1500,7 @@
             SaveLogBtn.ForeColor = Color.FromArgb(213, 216, 216);
             SaveLogBtn.Image = Properties.Resources.floppy_disk_arrow_in;
             SaveLogBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            SaveLogBtn.Location = new Point(0, 267);
+            SaveLogBtn.Location = new Point(0, 418);
             SaveLogBtn.Margin = new Padding(2, 3, 2, 3);
             SaveLogBtn.Name = "SaveLogBtn";
             SaveLogBtn.Size = new Size(750, 27);
@@ -1494,7 +1516,7 @@
             CorruptButtonPanel.Controls.Add(CorruptButton);
             CorruptButtonPanel.Controls.Add(CorruptionProgressBar);
             CorruptButtonPanel.Dock = DockStyle.Bottom;
-            CorruptButtonPanel.Location = new Point(0, 495);
+            CorruptButtonPanel.Location = new Point(0, 646);
             CorruptButtonPanel.Margin = new Padding(2, 3, 2, 3);
             CorruptButtonPanel.Name = "CorruptButtonPanel";
             CorruptButtonPanel.Size = new Size(758, 60);
@@ -1870,7 +1892,7 @@
             StartEmulatorPanel.Controls.Add(Runemulatorchbox);
             StartEmulatorPanel.Controls.Add(BrowseEmulatorbutton);
             StartEmulatorPanel.Dock = DockStyle.Bottom;
-            StartEmulatorPanel.Location = new Point(0, 404);
+            StartEmulatorPanel.Location = new Point(0, 555);
             StartEmulatorPanel.Margin = new Padding(2, 3, 2, 3);
             StartEmulatorPanel.Name = "StartEmulatorPanel";
             StartEmulatorPanel.Size = new Size(758, 91);
@@ -1950,14 +1972,14 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(758, 555);
+            ClientSize = new Size(758, 706);
             Controls.Add(MainTabControl);
             Controls.Add(StartEmulatorPanel);
             Controls.Add(CorruptButtonPanel);
             Controls.Add(FileSelectPanel);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4, 3, 4, 3);
-            MinimumSize = new Size(774, 594);
+            MinimumSize = new Size(774, 745);
             Name = "MainCorruptionForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "LunarROMCorruptor - vx.x";
@@ -1972,6 +1994,7 @@
             StashBtnTableLayoutPanel.ResumeLayout(false);
             CorruptionParametersPanel.ResumeLayout(false);
             CorruptionParametersPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)ByteViewCloneImage).EndInit();
             ((System.ComponentModel.ISupportInitialize)EndByteNumb).EndInit();
             ((System.ComponentModel.ISupportInitialize)EndByteTrackbar).EndInit();
             ((System.ComponentModel.ISupportInitialize)StartByteNumb).EndInit();
@@ -2101,7 +2124,6 @@
         internal System.Windows.Forms.CheckBox EnableStashSavesChkbox;
         private System.Windows.Forms.TabPage ByteViewTab;
         private System.Windows.Forms.SplitContainer ByteViewContainer;
-        private System.Windows.Forms.PictureBox ByteViewPictureBox;
         private System.Windows.Forms.ComboBox ByteViewModeComboBox;
         private System.Windows.Forms.Label ByteViewInfoLbl;
         private System.Windows.Forms.Label ByteViewLbl;
@@ -2136,6 +2158,8 @@
         internal Button TransferFileLocationToSavePointBtn;
         internal Button RevertSaveLocationBtn;
         private Label ByteSelectionDetailsLbl;
+        private PictureBox ByteViewCloneImage;
+        private PictureBox ByteViewPictureBox;
     }
 }
 

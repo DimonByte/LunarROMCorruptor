@@ -85,7 +85,7 @@ namespace LunarROMCorruptor
             ByteViewPictureBox.MouseUp += ByteViewPictureBox_MouseUp;
             ByteViewPictureBox.Paint += ByteViewPictureBox_Paint;
             ByteViewPictureBox.Resize += (_, _) => ByteViewPictureBox.Invalidate();
-            ByteViewModeComboBox.SelectedIndexChanged += (_, _) => { if (CorruptionCore.IsLoaded && _byteViewInfo != null) UpdateByteView(); };
+            ByteViewModeComboBox.SelectedIndexChanged += (_, _) => { if (CorruptionCore.IsLoaded && _byteViewInfo != null) UpdateByteView(ByteViewPictureBox); };
             FormClosed += (_, _) =>
             {
                 TraceLogger.OnLogEntryAdded -= OnTraceLogEntryAdded;
@@ -149,6 +149,7 @@ namespace LunarROMCorruptor
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
             GenerateSelectedByteDetails();
+            ByteViewModeComboBox.Text = "Diff";
             AttentionPictureBox.BringToFront();
             //This code under this comment fixes a .net bug where the trackbar allocates a huge amount of memory if the trackbar maximum value is set to a large amount.
             EndByteTrackbar.TickStyle = TickStyle.None;
@@ -211,6 +212,7 @@ namespace LunarROMCorruptor
                 ClearByteView();
                 if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
                 GenerateSelectedByteDetails();
+                UpdateByteViewIfEnabled();
                 TraceLogger.Log($"File loaded successfully and UI updated for file: {FileLocation}");
             }
             else
@@ -230,7 +232,7 @@ namespace LunarROMCorruptor
             //But with FormatByteCount, that uses long instead of decimal, so use a long for the length calculation
             try
             {
-                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value}) - End: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value}) - Length: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}";
+                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value}) - End: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value}) - Length: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\nStash Count: {StashBytesList.Items.Count}";
             }
             catch (Exception ex)
             {
@@ -521,6 +523,7 @@ namespace LunarROMCorruptor
             TraceLogger.Log("Corruption process started by user.");
             CorruptionResult? result = CorruptionQueueChkbox.Checked ? await ProcessMultiFileCorruptionAsync() : await ProcessSingleFileCorruptionAsync();
             TraceLogger.Log($"Corruption process completed. Result: {(result?.ToString() ?? "not started")}. Stash Item Count: {CorruptionCore.Stash.Count}");
+            GenerateSelectedByteDetails();
             return result;
         }
 
@@ -1457,19 +1460,21 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("Attempted to refresh ByteView but no file is loaded. Please load a file before attempting to use ByteView.", StatusSeverityType.Error, true);
                 return;
             }
-            UpdateByteView();
+            UpdateByteView(ByteViewPictureBox);
         }
 
         private void UpdateByteViewIfEnabled()
         {
             if (ByteViewupdateWhenCorruptedChkBox.Checked)
-                UpdateByteView();
+            {
+                UpdateByteView(ByteViewPictureBox);
+            }
         }
 
         /// <summary>
         /// Renders the latest corrupted file (or the loaded file if nothing has been corrupted yet) in ByteView on a background thread.
         /// </summary>
-        private async void UpdateByteView()
+        private async void UpdateByteView(PictureBox RenderpictureBox)
         {
             string? path = CorruptionCore.LastOutputPath != null && File.Exists(CorruptionCore.LastOutputPath) ? CorruptionCore.LastOutputPath : CorruptionCore.SourcePath;
             if (path == null) return;
@@ -1492,7 +1497,8 @@ namespace LunarROMCorruptor
                 }
                 var old = _byteViewInfo;
                 _byteViewInfo = rendered;
-                ByteViewPictureBox.Image = rendered.Image;
+                RenderpictureBox.Image = rendered.Image;
+                ByteViewCloneImage.Image = rendered.Image;
                 old?.Dispose();
                 ByteViewInfoLbl.Text = DescribeByteView(rendered);
             }
@@ -1794,6 +1800,11 @@ namespace LunarROMCorruptor
         {
             SaveasTxt.SelectionStart = SaveasTxt.Text.Length;
             SaveasTxt.SelectionLength = 0;
+        }
+
+        private void ByteViewCloneImage_Click(object sender, EventArgs e)
+        {
+            MainTabControl.SelectedTab = ByteViewTab;
         }
     }
 }

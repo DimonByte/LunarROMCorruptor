@@ -183,7 +183,7 @@ namespace LunarROMCorruptor.Modules
             }
             else
             {
-                TraceLogger.Log("ByteView Diff: nothing to compare with (corrupt to a different file, or enable stash saves for in-place corruption).", StatusSeverityType.Warning, true);
+                TraceLogger.Log("ByteView Diff: nothing to compare with (corrupt to a different file, or enable stash saves for in-place corruption).", StatusSeverityType.Warning);
             }
 
             var image = DrawRgb(path, width, height, step, (r, g, bl, index) =>

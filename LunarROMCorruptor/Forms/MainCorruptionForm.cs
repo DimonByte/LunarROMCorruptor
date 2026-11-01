@@ -232,7 +232,19 @@ namespace LunarROMCorruptor
             //But with FormatByteCount, that uses long instead of decimal, so use a long for the length calculation
             try
             {
-                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value}) - End: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value}) - Length: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\nStash Count: {StashBytesList.Items.Count}";
+                int NumberOfBytesToCorrupt = 0;
+                if (CorruptEverynthByteRadioBtn.Checked)
+                {
+                    if (EveryNthByte.Value > 0)
+                    {
+                        NumberOfBytesToCorrupt = (int)((EndByteNumb.Value - StartByteNumb.Value + 1) / EveryNthByte.Value);
+                    }
+                }
+                else
+                {
+                    NumberOfBytesToCorrupt = (int)Intensity.Value;
+                }
+                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value})\nEnd: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value})\nLength: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\nNumber of Stash Items: {StashBytesList.Items.Count}\nNumber of Bytes to Corrupt: {NumberOfBytesToCorrupt}";
             }
             catch (Exception ex)
             {
@@ -315,21 +327,25 @@ namespace LunarROMCorruptor
         private void CorrupteverynthbyteTrackbar_Scroll(object sender, EventArgs e)
         {
             EveryNthByte.Value = Math.Clamp(CorrupteverynthbyteTrackbar.Value, EveryNthByte.Minimum, EveryNthByte.Maximum);
+            GenerateSelectedByteDetails();
         }
 
         private void IntensityTrackbar_Scroll(object sender, EventArgs e)
         {
             Intensity.Value = Math.Clamp(IntensityTrackbar.Value, Intensity.Minimum, Intensity.Maximum);
+            GenerateSelectedByteDetails();
         }
 
         private void Intensity_ValueChanged(object sender, EventArgs e)
         {
             IntensityTrackbar.Value = (int)Math.Clamp(Intensity.Value, IntensityTrackbar.Minimum, IntensityTrackbar.Maximum);
+            GenerateSelectedByteDetails();
         }
 
         private void EveryNthByte_ValueChanged(object sender, EventArgs e)
         {
             CorrupteverynthbyteTrackbar.Value = (int)Math.Clamp(EveryNthByte.Value, CorrupteverynthbyteTrackbar.Minimum, CorrupteverynthbyteTrackbar.Maximum);
+            GenerateSelectedByteDetails();
         }
 
         private void AllowLargeIntensity_CheckedChanged(object sender, EventArgs e)
@@ -1404,11 +1420,13 @@ namespace LunarROMCorruptor
         private void RandomByteCorruptRadioBtn_CheckedChanged(object sender, EventArgs e)
         {
             EverynthbyteGroupbox.Visible = false;
+            GenerateSelectedByteDetails();
         }
 
         private void CorruptEverynthByteRadioBtn_CheckedChanged(object sender, EventArgs e)
         {
             EverynthbyteGroupbox.Visible = true;
+            GenerateSelectedByteDetails();
         }
 
         private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)

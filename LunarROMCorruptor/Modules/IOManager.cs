@@ -74,6 +74,31 @@ namespace LunarROMCorruptor.Modules
             }
         }
 
+        public static void DeleteFile(string file, bool showWarning)
+        {
+            if (file == null) return;
+            if (!File.Exists(file))
+            {
+                TraceLogger.Log($"File does not exist: {file}. Cannot delete.", StatusSeverityType.Warning);
+                return;
+            }
+            try
+            {
+                if (showWarning && MessageBox.Show($"Are you sure you want to delete the file: {file}?", "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                {
+                    TraceLogger.Log($"User cancelled deletion of file: {file}");
+                    return;
+                }
+                TraceLogger.Log($"Attempting to delete file: {file}");
+                File.Delete(file);
+                TraceLogger.Log($"File deleted successfully: {file}");
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to delete file: {file}. Exception: {ex.Message}", StatusSeverityType.Error, true);
+            }
+        }
+
         public static void SaveCorruptedFileCopy(string saveAsTxt, ListBox filesaveList)
         {
             string? newFileName = CopyToSaves(saveAsTxt);

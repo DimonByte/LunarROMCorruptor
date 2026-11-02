@@ -125,6 +125,7 @@
             SaveasTxt = new TextBox();
             FileSelectPanel = new Panel();
             OpenSaveFolderLocationBtn = new Button();
+            DeleteCorruptedFileBtn = new Button();
             RevertSaveLocationBtn = new Button();
             TransferFileLocationToSavePointBtn = new Button();
             OpenOriginalFolderLocationBtn = new Button();
@@ -566,6 +567,7 @@
             // ByteViewCloneImage
             // 
             ByteViewCloneImage.BackColor = Color.Black;
+            ByteViewCloneImage.BorderStyle = BorderStyle.FixedSingle;
             ByteViewCloneImage.Cursor = Cursors.Hand;
             ByteViewCloneImage.Location = new Point(0, 251);
             ByteViewCloneImage.Margin = new Padding(2);
@@ -837,7 +839,7 @@
             StashBytesList.Location = new Point(384, 25);
             StashBytesList.Margin = new Padding(2, 3, 2, 3);
             StashBytesList.Name = "StashBytesList";
-            StashBytesList.Size = new Size(134, 329);
+            StashBytesList.Size = new Size(134, 355);
             StashBytesList.TabIndex = 158;
             // 
             // CorruptionHistoryBtn
@@ -858,10 +860,9 @@
             // 
             // BisectModeChkBox
             // 
-            BisectModeChkBox.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             BisectModeChkBox.AutoSize = true;
             BisectModeChkBox.ForeColor = Color.FromArgb(213, 216, 216);
-            BisectModeChkBox.Location = new Point(384, 358);
+            BisectModeChkBox.Location = new Point(512, 3);
             BisectModeChkBox.Margin = new Padding(2, 3, 2, 3);
             BisectModeChkBox.Name = "BisectModeChkBox";
             BisectModeChkBox.Size = new Size(91, 19);
@@ -905,19 +906,20 @@
             // 
             // StashEditorbtn
             // 
-            StashEditorbtn.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            StashEditorbtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             StashEditorbtn.BackColor = Color.FromArgb(52, 60, 111);
             StashEditorbtn.FlatAppearance.BorderSize = 0;
             StashEditorbtn.FlatStyle = FlatStyle.Flat;
             StashEditorbtn.ForeColor = Color.FromArgb(213, 216, 216);
             StashEditorbtn.Image = Properties.Resources.edit_pencil;
             StashEditorbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            StashEditorbtn.Location = new Point(544, 0);
+            StashEditorbtn.Location = new Point(647, 0);
             StashEditorbtn.Margin = new Padding(2, 3, 2, 3);
             StashEditorbtn.Name = "StashEditorbtn";
-            StashEditorbtn.Size = new Size(204, 25);
+            StashEditorbtn.Size = new Size(101, 25);
             StashEditorbtn.TabIndex = 0;
             StashEditorbtn.Text = "Stash Editor";
+            StashEditorbtn.TextAlign = ContentAlignment.MiddleRight;
             StashEditorbtn.UseVisualStyleBackColor = false;
             StashEditorbtn.Click += StashEditorbtn_Click;
             // 
@@ -1614,7 +1616,7 @@
             SaveasTxt.Location = new Point(186, 31);
             SaveasTxt.Margin = new Padding(2, 3, 2, 3);
             SaveasTxt.Name = "SaveasTxt";
-            SaveasTxt.Size = new Size(505, 23);
+            SaveasTxt.Size = new Size(474, 23);
             SaveasTxt.TabIndex = 85;
             SaveasTxt.Text = "No save location set.";
             SaveasTxt.TextChanged += SaveasTxt_TextChanged;
@@ -1624,6 +1626,7 @@
             FileSelectPanel.BackColor = Color.FromArgb(18, 16, 51);
             FileSelectPanel.BackgroundImageLayout = ImageLayout.None;
             FileSelectPanel.Controls.Add(OpenSaveFolderLocationBtn);
+            FileSelectPanel.Controls.Add(DeleteCorruptedFileBtn);
             FileSelectPanel.Controls.Add(RevertSaveLocationBtn);
             FileSelectPanel.Controls.Add(TransferFileLocationToSavePointBtn);
             FileSelectPanel.Controls.Add(OpenOriginalFolderLocationBtn);
@@ -1659,6 +1662,24 @@
             OpenSaveFolderLocationBtn.UseVisualStyleBackColor = false;
             OpenSaveFolderLocationBtn.Click += OpenSaveFolderLocationBtn_Click;
             // 
+            // DeleteCorruptedFileBtn
+            // 
+            DeleteCorruptedFileBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            DeleteCorruptedFileBtn.BackColor = Color.FromArgb(52, 60, 111);
+            DeleteCorruptedFileBtn.BackgroundImageLayout = ImageLayout.Zoom;
+            DeleteCorruptedFileBtn.FlatAppearance.BorderSize = 0;
+            DeleteCorruptedFileBtn.FlatStyle = FlatStyle.Flat;
+            DeleteCorruptedFileBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            DeleteCorruptedFileBtn.Image = Properties.Resources.trash;
+            DeleteCorruptedFileBtn.ImageAlign = ContentAlignment.MiddleRight;
+            DeleteCorruptedFileBtn.Location = new Point(664, 31);
+            DeleteCorruptedFileBtn.Margin = new Padding(2, 3, 2, 3);
+            DeleteCorruptedFileBtn.Name = "DeleteCorruptedFileBtn";
+            DeleteCorruptedFileBtn.Size = new Size(27, 24);
+            DeleteCorruptedFileBtn.TabIndex = 168;
+            DeleteCorruptedFileBtn.UseVisualStyleBackColor = false;
+            DeleteCorruptedFileBtn.Click += DeleteCorruptedFileBtn_Click;
+            // 
             // RevertSaveLocationBtn
             // 
             RevertSaveLocationBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
@@ -1691,9 +1712,9 @@
             TransferFileLocationToSavePointBtn.Location = new Point(695, 3);
             TransferFileLocationToSavePointBtn.Margin = new Padding(2, 3, 2, 3);
             TransferFileLocationToSavePointBtn.Name = "TransferFileLocationToSavePointBtn";
-            TransferFileLocationToSavePointBtn.Size = new Size(27, 24);
+            TransferFileLocationToSavePointBtn.Size = new Size(27, 23);
             TransferFileLocationToSavePointBtn.TabIndex = 168;
-            ToolTipHelper.SetToolTip(TransferFileLocationToSavePointBtn, "Replaces the save point with the same location as the opened file. (WARNING: This will corrupt the original file)");
+            ToolTipHelper.SetToolTip(TransferFileLocationToSavePointBtn, "Set the save point with the same location as the opened file.\r\n(WARNING: This will corrupt the original file if you click corrupt)");
             TransferFileLocationToSavePointBtn.UseVisualStyleBackColor = false;
             TransferFileLocationToSavePointBtn.Click += TransferFileLocationToSavePointBtn_Click;
             // 
@@ -1710,7 +1731,7 @@
             OpenOriginalFolderLocationBtn.Location = new Point(726, 3);
             OpenOriginalFolderLocationBtn.Margin = new Padding(2, 3, 2, 3);
             OpenOriginalFolderLocationBtn.Name = "OpenOriginalFolderLocationBtn";
-            OpenOriginalFolderLocationBtn.Size = new Size(27, 24);
+            OpenOriginalFolderLocationBtn.Size = new Size(27, 23);
             OpenOriginalFolderLocationBtn.TabIndex = 168;
             ToolTipHelper.SetToolTip(OpenOriginalFolderLocationBtn, "Open Original Folder Location");
             OpenOriginalFolderLocationBtn.UseVisualStyleBackColor = false;
@@ -2214,6 +2235,7 @@
         private Label ByteSelectionDetailsLbl;
         private PictureBox ByteViewCloneImage;
         private PictureBox ByteViewPictureBox;
+        internal Button DeleteCorruptedFileBtn;
     }
 }
 

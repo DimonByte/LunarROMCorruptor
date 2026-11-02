@@ -226,7 +226,7 @@ namespace LunarROMCorruptor
 
         #region File loading and byte range
 
-        public void LoadFile(string FileLocation)
+        public async Task LoadFile(string FileLocation)
         {
             if (_busy)
             {
@@ -253,7 +253,6 @@ namespace LunarROMCorruptor
                 MainSaveFileDialog.InitialDirectory = directory;
                 _corruptButtonIdleText = $"Corrupt File ({CorruptionCore.rawFileSize} {CorruptionCore.fileSizeUnit})";
                 CorruptButton.Text = _corruptButtonIdleText;
-                StashBytesList.Items.Clear();
                 _inPlaceWarningShown = false;
                 ClearByteView();
                 if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
@@ -307,7 +306,12 @@ namespace LunarROMCorruptor
                 {
                     NumberOfBytesToCorrupt = (int)Intensity.Value;
                 }
-                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value})\nEnd: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value})\nLength: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\nNumber of Stash Items: {StashBytesList.Items.Count}\nNumber of Bytes to Corrupt: {NumberOfBytesToCorrupt}{(CorruptionCore.Exclusions.Count > 0 ? $"\nExcluded Ranges: {CorruptionCore.Exclusions.Count} ({FormatByteCount(CorruptionCore.Exclusions.TotalBytes)})" : "")}";
+                ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value})\n" +
+                    $"End: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value})\n" +
+                    $"Length: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\n" +
+                    $"Corrupted Bytes in Stash List Count: {StashBytesList.Items.Count}\n" +
+                    $"Number of Bytes to Corrupt: {NumberOfBytesToCorrupt}{(CorruptionCore.Exclusions.Count > 0 ? $"\n" +
+                    $"Excluded Ranges: {CorruptionCore.Exclusions.Count} ({FormatByteCount(CorruptionCore.Exclusions.TotalBytes)})" : "")}";
             }
             catch (Exception ex)
             {
@@ -357,7 +361,7 @@ namespace LunarROMCorruptor
             //Main Function - If the user didn't cancel, load file.
             if (MainOpenFileDialog.ShowDialog() != DialogResult.Cancel)
             {
-                LoadFile(MainOpenFileDialog.FileName);
+                LoadFile(MainOpenFileDialog.FileName).GetAwaiter();
             }
         }
 
@@ -882,7 +886,7 @@ namespace LunarROMCorruptor
                 result = await Task.Run(() =>
                 {
                     //The stash is always recorded so the corruption history works, the stash checkbox only controls the stash list/saving
-                    var r = CorruptionCore.StartCorruption(settings, outputPath, true, token, progress);
+                    var r = CorruptionCore.StartCorruption(settings, outputPath, EnableStashSavesChkbox.Checked, token, progress);
                     if (r == CorruptionResult.Success)
                         CorruptionHistory.Add(CorruptionCore.Stash, engineName, sourcePath, EnableStashSavesChkbox.Checked);
                     return r;
@@ -906,13 +910,13 @@ namespace LunarROMCorruptor
             }
 
             RunEmulatorIfEnabled(outputPath);
-            await HandleStashSavingAsync();
+            await HandleStashRenderingAsync();
             UpdateByteViewIfEnabled();
             StartSuccessFeedback();
             return result;
         }
 
-        private async Task HandleStashSavingAsync()
+        private async Task HandleStashRenderingAsync()
         {
             StashBytesList.Items.Clear();
             if (!EnableStashSavesChkbox.Checked) return;
@@ -999,7 +1003,7 @@ namespace LunarROMCorruptor
                 if (CorruptionQueueChkbox.Checked)
                     CorruptionQueueChkbox.Checked = false;
                 TraceLogger.Log($"File dropped onto main form: {path}. Attempting to load this file.");
-                LoadFile(path);
+                LoadFile(path).GetAwaiter();
             }
         }
 
@@ -1212,6 +1216,8 @@ namespace LunarROMCorruptor
 
             string outputPath = SaveasTxt.Text;
             BeginBusy("Applying stash");
+            //Reset exclusion ranges to avoid conflicts with the stash file
+            CorruptionCore.Exclusions.Clear();
             CorruptionResult result;
             try
             {
@@ -1248,6 +1254,8 @@ namespace LunarROMCorruptor
         {
             StashBytesList.Enabled = EnableStashSavesChkbox.Checked;
             TransferStash.Enabled = EnableStashSavesChkbox.Checked;
+            BisectModeChkBox.Enabled = EnableStashSavesChkbox.Checked;
+            HandleStashRenderingAsync().ConfigureAwait(false);
             //Save changes to settings
             Settings.Default.StashSavesEnabled = EnableStashSavesChkbox.Checked;
             Settings.Default.Save();
@@ -2092,7 +2100,7 @@ namespace LunarROMCorruptor
             }
             TraceLogger.Log($"{status}: applied {CorruptionCore.Stash.ByteEntries.Count:N0} change(s) to {outputPath}.");
             RunEmulatorIfEnabled(outputPath);
-            await HandleStashSavingAsync();
+            await HandleStashRenderingAsync();
             UpdateByteViewIfEnabled();
             InvalidateByteViewOverlays();
             GenerateSelectedByteDetails();
@@ -2225,6 +2233,11 @@ namespace LunarROMCorruptor
         private void ByteViewCloneImage_Click(object sender, EventArgs e)
         {
             MainTabControl.SelectedTab = ByteViewTab;
+        }
+
+        private void DeleteCorruptedFileBtn_Click(object sender, EventArgs e)
+        {
+            IOManager.DeleteFile(FileSelectiontxt.Text, true);
         }
     }
 }

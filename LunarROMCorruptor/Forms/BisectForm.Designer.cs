@@ -45,10 +45,10 @@
             // 
             BisectStatusLbl.ForeColor = Color.White;
             BisectStatusLbl.Location = new Point(12, 10);
-            BisectStatusLbl.Size = new Size(356, 96);
-            BisectStatusLbl.Text = "Corrupt the file as usual. When it crashes, press Start: LRC leaves out half of the stash each round and asks whether it still crashes.";
             BisectStatusLbl.Name = "BisectStatusLbl";
+            BisectStatusLbl.Size = new Size(356, 96);
             BisectStatusLbl.TabIndex = 0;
+            BisectStatusLbl.Text = "Corrupt the file as usual. When it crashes, press Start: LRC leaves out half of the stash each round and asks whether it still crashes.";
             // 
             // BisectStartBtn
             // 
@@ -56,11 +56,11 @@
             BisectStartBtn.FlatStyle = FlatStyle.Flat;
             BisectStartBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectStartBtn.Location = new Point(12, 110);
+            BisectStartBtn.Name = "BisectStartBtn";
             BisectStartBtn.Size = new Size(356, 30);
+            BisectStartBtn.TabIndex = 1;
             BisectStartBtn.Text = "Start bisect from the current stash";
             BisectStartBtn.UseVisualStyleBackColor = false;
-            BisectStartBtn.Name = "BisectStartBtn";
-            BisectStartBtn.TabIndex = 1;
             BisectStartBtn.Click += BisectStartBtn_Click;
             // 
             // BisectCrashBtn
@@ -69,11 +69,11 @@
             BisectCrashBtn.FlatStyle = FlatStyle.Flat;
             BisectCrashBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectCrashBtn.Location = new Point(12, 146);
+            BisectCrashBtn.Name = "BisectCrashBtn";
             BisectCrashBtn.Size = new Size(174, 34);
+            BisectCrashBtn.TabIndex = 2;
             BisectCrashBtn.Text = "💥 Still crashes";
             BisectCrashBtn.UseVisualStyleBackColor = false;
-            BisectCrashBtn.Name = "BisectCrashBtn";
-            BisectCrashBtn.TabIndex = 2;
             BisectCrashBtn.Click += BisectCrashBtn_Click;
             // 
             // BisectWorksBtn
@@ -82,11 +82,11 @@
             BisectWorksBtn.FlatStyle = FlatStyle.Flat;
             BisectWorksBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectWorksBtn.Location = new Point(194, 146);
+            BisectWorksBtn.Name = "BisectWorksBtn";
             BisectWorksBtn.Size = new Size(174, 34);
+            BisectWorksBtn.TabIndex = 3;
             BisectWorksBtn.Text = "✔ Works now";
             BisectWorksBtn.UseVisualStyleBackColor = false;
-            BisectWorksBtn.Name = "BisectWorksBtn";
-            BisectWorksBtn.TabIndex = 3;
             BisectWorksBtn.Click += BisectWorksBtn_Click;
             // 
             // BisectRetestBtn
@@ -95,11 +95,11 @@
             BisectRetestBtn.FlatStyle = FlatStyle.Flat;
             BisectRetestBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectRetestBtn.Location = new Point(12, 186);
+            BisectRetestBtn.Name = "BisectRetestBtn";
             BisectRetestBtn.Size = new Size(174, 27);
+            BisectRetestBtn.TabIndex = 4;
             BisectRetestBtn.Text = "Re-run this test";
             BisectRetestBtn.UseVisualStyleBackColor = false;
-            BisectRetestBtn.Name = "BisectRetestBtn";
-            BisectRetestBtn.TabIndex = 4;
             BisectRetestBtn.Click += BisectRetestBtn_Click;
             // 
             // BisectUndoBtn
@@ -108,11 +108,11 @@
             BisectUndoBtn.FlatStyle = FlatStyle.Flat;
             BisectUndoBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectUndoBtn.Location = new Point(194, 186);
+            BisectUndoBtn.Name = "BisectUndoBtn";
             BisectUndoBtn.Size = new Size(174, 27);
+            BisectUndoBtn.TabIndex = 5;
             BisectUndoBtn.Text = "Undo last answer";
             BisectUndoBtn.UseVisualStyleBackColor = false;
-            BisectUndoBtn.Name = "BisectUndoBtn";
-            BisectUndoBtn.TabIndex = 5;
             BisectUndoBtn.Click += BisectUndoBtn_Click;
             // 
             // BisectWordAlignChkBox
@@ -122,10 +122,11 @@
             BisectWordAlignChkBox.CheckState = CheckState.Checked;
             BisectWordAlignChkBox.ForeColor = Color.FromArgb(213, 216, 216);
             BisectWordAlignChkBox.Location = new Point(12, 220);
+            BisectWordAlignChkBox.Name = "BisectWordAlignChkBox";
+            BisectWordAlignChkBox.Size = new Size(330, 19);
+            BisectWordAlignChkBox.TabIndex = 6;
             BisectWordAlignChkBox.Text = "Exclude whole 4-byte words (instructions, pointers, floats)";
             BisectWordAlignChkBox.UseVisualStyleBackColor = true;
-            BisectWordAlignChkBox.Name = "BisectWordAlignChkBox";
-            BisectWordAlignChkBox.TabIndex = 6;
             // 
             // BisectExcludeBtn
             // 
@@ -133,11 +134,11 @@
             BisectExcludeBtn.FlatStyle = FlatStyle.Flat;
             BisectExcludeBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectExcludeBtn.Location = new Point(12, 244);
+            BisectExcludeBtn.Name = "BisectExcludeBtn";
             BisectExcludeBtn.Size = new Size(174, 30);
+            BisectExcludeBtn.TabIndex = 7;
             BisectExcludeBtn.Text = "Exclude suspects";
             BisectExcludeBtn.UseVisualStyleBackColor = false;
-            BisectExcludeBtn.Name = "BisectExcludeBtn";
-            BisectExcludeBtn.TabIndex = 7;
             BisectExcludeBtn.Click += BisectExcludeBtn_Click;
             // 
             // BisectApplyWithoutBtn
@@ -146,21 +147,21 @@
             BisectApplyWithoutBtn.FlatStyle = FlatStyle.Flat;
             BisectApplyWithoutBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectApplyWithoutBtn.Location = new Point(194, 244);
+            BisectApplyWithoutBtn.Name = "BisectApplyWithoutBtn";
             BisectApplyWithoutBtn.Size = new Size(174, 30);
+            BisectApplyWithoutBtn.TabIndex = 8;
             BisectApplyWithoutBtn.Text = "Exclude + apply the rest";
             BisectApplyWithoutBtn.UseVisualStyleBackColor = false;
-            BisectApplyWithoutBtn.Name = "BisectApplyWithoutBtn";
-            BisectApplyWithoutBtn.TabIndex = 8;
             BisectApplyWithoutBtn.Click += BisectApplyWithoutBtn_Click;
             // 
             // BisectExclusionsLbl
             // 
             BisectExclusionsLbl.ForeColor = Color.Silver;
             BisectExclusionsLbl.Location = new Point(12, 284);
-            BisectExclusionsLbl.Size = new Size(240, 34);
-            BisectExclusionsLbl.Text = "No excluded ranges.";
             BisectExclusionsLbl.Name = "BisectExclusionsLbl";
+            BisectExclusionsLbl.Size = new Size(240, 34);
             BisectExclusionsLbl.TabIndex = 9;
+            BisectExclusionsLbl.Text = "No excluded ranges.";
             // 
             // BisectResetExclusionsBtn
             // 
@@ -168,11 +169,11 @@
             BisectResetExclusionsBtn.FlatStyle = FlatStyle.Flat;
             BisectResetExclusionsBtn.ForeColor = Color.FromArgb(213, 216, 216);
             BisectResetExclusionsBtn.Location = new Point(258, 286);
+            BisectResetExclusionsBtn.Name = "BisectResetExclusionsBtn";
             BisectResetExclusionsBtn.Size = new Size(110, 27);
+            BisectResetExclusionsBtn.TabIndex = 10;
             BisectResetExclusionsBtn.Text = "Reset exclusions";
             BisectResetExclusionsBtn.UseVisualStyleBackColor = false;
-            BisectResetExclusionsBtn.Name = "BisectResetExclusionsBtn";
-            BisectResetExclusionsBtn.TabIndex = 10;
             BisectResetExclusionsBtn.Click += BisectResetExclusionsBtn_Click;
             // 
             // BisectForm

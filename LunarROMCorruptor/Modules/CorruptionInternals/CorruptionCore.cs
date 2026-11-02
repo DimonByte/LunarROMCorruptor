@@ -271,6 +271,16 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         }
 
         /// <summary>
+        /// Adds stash header files for quick loading of stash corruptions.
+        /// </summary>
+        /// <param name="saveAsPath"></param>
+        internal static void AddStashHeaders(string saveAsPath)
+        {
+            Stash.AddLine($"[x] File.OpenLocation(\"{SourcePath}\")");
+            Stash.AddLine($"[x] File.SaveAsLocation(\"{saveAsPath}\")");
+        }
+
+        /// <summary>
         /// Clears the undo journal and the output tracking. Called when a new file is loaded or the program closes.
         /// </summary>
         public static void ResetSession()
@@ -319,6 +329,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
             Stash.Clear();
             Stash.Enabled = recordStash;
+            if (recordStash)
+                AddStashHeaders(outputPath);
             var rnd = new Random();
 
             if (settings.Engine is CorruptionEngineType.SourceCodeEngine or CorruptionEngineType.DatamoshEngine)

@@ -117,12 +117,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <metadata name="OpenFileDialog1.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+  <metadata name="ToolTipHelper.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
   </metadata>
   <data name="HelpAboutEngineLbl.Text" xml:space="preserve">
-    <value>RANDOM: Sets selected bytes to a random value (0-255).
-RANDOMTILT: Either generates a random byte value, or randomly adds or subtracts a user-defined offset.
-TILT: Adds or subtracts a fixed mathematical shift (e.g., Value + 10).</value>
+    <value>RANDOM: sets the byte to a random value (0-255).
+RANDOMTILT: either a random value, or adds/subtracts the Increment/Decrement number.
+TILT: adds or subtracts the Increment/Decrement number.
+
+Exclusion Type None = the classic Nightmare Engine. Pick a platform (or Auto) to keep its header and boot code safe, so the file is much more likely to still boot.</value>
   </data>
 </root>

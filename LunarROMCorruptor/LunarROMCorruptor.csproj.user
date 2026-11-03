@@ -22,9 +22,6 @@
     <Compile Update="EngineControls\DatamoshEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Update="EngineControls\ExclusionEngineControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Update="EngineControls\LerpEngineControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

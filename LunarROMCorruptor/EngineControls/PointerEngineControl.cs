@@ -5,9 +5,20 @@ namespace LunarROMCorruptor.EngineControls
 {
     public partial class PointerEngineControl : UserControl
     {
+        private const string GeneralHelp = "Swaps, shifts or copies pointers so the game loads a different texture, model, sound, animation or text instead of crashing. SWAP inside tables is the most stable. Compressed data can't be seen, use the Compression Engine for it.";
+
         public PointerEngineControl()
         {
             InitializeComponent();
+            UpdateProfileHelp();
+        }
+
+        private void PointerProfileComboBox_SelectedIndexChanged(object? sender, EventArgs e) => UpdateProfileHelp();
+
+        private void UpdateProfileHelp()
+        {
+            var profile = (PointerEngine.PointerProfile)Math.Max(0, PointerProfileComboBox.SelectedIndex);
+            PointerHelpLbl.Text = $"{PointerEngine.Describe(profile)}\n{GeneralHelp}";
         }
 
         private static uint ParseHex(string text, string what)

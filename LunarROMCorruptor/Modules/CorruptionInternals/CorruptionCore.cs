@@ -271,13 +271,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         }
 
         /// <summary>
-        /// Adds stash header files for quick loading of stash corruptions.
+        /// Adds the stash headers (the loaded file and the save location) so "Corrupt File and Stash" can load the file and replay the stash in one click.
+        /// Written as [x] File.OpenLocation("path") and [x] File.SaveAsLocation("path") at the top of the stash.
         /// </summary>
-        /// <param name="saveAsPath"></param>
         internal static void AddStashHeaders(string saveAsPath)
         {
-            Stash.AddLine($"[x] File.OpenLocation(\"{SourcePath}\")");
-            Stash.AddLine($"[x] File.SaveAsLocation(\"{saveAsPath}\")");
+            Stash.SetHeaders(SourcePath, saveAsPath);
         }
 
         /// <summary>
@@ -543,6 +542,10 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     {
                         excludeEntries.Add(exclude);
                     }
+                    else if (StashParser.TryParseHeader(line, out _, out _))
+                    {
+                        //OpenLocation/SaveAsLocation headers are only used by "Corrupt File and Stash" to load the file first
+                    }
                     else
                     {
                         TraceLogger.Log($"Stash line {lineNumber} is invalid: '{line}'. Corruption has been aborted.", StatusSeverityType.Error, true);
@@ -558,6 +561,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
             Stash.Clear();
             Stash.Enabled = true;
+            AddStashHeaders(outputPath);
 
             if (excludeEntries.Count > 0)
             {
@@ -624,6 +628,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             var excluded = Exclusions.Snapshot();
             Stash.Clear();
             Stash.Enabled = true;
+            AddStashHeaders(outputPath);
             Stash.SetExcludes(excluded);
             FileBuffer? buffer = null;
             try
@@ -1393,6 +1398,19 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public long Count => _bytes.Count + _lines.Count + _excludes.Count;
 
         /// <summary>
+        /// Stash headers: the file that was loaded and where the corrupted file was saved. Written as the first two lines of the stash
+        /// ([x] File.OpenLocation("path") / [x] File.SaveAsLocation("path")) and used by "Corrupt File and Stash". They aren't counted as entries.
+        /// </summary>
+        public string? OpenLocation { get; private set; }
+        public string? SaveAsLocation { get; private set; }
+
+        public void SetHeaders(string? openLocation, string? saveAsLocation)
+        {
+            OpenLocation = string.IsNullOrWhiteSpace(openLocation) ? null : openLocation;
+            SaveAsLocation = string.IsNullOrWhiteSpace(saveAsLocation) ? null : saveAsLocation;
+        }
+
+        /// <summary>
         /// The recorded byte changes in the order they were made (Bisect mode works on these).
         /// </summary>
         public IReadOnlyList<(long Offset, byte Value)> ByteEntries => _bytes;
@@ -1450,6 +1468,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             _bytes.Clear();
             _lines.Clear();
             _excludes.Clear();
+            OpenLocation = null;
+            SaveAsLocation = null;
             if (_bytes.Capacity > 1_000_000) _bytes.TrimExcess();
             Overflowed = false;
         }
@@ -1457,6 +1477,16 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public IEnumerable<string> FormatLines(int max = int.MaxValue)
         {
             int n = 0;
+            if (OpenLocation != null)
+            {
+                if (n++ >= max) yield break;
+                yield return StashParser.FormatOpenLocation(OpenLocation);
+            }
+            if (SaveAsLocation != null)
+            {
+                if (n++ >= max) yield break;
+                yield return StashParser.FormatSaveAsLocation(SaveAsLocation);
+            }
             foreach (var range in _excludes)
             {
                 if (n++ >= max) yield break;
@@ -1557,7 +1587,61 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             return true;
         }
 
-        public static bool IsValidStashLine(string line) => TryParseByte(line, out _, out _) || TryParseVarLine(line, out _) || TryParseFrame(line, out _) || TryParseExclude(line, out _);
+        public static bool IsValidStashLine(string line) => TryParseByte(line, out _, out _) || TryParseVarLine(line, out _) || TryParseFrame(line, out _) || TryParseExclude(line, out _) || TryParseHeader(line, out _, out _);
+
+        public enum HeaderKind { OpenLocation, SaveAsLocation }
+
+        //Windows paths can't contain quotes, so the path is stored as it is (no escaping, backslashes stay readable)
+        [GeneratedRegex(@"^\[x\] File\.(OpenLocation|SaveAsLocation)\(""([^""]*)""\)$", RegexOptions.IgnoreCase)]
+        private static partial Regex HeaderLineRegex();
+
+        public static string FormatOpenLocation(string path) => $"[x] File.OpenLocation(\"{path}\")";
+        public static string FormatSaveAsLocation(string path) => $"[x] File.SaveAsLocation(\"{path}\")";
+
+        /// <summary>
+        /// [x] File.OpenLocation("path") / [x] File.SaveAsLocation("path"): the file the stash was made for and where it was saved.
+        /// </summary>
+        public static bool TryParseHeader(string line, out HeaderKind kind, out string path)
+        {
+            kind = default;
+            path = "";
+            var m = HeaderLineRegex().Match(line);
+            if (!m.Success) return false;
+            kind = m.Groups[1].Value.Equals("OpenLocation", StringComparison.OrdinalIgnoreCase) ? HeaderKind.OpenLocation : HeaderKind.SaveAsLocation;
+            path = m.Groups[2].Value.Trim();
+            return true;
+        }
+
+        public static bool IsHeaderOrExclude(string line) => TryParseHeader(line, out _, out _) || TryParseExclude(line, out _);
+
+        /// <summary>
+        /// Reads the OpenLocation/SaveAsLocation headers of a stash file. Only the top of the file is read (headers are written first),
+        /// so this is quick even for huge stashes. Returns false if the stash has no OpenLocation header (stashes made before headers existed).
+        /// </summary>
+        public static bool TryReadHeaders(string stashFile, out string? openLocation, out string? saveAsLocation)
+        {
+            openLocation = null;
+            saveAsLocation = null;
+            int scanned = 0;
+            foreach (var raw in File.ReadLines(stashFile))
+            {
+                string line = raw.Trim();
+                if (line.Length == 0) continue;
+                if (TryParseHeader(line, out var kind, out string path))
+                {
+                    if (kind == HeaderKind.OpenLocation) openLocation ??= path;
+                    else saveAsLocation ??= path;
+                    if (openLocation != null && saveAsLocation != null) break;
+                }
+                else if (!TryParseExclude(line, out _) && ++scanned > 16)
+                {
+                    break; //Past the header block
+                }
+            }
+            if (openLocation == "") openLocation = null;
+            if (saveAsLocation == "") saveAsLocation = null;
+            return openLocation != null;
+        }
 
         public static string Escape(string s)
         {

@@ -24,22 +24,20 @@
 namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
 {
     /// <summary>
-    /// A range of bytes (inclusive) that the Exclusion Engine will never corrupt.
+    /// A range of bytes (inclusive) that the Nightmare+ Engine exclusion types will never corrupt.
     /// </summary>
     public readonly record struct ProtectedRange(long Start, long End, string Description)
     {
         public override string ToString() => $"0x{Start:X6} - 0x{End:X6}  {Description}";
     }
 
+    /// <summary>
+    /// Platform exclusion profiles: the header/boot ranges of each file type that should never be corrupted, file type detection and the
+    /// named regions used by ByteView. The corruption itself is done by the Nightmare+ Engine (exclusion type), the Pointer Engine uses
+    /// the detection too. (This used to be the separate Exclusion Engine.)
+    /// </summary>
     public class ExclusionEngine
     {
-        public sealed class Settings
-        {
-            public string Profile = "NES";
-            public CorruptionOptions Option = CorruptionOptions.RANDOM;
-            public int TiltAmount = 1;
-        }
-
         private const long RawSector = 2352; //Raw CD sector (BIN/CUE)
         private const long IsoSector = 2048; //Cooked CD/DVD sector (ISO)
 
@@ -184,7 +182,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             }
             catch (Exception ex)
             {
-                TraceLogger.Log($"Exclusion Engine: unable to read the {profile} header from the file, only the fixed ranges will be used. {ex.Message}", StatusSeverityType.Warning);
+                TraceLogger.Log($"Exclusion profile: unable to read the {profile} header from the file, only the fixed ranges will be used. {ex.Message}", StatusSeverityType.Warning);
             }
             long max = data.Length - 1;
             return [.. ranges.Where(r => r.Start <= max && r.End >= r.Start).Select(r => r with { End = Math.Min(r.End, max) }).OrderBy(r => r.Start)];
@@ -237,11 +235,11 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     var byteOrder = N64Rom.DetectByteOrder(d);
                     if (byteOrder == null)
                     {
-                        TraceLogger.Log("Exclusion Engine: the file doesn't start with an N64 header (.z64/.v64/.n64), the N64 ranges may not match this file.", StatusSeverityType.Warning);
+                        TraceLogger.Log("Exclusion profile: the file doesn't start with an N64 header (.z64/.v64/.n64), the N64 ranges may not match this file.", StatusSeverityType.Warning);
                     }
                     else
                     {
-                        TraceLogger.Log($"Exclusion Engine: the file has a valid N64 header, the N64 ranges will be used. {byteOrder}", StatusSeverityType.Information);
+                        TraceLogger.Log($"Exclusion profile: the file has a valid N64 header, the N64 ranges will be used. {byteOrder}", StatusSeverityType.Information);
                     }
                     break;
 
@@ -645,134 +643,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     return true;
             }
             return false;
-        }
-
-        /// <summary>
-        /// Runs the Exclusion Engine. Instead of picking random addresses and retrying when they're protected, the allowed parts of the
-        /// selected range are calculated once, so every corruption lands on an allowed byte and there's no retry limit.
-        /// </summary>
-        public static void Run(CorruptionContext ctx, Settings s)
-        {
-            var ranges = GetProtectedRanges(s.Profile, ctx.Data);
-            TraceLogger.Log($"Exclusion Engine profile {s.Profile}: {ranges.Count} protected range(s).\n{string.Join("\n", ranges)}");
-            if (ctx.Excluded != null)
-            {
-                //Bisect / EXCLUDE stash ranges are left out of the allowed area too, so every corruption still lands on an allowed byte
-                ranges.AddRange(ctx.Excluded.Select(x => new ProtectedRange(x.Start, x.End, "Excluded (Bisect / stash EXCLUDE)")));
-                ranges.Sort((a, b) => a.Start.CompareTo(b.Start));
-            }
-
-            //Build the allowed intervals = [Start, End] minus the protected ranges.
-            var allowed = new List<(long Start, long End)>();
-            long cursor = ctx.Start;
-            foreach (var range in ranges.OrderBy(x => x.Start))
-            {
-                if (range.End < cursor) continue;
-                if (range.Start > ctx.End) break;
-                if (range.Start > cursor) allowed.Add((cursor, Math.Min(range.Start - 1, ctx.End)));
-                cursor = Math.Max(cursor, range.End + 1);
-                if (cursor > ctx.End) break;
-            }
-            if (cursor <= ctx.End) allowed.Add((cursor, ctx.End));
-
-            long totalAllowed = allowed.Sum(a => a.End - a.Start + 1);
-            if (totalAllowed == 0)
-            {
-                TraceLogger.Log($"The selected byte range is completely protected by the {s.Profile} profile. Nothing was corrupted.", StatusSeverityType.Warning, true);
-                return;
-            }
-
-            if (ctx.EveryNth)
-            {
-                long step = ctx.Intensity;
-                long total = (ctx.End - ctx.Start) / step + 1;
-                long done = 0;
-                for (long i = ctx.Start; i <= ctx.End; i += step)
-                {
-                    if (!IsProtected(i, ranges))
-                        CorruptByte(ctx, s, i);
-                    if (++done % 65536 == 0) ctx.Tick(done, total);
-                }
-            }
-            else
-            {
-                //Prefix sums so a random number in [0, totalAllowed) maps to an allowed address
-                var prefix = new long[allowed.Count];
-                long running = 0;
-                for (int k = 0; k < allowed.Count; k++)
-                {
-                    prefix[k] = running;
-                    running += allowed[k].End - allowed[k].Start + 1;
-                }
-                for (long n = 0; n < ctx.Intensity; n++)
-                {
-                    long pick = ctx.Rnd.NextInt64(0, totalAllowed);
-                    int idx = Array.BinarySearch(prefix, pick);
-                    if (idx < 0) idx = ~idx - 1;
-                    CorruptByte(ctx, s, allowed[idx].Start + (pick - prefix[idx]));
-                    if ((n + 1) % 65536 == 0) ctx.Tick(n + 1, ctx.Intensity);
-                }
-            }
-        }
-
-        public static void CorruptByte(CorruptionContext ctx, Settings s, long i)
-        {
-            switch (s.Option)
-            {
-                case CorruptionOptions.RANDOM:
-                    byte newValue = (byte)ctx.Rnd.Next(0, 256);
-                    if (ShouldAvoidValue(newValue))
-                        newValue = GetAlternativeValue(ctx.Rnd);
-                    ctx.Set(i, newValue);
-                    break;
-
-                case CorruptionOptions.RANDOMTILT:
-                    switch (ctx.Rnd.Next(0, 3))
-                    {
-                        case 0:
-                            byte value = (byte)ctx.Rnd.Next(0, 256);
-                            if (ShouldAvoidValue(value))
-                                value = GetAlternativeValue(ctx.Rnd);
-                            ctx.Set(i, value);
-                            break;
-                        case 1:
-                            ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) + s.TiltAmount));
-                            break;
-                        default:
-                            ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) - s.TiltAmount));
-                            break;
-                    }
-                    break;
-
-                case CorruptionOptions.TILT:
-                    if (ctx.Rnd.Next(0, 2) == 0)
-                        ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) + s.TiltAmount));
-                    else
-                        ctx.Set(i, CorruptionCore.ClampByte(ctx.Get(i) - s.TiltAmount));
-                    break;
-
-                default:
-                    throw new InvalidOperationException($"The Exclusion Engine doesn't support the corruption type {s.Option}.");
-            }
-        }
-
-        /// <summary>
-        /// Determines if a corruption value should be avoided (0x00 and 0xF0-0xFF have a high crash potential)
-        /// </summary>
-        private static bool ShouldAvoidValue(byte value)
-        {
-            return value == 0x00 || value >= 0xF0;
-        }
-
-        private static readonly byte[] AlternativeValues =
-        [
-            0x7F, 0x80, 0x42, 0x69, 0xA5, 0xCD, 0x13, 0x88,
-            0x2A, 0x76, 0x65, 0x8C
-        ];
-
-        private static byte GetAlternativeValue(Random rnd)
-        {
-            return AlternativeValues[rnd.Next(AlternativeValues.Length)];
         }
     }
 }

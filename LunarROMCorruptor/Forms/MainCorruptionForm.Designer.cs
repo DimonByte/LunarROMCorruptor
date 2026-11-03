@@ -77,6 +77,7 @@
             StashFileList = new ListBox();
             StashEditorbtn = new Button();
             Corruptusingstashbtn = new Button();
+            CorruptFileAndStashBtn = new Button();
             TransferStash = new Button();
             AttentionPictureBox = new PictureBox();
             SilentCorruptionchbox = new CheckBox();
@@ -371,7 +372,7 @@
             CorruptionEngineComboBox.Font = new Font("Tahoma", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptionEngineComboBox.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptionEngineComboBox.FormattingEnabled = true;
-            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Exclusion Engine", "Vector2 Engine", "Blocks Engine", "Pointer Engine", "Compression Engine", "Datamosh Engine", "Source Code Engine" });
+            CorruptionEngineComboBox.Items.AddRange(new object[] { "Manual Engine", "Nightmare+ Engine", "Merge Engine", "Lerp Engine", "Logic Engine", "Vector2 Engine", "Blocks Engine", "Pointer Engine", "Compression Engine", "Datamosh Engine", "Source Code Engine" });
             CorruptionEngineComboBox.Location = new Point(437, 4);
             CorruptionEngineComboBox.Margin = new Padding(2, 3, 2, 3);
             CorruptionEngineComboBox.Name = "CorruptionEngineComboBox";
@@ -420,6 +421,7 @@
             FileCorruptionTab.Controls.Add(EnableStashSavesChkbox);
             FileCorruptionTab.Controls.Add(StashFileList);
             FileCorruptionTab.Controls.Add(StashEditorbtn);
+            FileCorruptionTab.Controls.Add(CorruptFileAndStashBtn);
             FileCorruptionTab.Controls.Add(Corruptusingstashbtn);
             FileCorruptionTab.Controls.Add(TransferStash);
             FileCorruptionTab.Controls.Add(AttentionPictureBox);
@@ -900,9 +902,10 @@
             StashFileList.Margin = new Padding(2, 3, 2, 3);
             StashFileList.Name = "StashFileList";
             StashFileList.SelectionMode = SelectionMode.MultiExtended;
-            StashFileList.Size = new Size(201, 323);
+            StashFileList.Size = new Size(201, 294);
             StashFileList.TabIndex = 158;
             StashFileList.MouseDown += StashList_MouseDown;
+            StashFileList.DoubleClick += StashFileList_DoubleClick;
             // 
             // StashEditorbtn
             // 
@@ -941,6 +944,27 @@
             Corruptusingstashbtn.Text = "Corrupt using Selected Stash";
             Corruptusingstashbtn.UseVisualStyleBackColor = false;
             Corruptusingstashbtn.Click += Corruptusingstash_Click;
+            ToolTipHelper.SetToolTip(Corruptusingstashbtn, "Applies the selected stash to the file that is loaded right now and saves it to the current save location.");
+            // 
+            // CorruptFileAndStashBtn
+            // 
+            CorruptFileAndStashBtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            CorruptFileAndStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            CorruptFileAndStashBtn.FlatAppearance.BorderSize = 0;
+            CorruptFileAndStashBtn.FlatStyle = FlatStyle.Flat;
+            CorruptFileAndStashBtn.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            CorruptFileAndStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            CorruptFileAndStashBtn.Image = Properties.Resources.arrow_up_circle_solid;
+            CorruptFileAndStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            CorruptFileAndStashBtn.Location = new Point(544, 321);
+            CorruptFileAndStashBtn.Margin = new Padding(2, 3, 2, 3);
+            CorruptFileAndStashBtn.Name = "CorruptFileAndStashBtn";
+            CorruptFileAndStashBtn.Size = new Size(202, 27);
+            CorruptFileAndStashBtn.TabIndex = 0;
+            CorruptFileAndStashBtn.Text = "Corrupt File and Stash";
+            ToolTipHelper.SetToolTip(CorruptFileAndStashBtn, "Quick load: loads the file and save location written in the selected stash's headers (OpenLocation / SaveAsLocation), then applies the stash. Same as double-clicking a stash.");
+            CorruptFileAndStashBtn.UseVisualStyleBackColor = false;
+            CorruptFileAndStashBtn.Click += CorruptFileAndStashBtn_Click;
             // 
             // TransferStash
             // 
@@ -2127,6 +2151,7 @@
         internal System.Windows.Forms.Button CorruptionHistoryBtn;
         internal System.Windows.Forms.Button StashEditorbtn;
         internal System.Windows.Forms.Button Corruptusingstashbtn;
+        internal System.Windows.Forms.Button CorruptFileAndStashBtn;
         internal System.Windows.Forms.Button RefreshStashBtn;
         internal System.Windows.Forms.Button RenameStashBtn;
         internal System.Windows.Forms.Button TransferStash;

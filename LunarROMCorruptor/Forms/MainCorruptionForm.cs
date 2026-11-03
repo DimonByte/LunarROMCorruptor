@@ -50,7 +50,6 @@ namespace LunarROMCorruptor
         public readonly MergeEngineControl MergeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly VectorEngineControl VectorEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly ManualEngineControl ManualEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
-        public readonly ExclusionEngineControl ExclusionEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly SourceCodeEngineControl SourceCodeEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly DatamoshEngineControl DatamoshEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
         public readonly BlocksEngineControl BlocksEngineFrame = new(); //This is the form that will be used to set the options for the corruption engine. It will be embedded in the main form.
@@ -79,10 +78,17 @@ namespace LunarROMCorruptor
         private List<ExclusionEngine.NamedRegion>? _byteViewRegions; //Regions mode: the named regions of the shown file
         private string? _byteViewRegionProfile; //Regions mode: the profile the regions were read with
         private LunarROMCorruptor.Forms.BisectForm? _bisectForm;
+        //Engine presets bar (top of the Corruption Engine tab)
+        private Panel _presetPanel = null!;
+        private ComboBox _presetComboBox = null!;
+        private Label _presetDescriptionLbl = null!;
+        private Button _presetDeleteBtn = null!;
+        private bool _presetListUpdating;
 
         public MainCorruptionForm()
         {
             InitializeComponent();
+            InitializePresetBar();
             FormClosing += MainCorruptionForm_FormClosing;
             //ByteView targeting: drag on the image to set the start/end byte
             ByteViewPictureBox.Cursor = Cursors.Cross;
@@ -177,6 +183,7 @@ namespace LunarROMCorruptor
             {
                 Directory.CreateDirectory(savesDirectory);
                 Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
+                Directory.CreateDirectory(EnginePresets.UserPresetDirectory);
             }
             catch (Exception ex)
             {
@@ -255,7 +262,7 @@ namespace LunarROMCorruptor
                 CorruptButton.Text = _corruptButtonIdleText;
                 _inPlaceWarningShown = false;
                 ClearByteView();
-                if (ExclusionEngineFrame.Visible) ExclusionEngineFrame.LoadAddresses();
+                if (NightmareEngineFrame.Visible) NightmareEngineFrame.LoadAddresses();
                 GenerateSelectedByteDetails();
                 UpdateByteViewIfEnabled();
                 //If file extension is n64, v64, or z64, enable Big-Endian checkbox in vector2 engine. Actually have a file extension checker for all big-endian ROMS.
@@ -484,70 +491,11 @@ namespace LunarROMCorruptor
                     control.Visible = false; //DO NOT dispose of the user controls. Hide them since the data in those controls are used throughout the corruption process and disposing them will cause issues.
                 }
             }
-            UserControl? newControl = null;
-            switch (selectedEngine)
-            {
-                case CorruptionEngineType.MergeEngine:
-                    newControl = MergeEngineFrame;
-                    newControl.Name = "MergeEngineControl";
-                    break;
-
-                case CorruptionEngineType.LogicEngine:
-                    newControl = LogicEngineFrame;
-                    newControl.Name = "LogicEngineControl";
-                    break;
-
-                case CorruptionEngineType.NightmareEngine:
-                    newControl = NightmareEngineFrame;
-                    newControl.Name = "NightmareEngineControl";
-                    break;
-
-                case CorruptionEngineType.LerpEngine:
-                    newControl = LerpEngineFrame;
-                    newControl.Name = "LerpEngineControl";
-                    break;
-
-                case CorruptionEngineType.VectorEngine:
-                    newControl = VectorEngineFrame;
-                    newControl.Name = "VectorEngineControl";
-                    break;
-
-                case CorruptionEngineType.ManualEngine:
-                    newControl = ManualEngineFrame;
-                    newControl.Name = "ManualEngineControl";
-                    break;
-
-                case CorruptionEngineType.ExclusionEngine:
-                    newControl = ExclusionEngineFrame;
-                    newControl.Name = "ExclusionEngineControl";
-                    ExclusionEngineFrame.LoadAddresses(); //The loaded file may have changed since the profile was last shown
-                    break;
-
-                case CorruptionEngineType.DatamoshEngine:
-                    newControl = DatamoshEngineFrame;
-                    newControl.Name = "DatamoshEngineControl";
-                    break;
-
-                case CorruptionEngineType.BlocksEngine:
-                    newControl = BlocksEngineFrame;
-                    newControl.Name = "BlocksEngineControl";
-                    break;
-
-                case CorruptionEngineType.PointerEngine:
-                    newControl = PointerEngineFrame;
-                    newControl.Name = "PointerEngineControl";
-                    break;
-
-                case CorruptionEngineType.CompressionEngine:
-                    newControl = CompressionEngineFrame;
-                    newControl.Name = "CompressionEngineControl";
-                    break;
-
-                case CorruptionEngineType.SourceCodeEngine:
-                    newControl = SourceCodeEngineFrame;
-                    newControl.Name = "SourceCodeEngineControl";
-                    break;
-            }
+            UserControl? newControl = GetEngineFrame(selectedEngine);
+            if (newControl != null)
+                newControl.Name = newControl.GetType().Name; //The engine tab finds the engine controls by their "...EngineControl" name
+            if (selectedEngine == CorruptionEngineType.NightmareEngine)
+                NightmareEngineFrame.LoadAddresses(); //The loaded file may have changed since the exclusion type was last shown
 
             if (newControl != null)
             {
@@ -557,6 +505,224 @@ namespace LunarROMCorruptor
                 {
                     CorruptionEngineTab.Controls.Add(newControl);
                 }
+                newControl.BringToFront(); //Docked last, so it fills the space under the preset bar
+            }
+            RefreshPresetList(selectedEngine);
+        }
+
+        /// <summary>
+        /// The settings control of an engine (null for INVALID).
+        /// </summary>
+        private UserControl? GetEngineFrame(CorruptionEngineType engine) => engine switch
+        {
+            CorruptionEngineType.MergeEngine => MergeEngineFrame,
+            CorruptionEngineType.LogicEngine => LogicEngineFrame,
+            CorruptionEngineType.NightmareEngine => NightmareEngineFrame,
+            CorruptionEngineType.LerpEngine => LerpEngineFrame,
+            CorruptionEngineType.VectorEngine => VectorEngineFrame,
+            CorruptionEngineType.ManualEngine => ManualEngineFrame,
+            CorruptionEngineType.DatamoshEngine => DatamoshEngineFrame,
+            CorruptionEngineType.BlocksEngine => BlocksEngineFrame,
+            CorruptionEngineType.PointerEngine => PointerEngineFrame,
+            CorruptionEngineType.CompressionEngine => CompressionEngineFrame,
+            CorruptionEngineType.SourceCodeEngine => SourceCodeEngineFrame,
+            _ => null
+        };
+
+        #endregion
+
+        #region Engine presets
+
+        private Button PresetButton(string text, string tip, EventHandler onClick)
+        {
+            var button = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                MinimumSize = new Size(0, 25),
+                Padding = new Padding(4, 0, 4, 0),
+                Margin = new Padding(3, 2, 0, 0),
+                BackColor = Color.FromArgb(52, 60, 111),
+                ForeColor = Color.FromArgb(213, 216, 216),
+                FlatStyle = FlatStyle.Flat,
+                UseVisualStyleBackColor = false
+            };
+            button.FlatAppearance.BorderSize = 0;
+            ToolTipHelper.SetToolTip(button, tip);
+            button.Click += onClick;
+            return button;
+        }
+
+        /// <summary>
+        /// Builds the preset bar at the top of the Corruption Engine tab: pick a built-in (★) or user (👤) preset to load it,
+        /// save the current engine settings, delete, import a shared preset or open the UserCorruptionEnginePresets folder.
+        /// </summary>
+        private void InitializePresetBar()
+        {
+            var row = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 30, WrapContents = false, AutoScroll = false, Padding = new Padding(2, 2, 2, 0), BackColor = Color.Transparent };
+            var label = new Label { Text = "Preset:", AutoSize = true, ForeColor = Color.FromArgb(192, 255, 255), Margin = new Padding(0, 7, 2, 0) };
+            _presetComboBox = new ComboBox
+            {
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Width = 270,
+                MaxDropDownItems = 20,
+                BackColor = Color.FromArgb(45, 45, 64),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(0, 3, 0, 0)
+            };
+            ToolTipHelper.SetToolTip(_presetComboBox, "Pick a preset to load its settings into the engine. ★ = built-in, 👤 = your presets (UserCorruptionEnginePresets folder).");
+            _presetComboBox.SelectionChangeCommitted += (_, _) => LoadSelectedPreset();
+            _presetComboBox.SelectedIndexChanged += (_, _) => UpdatePresetDescription();
+            _presetDeleteBtn = PresetButton("Delete", "Delete the selected user preset.", (_, _) => DeleteSelectedPreset());
+            row.Controls.Add(label);
+            row.Controls.Add(_presetComboBox);
+            row.Controls.Add(PresetButton("Save As...", "Save the current engine settings as a new user preset.", (_, _) => SaveCurrentPreset()));
+            row.Controls.Add(_presetDeleteBtn);
+            row.Controls.Add(PresetButton("Import...", "Import a .lrcpreset file someone shared (you can also drag it onto LRC).", (_, _) => ImportPresetDialog()));
+            row.Controls.Add(PresetButton("Open Folder", "Open the UserCorruptionEnginePresets folder (share presets by sending the .lrcpreset files).", (_, _) => OpenPresetFolder()));
+            _presetDescriptionLbl = new Label { Dock = DockStyle.Top, Height = 18, ForeColor = Color.Silver, Padding = new Padding(6, 0, 4, 0), AutoEllipsis = true, Text = "" };
+            _presetPanel = new Panel { Dock = DockStyle.Top, Height = 48, Name = "PresetBarPanel" };
+            _presetPanel.Controls.Add(_presetDescriptionLbl);
+            _presetPanel.Controls.Add(row);
+            CorruptionEngineTab.Controls.Add(_presetPanel);
+        }
+
+        private CorruptionEngineType SelectedEngine => EngineParser.ParseEngineType(CorruptionEngineComboBox.Text);
+
+        private void RefreshPresetList(CorruptionEngineType engine, string? selectPath = null)
+        {
+            _presetListUpdating = true;
+            try
+            {
+                _presetComboBox.BeginUpdate();
+                _presetComboBox.Items.Clear();
+                _presetComboBox.Items.Add("(choose a preset to load)");
+                foreach (var preset in EnginePresets.BuiltIn(engine)) _presetComboBox.Items.Add(preset);
+                foreach (var preset in EnginePresets.LoadUser(engine)) _presetComboBox.Items.Add(preset);
+                int index = 0;
+                if (selectPath != null)
+                {
+                    for (int k = 1; k < _presetComboBox.Items.Count; k++)
+                        if (_presetComboBox.Items[k] is EnginePreset p && CorruptionCore.PathsEqual(p.FilePath, selectPath)) index = k;
+                }
+                _presetComboBox.SelectedIndex = index;
+                _presetComboBox.EndUpdate();
+            }
+            finally
+            {
+                _presetListUpdating = false;
+            }
+            UpdatePresetDescription();
+        }
+
+        private void UpdatePresetDescription()
+        {
+            var preset = _presetComboBox.SelectedItem as EnginePreset;
+            _presetDescriptionLbl.Text = preset == null ? $"{_presetComboBox.Items.Count - 1} preset(s) for the {EngineParser.GetEngineDisplayName(SelectedEngine)}." : (string.IsNullOrWhiteSpace(preset.Description) ? preset.Name : preset.Description);
+            ToolTipHelper.SetToolTip(_presetDescriptionLbl, _presetDescriptionLbl.Text);
+            _presetDeleteBtn.Enabled = preset is { BuiltIn: false };
+        }
+
+        private bool ApplyPreset(EnginePreset preset)
+        {
+            var engine = EngineParser.ParseEngineType(preset.Engine);
+            if (engine == CorruptionEngineType.INVALID) return false;
+            if (engine != SelectedEngine)
+                CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engine); //Switches the engine tab (and the preset list)
+            var frame = GetEngineFrame(engine);
+            if (frame == null) return false;
+            int applied = EnginePresets.Apply(frame, preset.Settings, out var unknown);
+            TraceLogger.Log($"Engine preset loaded: {preset.Name} ({preset.Engine}, {applied} setting(s)).{(unknown.Count > 0 ? $" Ignored (not in this version): {string.Join(", ", unknown)}" : "")}");
+            return true;
+        }
+
+        private void LoadSelectedPreset()
+        {
+            if (_presetListUpdating || _presetComboBox.SelectedItem is not EnginePreset preset) return;
+            ApplyPreset(preset);
+            UpdatePresetDescription();
+        }
+
+        private void SaveCurrentPreset()
+        {
+            var engine = SelectedEngine;
+            var frame = GetEngineFrame(engine);
+            if (frame == null) return;
+            string suggested = _presetComboBox.SelectedItem is EnginePreset current ? (current.BuiltIn ? current.Name + " (copy)" : current.Name) : "";
+            string? name = InputBox.Ask($"Preset name for the {EngineParser.GetEngineDisplayName(engine)}", suggested)?.Trim();
+            if (string.IsNullOrEmpty(name)) return;
+            string description = InputBox.Ask("Description (optional): what does this preset do / what is it for?", _presetComboBox.SelectedItem is EnginePreset p && p.Name == name ? p.Description : "")?.Trim() ?? "";
+            var preset = new EnginePreset { Engine = EngineParser.GetEngineDisplayName(engine), Name = name, Description = description, Settings = EnginePresets.Capture(frame) };
+            try
+            {
+                string path;
+                try
+                {
+                    path = EnginePresets.Save(preset, overwrite: false);
+                }
+                catch (IOException) when (MessageBox.Show($"A preset called '{name}' already exists. Replace it?", $"{nameof(LunarROMCorruptor)} - Save preset", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                {
+                    path = EnginePresets.Save(preset, overwrite: true);
+                }
+                RefreshPresetList(engine, path);
+            }
+            catch (IOException)
+            {
+                //Not replaced
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to save the engine preset: {ex.Message}", StatusSeverityType.Error, true);
+            }
+        }
+
+        private void DeleteSelectedPreset()
+        {
+            if (_presetComboBox.SelectedItem is not EnginePreset { BuiltIn: false, FilePath: not null } preset) return;
+            if (MessageBox.Show($"Delete the preset '{preset.Name}'?", $"{nameof(LunarROMCorruptor)} - Delete preset", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            try
+            {
+                File.Delete(preset.FilePath);
+                TraceLogger.Log($"Engine preset deleted: {preset.FilePath}");
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to delete the preset: {ex.Message}", StatusSeverityType.Error, true);
+            }
+            RefreshPresetList(SelectedEngine);
+        }
+
+        private void ImportPresetDialog()
+        {
+            using var dialog = new OpenFileDialog { Filter = $"LRC engine presets (*{EnginePresets.Extension};*.json)|*{EnginePresets.Extension};*.json|All files (*.*)|*.*", Multiselect = true, Title = "Import engine presets" };
+            if (dialog.ShowDialog() != DialogResult.OK) return;
+            foreach (string file in dialog.FileNames) ImportPresetFile(file);
+        }
+
+        /// <summary>
+        /// Copies a shared preset into the user preset folder, switches to its engine and loads it.
+        /// </summary>
+        public void ImportPresetFile(string file)
+        {
+            var preset = EnginePresets.Import(file);
+            if (preset == null) return;
+            ApplyPreset(preset);
+            RefreshPresetList(EngineParser.ParseEngineType(preset.Engine), preset.FilePath);
+            TraceLogger.Log($"Imported the {preset.Engine} preset '{preset.Name}'.", StatusSeverityType.Information);
+        }
+
+        private void OpenPresetFolder()
+        {
+            try
+            {
+                Directory.CreateDirectory(EnginePresets.UserPresetDirectory);
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = EnginePresets.UserPresetDirectory, UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to open the preset folder: {ex.Message}", StatusSeverityType.Error, true);
             }
         }
 
@@ -598,7 +764,6 @@ namespace LunarROMCorruptor
                     case CorruptionEngineType.LogicEngine: settings.Logic = LogicEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.MergeEngine: settings.Merge = MergeEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.ManualEngine: settings.Manual = ManualEngineFrame.GetSettings(); break;
-                    case CorruptionEngineType.ExclusionEngine: settings.Exclusion = ExclusionEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.VectorEngine: settings.Vector = VectorEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.SourceCodeEngine: settings.SourceCode = SourceCodeEngineFrame.GetSettings(); break;
                     case CorruptionEngineType.BlocksEngine: settings.Blocks = BlocksEngineFrame.GetSettings(); break;
@@ -654,7 +819,7 @@ namespace LunarROMCorruptor
             _corruptionCts?.Dispose();
             _corruptionCts = new CancellationTokenSource();
             _enabledBeforeBusy.Clear();
-            foreach (Control control in new Control[] { Openfilebtn, Restorefilebtn, Changesaveasbtn, Corruptusingstashbtn, StashEditorbtn, TransferStash, CopySaveToCorruptedFileBtn, FilesaveSavebtn, CorruptionQueueChkbox, ByteViewRefreshBtn, CorruptionEngineComboBox })
+            foreach (Control control in new Control[] { Openfilebtn, Restorefilebtn, Changesaveasbtn, Corruptusingstashbtn, CorruptFileAndStashBtn, StashEditorbtn, TransferStash, CopySaveToCorruptedFileBtn, FilesaveSavebtn, CorruptionQueueChkbox, ByteViewRefreshBtn, CorruptionEngineComboBox })
             {
                 _enabledBeforeBusy[control] = control.Enabled;
                 control.Enabled = false;
@@ -983,6 +1148,11 @@ namespace LunarROMCorruptor
             else
             {
                 string path = files[0];
+                if (Path.GetExtension(path).Equals(EnginePresets.Extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    ImportPresetFile(path); //A shared engine preset
+                    return;
+                }
                 if (Path.GetExtension(path).Equals(".exe", StringComparison.OrdinalIgnoreCase))
                 {
                     var result = MessageBox.Show(
@@ -1187,32 +1357,109 @@ namespace LunarROMCorruptor
 
         private void Corruptusingstash_Click(object sender, EventArgs e)
         {
-            //Check if a StashFile is selected before running code
-            if (StashFileList.SelectedItems.Count == 0)
+            //Applies the selected stash to whatever file is loaded right now (use "Corrupt File and Stash" to load the stash's own file first)
+            string? stash = SelectedStashPath();
+            if (stash != null) CorruptUsingStashFile(stash);
+        }
+
+        private string? SelectedStashPath()
+        {
+            if (StashFileList.SelectedItems.Count == 0 || StashFileList.SelectedItem == null)
             {
-                TraceLogger.Log("Attempted to corrupt using stash file but no stash file is selected. Please select a stash file before attempting to corrupt.", StatusSeverityType.Error, true);
-                return;
+                TraceLogger.Log("No stash file selected. Please select a stash file first.", StatusSeverityType.Warning, true);
+                return null;
             }
-            if (StashFileList.SelectedItem == null)
+            return Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)!);
+        }
+
+        private async void CorruptFileAndStashBtn_Click(object? sender, EventArgs e)
+        {
+            string? stash = SelectedStashPath();
+            if (stash != null) await CorruptFileAndStashAsync(stash);
+        }
+
+        private async void StashFileList_DoubleClick(object? sender, EventArgs e)
+        {
+            //Only when an item was double-clicked, not the empty space under the list
+            var point = StashFileList.PointToClient(Cursor.Position);
+            int index = StashFileList.IndexFromPoint(point);
+            if (index == ListBox.NoMatches) return;
+            StashFileList.ClearSelected();
+            StashFileList.SelectedIndex = index;
+            string? stash = SelectedStashPath();
+            if (stash != null) await CorruptFileAndStashAsync(stash);
+        }
+
+        /// <summary>
+        /// Quick load: loads the file from the stash's OpenLocation header, sets the save location from its SaveAsLocation header,
+        /// then applies the stash, so the result is exactly the same corruption that the stash was saved from.
+        /// </summary>
+        public async Task<bool> CorruptFileAndStashAsync(string stashFileLocation)
+        {
+            if (_busy) return false;
+            if (!File.Exists(stashFileLocation))
             {
-                TraceLogger.Log("No stash file selected to corrupt with.", StatusSeverityType.Warning, true);
-                return;
+                TraceLogger.Log($"Stash file not found: {stashFileLocation}", StatusSeverityType.Error, true);
+                return false;
             }
-            CorruptUsingStashFile(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)!));
+            string? openLocation, saveAsLocation;
+            try
+            {
+                if (!StashParser.TryReadHeaders(stashFileLocation, out openLocation, out saveAsLocation))
+                {
+                    TraceLogger.Log($"{Path.GetFileName(stashFileLocation)} has no file headers (it was made before stash headers were added), so LRC doesn't know which file it belongs to.\n\nLoad the file yourself and use \"Corrupt using Selected Stash\" instead.", StatusSeverityType.Warning, true);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                TraceLogger.Log($"Unable to read the stash headers of {stashFileLocation}: {ex.Message}", StatusSeverityType.Error, true);
+                return false;
+            }
+            if (!File.Exists(openLocation))
+            {
+                TraceLogger.Log($"The file this stash was made for doesn't exist anymore:\n{openLocation}\n\nLoad the file yourself and use \"Corrupt using Selected Stash\" instead.", StatusSeverityType.Error, true);
+                return false;
+            }
+            if (CorruptionQueueChkbox.Checked)
+                CorruptionQueueChkbox.Checked = false; //Stashes are single file only
+            if (!CorruptionCore.IsLoaded || !CorruptionCore.PathsEqual(CorruptionCore.SourcePath, openLocation) || FileSelectiontxt.Text != CorruptionCore.SourcePath)
+            {
+                await LoadFile(openLocation!);
+                if (!CorruptionCore.IsLoaded || !CorruptionCore.PathsEqual(CorruptionCore.SourcePath, openLocation))
+                    return false; //LoadFile already told the user why
+            }
+            if (!string.IsNullOrWhiteSpace(saveAsLocation))
+            {
+                string? folder = Path.GetDirectoryName(saveAsLocation);
+                if (string.IsNullOrEmpty(folder) || Directory.Exists(folder))
+                {
+                    if (!CorruptionCore.PathsEqual(SaveasTxt.Text, saveAsLocation)) _inPlaceWarningShown = false;
+                    SaveasTxt.Text = saveAsLocation;
+                }
+                else
+                {
+                    TraceLogger.Log($"The stash's save location folder doesn't exist ({folder}), the default save location is used instead: {SaveasTxt.Text}", StatusSeverityType.Warning);
+                }
+            }
+            TraceLogger.Log($"Quick load from stash headers: {openLocation} -> {SaveasTxt.Text}");
+            return await CorruptUsingStashFileAsync(stashFileLocation);
         }
 
         /// <summary>
         /// Applies a stash file to a fresh copy of the loaded file and saves it to the save location.
         /// </summary>
-        public async void CorruptUsingStashFile(string StashFileLocation)
+        public async void CorruptUsingStashFile(string StashFileLocation) => await CorruptUsingStashFileAsync(StashFileLocation);
+
+        public async Task<bool> CorruptUsingStashFileAsync(string StashFileLocation)
         {
-            if (_busy) return;
+            if (_busy) return false;
             if (!File.Exists(StashFileLocation))
             {
                 TraceLogger.Log($"Stash file not found: {StashFileLocation}", StatusSeverityType.Error, true);
-                return;
+                return false;
             }
-            if (!ValidateSingleFileSelection()) return;
+            if (!ValidateSingleFileSelection()) return false;
 
             string outputPath = SaveasTxt.Text;
             BeginBusy("Applying stash");
@@ -1232,7 +1479,7 @@ namespace LunarROMCorruptor
             if (result != CorruptionResult.Success)
             {
                 if (result == CorruptionResult.Failed) StartFailureFeedback();
-                return;
+                return false;
             }
 
             TraceLogger.Log($"Corrupted file with stash file successfully saved: {outputPath}");
@@ -1248,6 +1495,8 @@ namespace LunarROMCorruptor
                 TraceLogger.Log($"Unable to show the stash file contents: {ex.Message}", StatusSeverityType.Warning);
             }
             UpdateByteViewIfEnabled();
+            GenerateSelectedByteDetails();
+            return true;
         }
 
         private void EnableStashSavesChkbox_CheckedChanged(object sender, EventArgs e)
@@ -1478,7 +1727,7 @@ namespace LunarROMCorruptor
                         case "Randomize Corruption Engine":
                             {
                                 //Only byte engines are randomized. Merge needs a merge file and the Source Code Engine only makes sense for text files.
-                                var engines = new List<CorruptionEngineType> { CorruptionEngineType.NightmareEngine, CorruptionEngineType.LerpEngine, CorruptionEngineType.LogicEngine, CorruptionEngineType.ManualEngine, CorruptionEngineType.ExclusionEngine, CorruptionEngineType.VectorEngine, CorruptionEngineType.BlocksEngine };
+                                var engines = new List<CorruptionEngineType> { CorruptionEngineType.NightmareEngine, CorruptionEngineType.LerpEngine, CorruptionEngineType.LogicEngine, CorruptionEngineType.ManualEngine, CorruptionEngineType.VectorEngine, CorruptionEngineType.BlocksEngine };
                                 if (File.Exists(MergeEngineFrame.MergeFileLocationTxt.Text))
                                     engines.Add(CorruptionEngineType.MergeEngine);
                                 CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engines[rnd.Next(engines.Count)]);
@@ -1540,7 +1789,7 @@ namespace LunarROMCorruptor
 
         private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\") and the Datamosh Engine as File(offset).FRAME(frame).SET(DROP/REPLACE/REPEAT,n).{Environment.NewLine}{Environment.NewLine}Corruption History keeps the stash of the last {CorruptionHistory.MaxEntries} corruptions, so you can re-apply one or save it to the stash list. The Stash Editor's Mutate tool makes variations of a corruption you like.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}Every stash remembers the file it was made for and its save location (the OpenLocation/SaveAsLocation lines at the top). \"Corrupt File and Stash\" (or double-clicking a stash) loads that file and applies the stash, giving the exact same corruption. \"Corrupt using Selected Stash\" applies it to the file that is loaded right now.{Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\") and the Datamosh Engine as File(offset).FRAME(frame).SET(DROP/REPLACE/REPEAT,n).{Environment.NewLine}{Environment.NewLine}Corruption History keeps the stash of the last {CorruptionHistory.MaxEntries} corruptions, so you can re-apply one or save it to the stash list. The Stash Editor's Mutate tool makes variations of a corruption you like.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteModeHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -1552,7 +1801,7 @@ namespace LunarROMCorruptor
         {
             MessageBox.Show($"ByteView shows the bytes of a file as an image. Convert/Update shows the latest corrupted file (or the loaded file if nothing has been corrupted yet). Large files are downsampled.{Environment.NewLine}{Environment.NewLine}" +
                 $"Modes:{Environment.NewLine}- Normal: every 3 bytes are one pixel (colour or greyscale).{Environment.NewLine}- Diff: the file in grey with every byte changed by the last corruption in red.{Environment.NewLine}- Entropy: how random each part of the file is. Dark = empty/padding, blue/green = tables and text, yellow = code, red = compressed or encrypted data.{Environment.NewLine}" +
-                $"- Regions: the named parts of the file for its type (picked automatically or with the list under the mode). Orange = header/boot (protected by the Exclusion Engine), blue = code, green = data, pink = graphics, purple = compressed blocks. Hover to see the name of a region.{Environment.NewLine}{Environment.NewLine}" +
+                $"- Regions: the named parts of the file for its type (picked automatically or with the list under the mode). Orange = header/boot (protected by the Nightmare+ Engine exclusion types), blue = code, green = data, pink = graphics, purple = compressed blocks. Hover to see the name of a region.{Environment.NewLine}{Environment.NewLine}" +
                 $"Excluded ranges (from Bisect Mode or EXCLUDE stash lines) are always shown in red: no engine changes them.{Environment.NewLine}{Environment.NewLine}" +
                 $"Targeting: drag over the image to set the Start/End byte to that area. The current range is highlighted in yellow. Right-click to reset the range to the whole file. Hover to see the offset under the mouse.{Environment.NewLine}{Environment.NewLine}" +
                 $"Zoom: use the scroll wheel over the image, drag with the middle mouse button to move around, double-click to reset the zoom.",
@@ -2046,15 +2295,18 @@ namespace LunarROMCorruptor
         {
             if (BisectModeChkBox.Checked)
             {
+                var screen = Screen.FromControl(this).WorkingArea;
                 if (_bisectForm == null || _bisectForm.IsDisposed)
                 {
                     _bisectForm = new LunarROMCorruptor.Forms.BisectForm(this);
                     _bisectForm.ClosedByUser += () => BisectModeChkBox.Checked = false;
-                    var screen = Screen.FromControl(this).WorkingArea;
-                    _bisectForm.Location = new Point(Math.Clamp(Right - 30, screen.Left, screen.Right - _bisectForm.Width), Math.Clamp(Top + 80, screen.Top, screen.Bottom - _bisectForm.Height));
                 }
-                if (!_bisectForm.Visible) _bisectForm.Show(this);
-                _bisectForm.Activate();
+                if (!_bisectForm.Visible)
+                {
+                    _bisectForm.Location = new Point(Math.Clamp(Left + (Width - _bisectForm.Width) / 2, screen.Left, screen.Right - _bisectForm.Width), Math.Clamp(Top + (Height - _bisectForm.Height) / 2, screen.Top, screen.Bottom - _bisectForm.Height));
+                    _bisectForm.Show(this);
+                    _bisectForm.Activate();
+                }
             }
             else
             {

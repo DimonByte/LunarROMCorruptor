@@ -111,12 +111,13 @@
             PointerProfileComboBox.ForeColor = Color.White;
             PointerProfileComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             PointerProfileComboBox.FormattingEnabled = true;
-            PointerProfileComboBox.Items.AddRange(new object[] { "Auto", "N64 RAM pointers", "N64 display lists", "GBA ROM pointers", "DS RAM pointers", "PS1 RAM pointers", "GameCube/Wii RAM pointers", "File offsets (little-endian)", "File offsets (big-endian)", "Custom range" });
+            PointerProfileComboBox.Items.AddRange(new object[] { "Auto", "N64 RAM pointers", "N64 display lists", "GBA ROM pointers", "DS RAM pointers", "PS1 RAM pointers", "GameCube/Wii RAM pointers", "NES 16-bit pointers", "SNES 24-bit pointers", "Game Boy 16-bit pointers", "Genesis/Mega Drive ROM pointers", "Saturn RAM pointers", "Dreamcast RAM pointers", "PS2 RAM pointers", "PSP RAM pointers", "Windows EXE/DLL (32-bit)", "File offsets (little-endian)", "File offsets (big-endian)", "Custom range" });
             PointerProfileComboBox.Location = new Point(190, 28);
-            PointerProfileComboBox.Size = new Size(191, 23);
+            PointerProfileComboBox.Size = new Size(230, 23);
             PointerProfileComboBox.SelectedIndex = 0;
             PointerProfileComboBox.Name = "PointerProfileComboBox";
             PointerProfileComboBox.TabIndex = 3;
+            PointerProfileComboBox.SelectedIndexChanged += PointerProfileComboBox_SelectedIndexChanged;
             // 
             // PointerModeLbl
             // 

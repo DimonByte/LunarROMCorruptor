@@ -44,7 +44,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
         public LogicEngine.Settings? Logic;
         public MergeEngine.Settings? Merge;
         public ManualEngine.Settings? Manual;
-        public ExclusionEngine.Settings? Exclusion;
         public VectorEngine.Settings? Vector;
         public SourceCodeEngine.Settings? SourceCode;
         public BlocksEngine.Settings? Blocks;
@@ -147,8 +146,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
             switch (settings.Engine)
             {
                 case CorruptionEngineType.NightmareEngine:
-                    var nightmare = settings.Nightmare ?? throw new InvalidOperationException("Nightmare Engine settings missing.");
-                    Drive(ctx, i => NightmareEngine.CorruptByte(ctx, nightmare, i));
+                    NightmareEngine.Run(ctx, settings.Nightmare ?? throw new InvalidOperationException("Nightmare+ Engine settings missing."));
                     break;
                 case CorruptionEngineType.LerpEngine:
                     var lerp = settings.Lerp ?? throw new InvalidOperationException("Lerp Engine settings missing.");
@@ -168,9 +166,6 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                     {
                         Drive(ctx, i => MergeEngine.CorruptByte(ctx, merge, mergeData, i));
                     }
-                    break;
-                case CorruptionEngineType.ExclusionEngine:
-                    ExclusionEngine.Run(ctx, settings.Exclusion ?? throw new InvalidOperationException("Exclusion Engine settings missing."));
                     break;
                 case CorruptionEngineType.VectorEngine:
                     VectorEngine.Run(ctx, settings.Vector ?? throw new InvalidOperationException("Vector2 Engine settings missing."));

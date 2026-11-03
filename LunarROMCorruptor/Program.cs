@@ -24,15 +24,38 @@ namespace LunarROMCorruptor
 {
     internal static class Program
     {
-        public static MainCorruptionForm Form;
+        public static MainCorruptionForm Form = null!;
 
         [STAThread]
         private static void Main()
         {
+            //Unexpected errors (e.g. in an async event handler) are logged and shown instead of closing LRC without a word
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            Application.ThreadException += (_, e) => ReportUnhandled(e.Exception, canContinue: true);
+            AppDomain.CurrentDomain.UnhandledException += (_, e) => ReportUnhandled(e.ExceptionObject as Exception, canContinue: false);
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                Modules.TraceLogger.Log($"Unobserved background error: {e.Exception.GetBaseException().Message}\n{e.Exception}", Modules.StatusSeverityType.Error);
+                e.SetObserved();
+            };
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Form = new MainCorruptionForm();
             Application.Run(Form);
+        }
+
+        private static void ReportUnhandled(Exception? ex, bool canContinue)
+        {
+            try
+            {
+                Modules.TraceLogger.Log($"Unexpected error: {ex?.Message}\n{ex}", Modules.StatusSeverityType.Error);
+                MessageBox.Show($"Something went wrong:\n\n{ex?.Message}\n\n{(canContinue ? "LRC will keep running. The details are in the Logs tab." : "LRC has to close. If a file was corrupted in place (save location = the original file), check it and restore it from a backup if needed.")}",
+                    $"{nameof(LunarROMCorruptor)} - Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch
+            {
+                //Nothing else can be done here
+            }
         }
     }
 }

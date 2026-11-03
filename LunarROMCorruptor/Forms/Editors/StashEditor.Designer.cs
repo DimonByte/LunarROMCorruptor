@@ -29,591 +29,572 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StashEditor));
-            this.stashListbox = new System.Windows.Forms.ListBox();
-            this.RemovedItemslstbx = new System.Windows.Forms.ListBox();
-            this.valueStashnum = new System.Windows.Forms.NumericUpDown();
-            this.LocationStash = new System.Windows.Forms.NumericUpDown();
-            this.Label3 = new System.Windows.Forms.Label();
-            this.Label2 = new System.Windows.Forms.Label();
-            this.Label4 = new System.Windows.Forms.Label();
-            this.OpenFileDialog = new System.Windows.Forms.OpenFileDialog();
-            this.Label1 = new System.Windows.Forms.Label();
-            this.newfilestashbtn = new System.Windows.Forms.Button();
-            this.removeitembtn = new System.Windows.Forms.Button();
-            this.additemsbtn = new System.Windows.Forms.Button();
-            this.addbtn = new System.Windows.Forms.Button();
-            this.remove50btn = new System.Windows.Forms.Button();
-            this.removeselbtn = new System.Windows.Forms.Button();
-            this.Panel1 = new System.Windows.Forms.Panel();
-            this.ToolsPanel = new System.Windows.Forms.Panel();
-            this.MutateTitleLbl = new System.Windows.Forms.Label();
-            this.MutatePercentLbl = new System.Windows.Forms.Label();
-            this.MutatePercentNumericUpDown = new System.Windows.Forms.NumericUpDown();
-            this.MutateModeLbl = new System.Windows.Forms.Label();
-            this.MutateModeComboBox = new System.Windows.Forms.ComboBox();
-            this.MutateAmountLbl = new System.Windows.Forms.Label();
-            this.MutateAmountNumericUpDown = new System.Windows.Forms.NumericUpDown();
-            this.MutateBtn = new System.Windows.Forms.Button();
-            this.MutateCorruptBtn = new System.Windows.Forms.Button();
-            this.MutateHelpLbl = new System.Windows.Forms.Label();
-            this.ListToolsLbl = new System.Windows.Forms.Label();
-            this.AppendStashBtn = new System.Windows.Forms.Button();
-            this.SortStashBtn = new System.Windows.Forms.Button();
-            this.DedupeStashBtn = new System.Windows.Forms.Button();
-            this.StashCountLbl = new System.Windows.Forms.Label();
-            this.restorebtn = new System.Windows.Forms.Button();
-            this.SaveAndCorruptbtn = new System.Windows.Forms.Button();
-            this.Openfilebtn = new System.Windows.Forms.Button();
-            this.RemoveAllbtn = new System.Windows.Forms.Button();
-            this.SaveFileDialog = new System.Windows.Forms.SaveFileDialog();
-            ((System.ComponentModel.ISupportInitialize)(this.valueStashnum)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.LocationStash)).BeginInit();
-            this.Panel1.SuspendLayout();
-            this.ToolsPanel.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.MutatePercentNumericUpDown)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.MutateAmountNumericUpDown)).BeginInit();
-            this.SuspendLayout();
+            stashListbox = new ListBox();
+            RemovedItemslstbx = new ListBox();
+            valueStashnum = new NumericUpDown();
+            LocationStash = new NumericUpDown();
+            Label3 = new Label();
+            Label2 = new Label();
+            Label4 = new Label();
+            OpenFileDialog = new OpenFileDialog();
+            Label1 = new Label();
+            newfilestashbtn = new Button();
+            removeitembtn = new Button();
+            additemsbtn = new Button();
+            addbtn = new Button();
+            remove50btn = new Button();
+            removeselbtn = new Button();
+            Panel1 = new Panel();
+            restorebtn = new Button();
+            SaveAndCorruptbtn = new Button();
+            Openfilebtn = new Button();
+            RemoveAllbtn = new Button();
+            ToolsPanel = new Panel();
+            MutateTitleLbl = new Label();
+            MutatePercentLbl = new Label();
+            MutatePercentNumericUpDown = new NumericUpDown();
+            MutateModeLbl = new Label();
+            MutateModeComboBox = new ComboBox();
+            MutateAmountLbl = new Label();
+            MutateAmountNumericUpDown = new NumericUpDown();
+            MutateBtn = new Button();
+            MutateCorruptBtn = new Button();
+            MutateHelpLbl = new Label();
+            ListToolsLbl = new Label();
+            AppendStashBtn = new Button();
+            SortStashBtn = new Button();
+            DedupeStashBtn = new Button();
+            StashCountLbl = new Label();
+            SaveFileDialog = new SaveFileDialog();
+            ((System.ComponentModel.ISupportInitialize)valueStashnum).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)LocationStash).BeginInit();
+            Panel1.SuspendLayout();
+            ToolsPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)MutatePercentNumericUpDown).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)MutateAmountNumericUpDown).BeginInit();
+            SuspendLayout();
             // 
             // stashListbox
             // 
-            this.stashListbox.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(39)))), ((int)(((byte)(43)))), ((int)(((byte)(83)))));
-            this.stashListbox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.stashListbox.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.stashListbox.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.stashListbox.FormattingEnabled = true;
-            this.stashListbox.HorizontalScrollbar = true;
-            this.stashListbox.IntegralHeight = false;
-            this.stashListbox.Location = new System.Drawing.Point(160, 0);
-            this.stashListbox.Name = "stashListbox";
-            this.stashListbox.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.stashListbox.Size = new System.Drawing.Size(309, 529);
-            this.stashListbox.TabIndex = 161;
+            stashListbox.BackColor = Color.FromArgb(39, 43, 83);
+            stashListbox.BorderStyle = BorderStyle.None;
+            stashListbox.Dock = DockStyle.Fill;
+            stashListbox.ForeColor = Color.FromArgb(224, 224, 224);
+            stashListbox.FormattingEnabled = true;
+            stashListbox.HorizontalScrollbar = true;
+            stashListbox.IntegralHeight = false;
+            stashListbox.Location = new Point(160, 0);
+            stashListbox.Name = "stashListbox";
+            stashListbox.SelectionMode = SelectionMode.MultiExtended;
+            stashListbox.Size = new Size(309, 529);
+            stashListbox.TabIndex = 161;
             // 
             // RemovedItemslstbx
             // 
-            this.RemovedItemslstbx.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left)));
-            this.RemovedItemslstbx.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.RemovedItemslstbx.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.RemovedItemslstbx.Font = new System.Drawing.Font("Segoe UI", 7F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.RemovedItemslstbx.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.RemovedItemslstbx.FormattingEnabled = true;
-            this.RemovedItemslstbx.HorizontalScrollbar = true;
-            this.RemovedItemslstbx.IntegralHeight = false;
-            this.RemovedItemslstbx.ItemHeight = 12;
-            this.RemovedItemslstbx.Location = new System.Drawing.Point(12, 282);
-            this.RemovedItemslstbx.Name = "RemovedItemslstbx";
-            this.RemovedItemslstbx.SelectionMode = System.Windows.Forms.SelectionMode.MultiExtended;
-            this.RemovedItemslstbx.Size = new System.Drawing.Size(136, 148);
-            this.RemovedItemslstbx.TabIndex = 160;
+            RemovedItemslstbx.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            RemovedItemslstbx.BackColor = Color.FromArgb(52, 60, 111);
+            RemovedItemslstbx.BorderStyle = BorderStyle.None;
+            RemovedItemslstbx.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            RemovedItemslstbx.ForeColor = Color.FromArgb(224, 224, 224);
+            RemovedItemslstbx.FormattingEnabled = true;
+            RemovedItemslstbx.HorizontalScrollbar = true;
+            RemovedItemslstbx.IntegralHeight = false;
+            RemovedItemslstbx.Location = new Point(12, 282);
+            RemovedItemslstbx.Name = "RemovedItemslstbx";
+            RemovedItemslstbx.SelectionMode = SelectionMode.MultiExtended;
+            RemovedItemslstbx.Size = new Size(136, 148);
+            RemovedItemslstbx.TabIndex = 160;
             // 
             // valueStashnum
             // 
-            this.valueStashnum.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.valueStashnum.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.valueStashnum.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.valueStashnum.Location = new System.Drawing.Point(70, 209);
-            this.valueStashnum.Maximum = new decimal(new int[] {
-            255,
-            0,
-            0,
-            0});
-            this.valueStashnum.Name = "valueStashnum";
-            this.valueStashnum.Size = new System.Drawing.Size(78, 22);
-            this.valueStashnum.TabIndex = 97;
-            this.valueStashnum.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
+            valueStashnum.BackColor = Color.FromArgb(52, 60, 111);
+            valueStashnum.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            valueStashnum.ForeColor = Color.FromArgb(230, 230, 230);
+            valueStashnum.Location = new Point(70, 209);
+            valueStashnum.Maximum = new decimal(new int[] { 255, 0, 0, 0 });
+            valueStashnum.Name = "valueStashnum";
+            valueStashnum.Size = new Size(78, 22);
+            valueStashnum.TabIndex = 97;
+            valueStashnum.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // LocationStash
             // 
-            this.LocationStash.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.LocationStash.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.LocationStash.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.LocationStash.Location = new System.Drawing.Point(70, 183);
-            this.LocationStash.Maximum = new decimal(new int[] {
-            -727379969,
-            232,
-            0,
-            0});
-            this.LocationStash.Minimum = new decimal(new int[] {
-            0,
-            0,
-            0,
-            0});
-            this.LocationStash.Name = "LocationStash";
-            this.LocationStash.Size = new System.Drawing.Size(78, 22);
-            this.LocationStash.TabIndex = 97;
-            this.LocationStash.Value = new decimal(new int[] {
-            1,
-            0,
-            0,
-            0});
+            LocationStash.BackColor = Color.FromArgb(52, 60, 111);
+            LocationStash.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            LocationStash.ForeColor = Color.FromArgb(230, 230, 230);
+            LocationStash.Location = new Point(70, 183);
+            LocationStash.Maximum = new decimal(new int[] { -727379969, 232, 0, 0 });
+            LocationStash.Name = "LocationStash";
+            LocationStash.Size = new Size(78, 22);
+            LocationStash.TabIndex = 97;
+            LocationStash.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // Label3
             // 
-            this.Label3.AutoSize = true;
-            this.Label3.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.Label3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.Label3.Location = new System.Drawing.Point(22, 210);
-            this.Label3.Name = "Label3";
-            this.Label3.Size = new System.Drawing.Size(42, 17);
-            this.Label3.TabIndex = 95;
-            this.Label3.Text = "Value:";
+            Label3.AutoSize = true;
+            Label3.Font = new Font("Segoe UI", 9.75F);
+            Label3.ForeColor = Color.FromArgb(230, 230, 230);
+            Label3.Location = new Point(22, 210);
+            Label3.Name = "Label3";
+            Label3.Size = new Size(42, 17);
+            Label3.TabIndex = 95;
+            Label3.Text = "Value:";
             // 
             // Label2
             // 
-            this.Label2.AutoSize = true;
-            this.Label2.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.Label2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.Label2.Location = new System.Drawing.Point(9, 183);
-            this.Label2.Name = "Label2";
-            this.Label2.Size = new System.Drawing.Size(60, 17);
-            this.Label2.TabIndex = 95;
-            this.Label2.Text = "Location:";
+            Label2.AutoSize = true;
+            Label2.Font = new Font("Segoe UI", 9.75F);
+            Label2.ForeColor = Color.FromArgb(230, 230, 230);
+            Label2.Location = new Point(9, 183);
+            Label2.Name = "Label2";
+            Label2.Size = new Size(60, 17);
+            Label2.TabIndex = 95;
+            Label2.Text = "Location:";
             // 
             // Label4
             // 
-            this.Label4.AutoSize = true;
-            this.Label4.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.Label4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.Label4.Location = new System.Drawing.Point(12, 262);
-            this.Label4.Name = "Label4";
-            this.Label4.Size = new System.Drawing.Size(101, 17);
-            this.Label4.TabIndex = 95;
-            this.Label4.Text = "Removed items:";
+            Label4.AutoSize = true;
+            Label4.Font = new Font("Segoe UI", 9.75F);
+            Label4.ForeColor = Color.FromArgb(230, 230, 230);
+            Label4.Location = new Point(12, 262);
+            Label4.Name = "Label4";
+            Label4.Size = new Size(101, 17);
+            Label4.TabIndex = 95;
+            Label4.Text = "Removed items:";
             // 
             // OpenFileDialog
             // 
-            this.OpenFileDialog.Filter = "All files (*.*)|*.*";
+            OpenFileDialog.Filter = "All files (*.*)|*.*";
             // 
             // Label1
             // 
-            this.Label1.AutoSize = true;
-            this.Label1.Font = new System.Drawing.Font("Segoe UI", 9.75F);
-            this.Label1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.Label1.Location = new System.Drawing.Point(9, 162);
-            this.Label1.Name = "Label1";
-            this.Label1.Size = new System.Drawing.Size(139, 17);
-            this.Label1.TabIndex = 95;
-            this.Label1.Text = "Create new stash item:";
+            Label1.AutoSize = true;
+            Label1.Font = new Font("Segoe UI", 9.75F);
+            Label1.ForeColor = Color.FromArgb(230, 230, 230);
+            Label1.Location = new Point(9, 162);
+            Label1.Name = "Label1";
+            Label1.Size = new Size(139, 17);
+            Label1.TabIndex = 95;
+            Label1.Text = "Create new stash item:";
             // 
             // newfilestashbtn
             // 
-            this.newfilestashbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.newfilestashbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.newfilestashbtn.FlatAppearance.BorderSize = 0;
-            this.newfilestashbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.newfilestashbtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.newfilestashbtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.newfilestashbtn.Location = new System.Drawing.Point(12, 465);
-            this.newfilestashbtn.Name = "newfilestashbtn";
-            this.newfilestashbtn.Size = new System.Drawing.Size(136, 23);
-            this.newfilestashbtn.TabIndex = 2;
-            this.newfilestashbtn.Text = "Save as new stash";
-            this.newfilestashbtn.UseVisualStyleBackColor = false;
-            this.newfilestashbtn.Click += new System.EventHandler(this.Newfilestashbtn_Click);
+            newfilestashbtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            newfilestashbtn.BackColor = Color.FromArgb(52, 60, 111);
+            newfilestashbtn.FlatAppearance.BorderSize = 0;
+            newfilestashbtn.FlatStyle = FlatStyle.Flat;
+            newfilestashbtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            newfilestashbtn.ForeColor = Color.FromArgb(213, 216, 216);
+            newfilestashbtn.Location = new Point(12, 465);
+            newfilestashbtn.Name = "newfilestashbtn";
+            newfilestashbtn.Size = new Size(136, 23);
+            newfilestashbtn.TabIndex = 2;
+            newfilestashbtn.Text = "Save as new stash";
+            newfilestashbtn.UseVisualStyleBackColor = false;
+            newfilestashbtn.Click += Newfilestashbtn_Click;
             // 
             // removeitembtn
             // 
-            this.removeitembtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.removeitembtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.removeitembtn.FlatAppearance.BorderSize = 0;
-            this.removeitembtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.removeitembtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.removeitembtn.Location = new System.Drawing.Point(87, 436);
-            this.removeitembtn.Name = "removeitembtn";
-            this.removeitembtn.Size = new System.Drawing.Size(61, 23);
-            this.removeitembtn.TabIndex = 2;
-            this.removeitembtn.Text = "Remove";
-            this.removeitembtn.UseVisualStyleBackColor = false;
-            this.removeitembtn.Click += new System.EventHandler(this.Removeitembtn_Click);
+            removeitembtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            removeitembtn.BackColor = Color.FromArgb(52, 60, 111);
+            removeitembtn.FlatAppearance.BorderSize = 0;
+            removeitembtn.FlatStyle = FlatStyle.Flat;
+            removeitembtn.ForeColor = Color.FromArgb(213, 216, 216);
+            removeitembtn.Location = new Point(87, 436);
+            removeitembtn.Name = "removeitembtn";
+            removeitembtn.Size = new Size(61, 23);
+            removeitembtn.TabIndex = 2;
+            removeitembtn.Text = "Remove";
+            removeitembtn.UseVisualStyleBackColor = false;
+            removeitembtn.Click += Removeitembtn_Click;
             // 
             // additemsbtn
             // 
-            this.additemsbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.additemsbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.additemsbtn.FlatAppearance.BorderSize = 0;
-            this.additemsbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.additemsbtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.additemsbtn.Location = new System.Drawing.Point(12, 436);
-            this.additemsbtn.Name = "additemsbtn";
-            this.additemsbtn.Size = new System.Drawing.Size(57, 23);
-            this.additemsbtn.TabIndex = 2;
-            this.additemsbtn.Text = "Add";
-            this.additemsbtn.UseVisualStyleBackColor = false;
-            this.additemsbtn.Click += new System.EventHandler(this.Additemsbtn_Click);
+            additemsbtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            additemsbtn.BackColor = Color.FromArgb(52, 60, 111);
+            additemsbtn.FlatAppearance.BorderSize = 0;
+            additemsbtn.FlatStyle = FlatStyle.Flat;
+            additemsbtn.ForeColor = Color.FromArgb(213, 216, 216);
+            additemsbtn.Location = new Point(12, 436);
+            additemsbtn.Name = "additemsbtn";
+            additemsbtn.Size = new Size(57, 23);
+            additemsbtn.TabIndex = 2;
+            additemsbtn.Text = "Add";
+            additemsbtn.UseVisualStyleBackColor = false;
+            additemsbtn.Click += Additemsbtn_Click;
             // 
             // addbtn
             // 
-            this.addbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.addbtn.FlatAppearance.BorderSize = 0;
-            this.addbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.addbtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.addbtn.Location = new System.Drawing.Point(12, 236);
-            this.addbtn.Name = "addbtn";
-            this.addbtn.Size = new System.Drawing.Size(136, 23);
-            this.addbtn.TabIndex = 2;
-            this.addbtn.Text = "Add";
-            this.addbtn.UseVisualStyleBackColor = false;
-            this.addbtn.Click += new System.EventHandler(this.Addbtn_Click);
+            addbtn.BackColor = Color.FromArgb(52, 60, 111);
+            addbtn.FlatAppearance.BorderSize = 0;
+            addbtn.FlatStyle = FlatStyle.Flat;
+            addbtn.ForeColor = Color.FromArgb(213, 216, 216);
+            addbtn.Location = new Point(12, 236);
+            addbtn.Name = "addbtn";
+            addbtn.Size = new Size(136, 23);
+            addbtn.TabIndex = 2;
+            addbtn.Text = "Add";
+            addbtn.UseVisualStyleBackColor = false;
+            addbtn.Click += Addbtn_Click;
             // 
             // remove50btn
             // 
-            this.remove50btn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.remove50btn.FlatAppearance.BorderSize = 0;
-            this.remove50btn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.remove50btn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.remove50btn.Location = new System.Drawing.Point(12, 99);
-            this.remove50btn.Name = "remove50btn";
-            this.remove50btn.Size = new System.Drawing.Size(136, 23);
-            this.remove50btn.TabIndex = 2;
-            this.remove50btn.Text = "Remove 50%";
-            this.remove50btn.UseVisualStyleBackColor = false;
-            this.remove50btn.Click += new System.EventHandler(this.Remove50btn_Click);
+            remove50btn.BackColor = Color.FromArgb(52, 60, 111);
+            remove50btn.FlatAppearance.BorderSize = 0;
+            remove50btn.FlatStyle = FlatStyle.Flat;
+            remove50btn.ForeColor = Color.FromArgb(213, 216, 216);
+            remove50btn.Location = new Point(12, 99);
+            remove50btn.Name = "remove50btn";
+            remove50btn.Size = new Size(136, 23);
+            remove50btn.TabIndex = 2;
+            remove50btn.Text = "Remove 50%";
+            remove50btn.UseVisualStyleBackColor = false;
+            remove50btn.Click += Remove50btn_Click;
             // 
             // removeselbtn
             // 
-            this.removeselbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.removeselbtn.FlatAppearance.BorderSize = 0;
-            this.removeselbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.removeselbtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.removeselbtn.Location = new System.Drawing.Point(12, 70);
-            this.removeselbtn.Name = "removeselbtn";
-            this.removeselbtn.Size = new System.Drawing.Size(136, 23);
-            this.removeselbtn.TabIndex = 2;
-            this.removeselbtn.Text = "Remove Selected";
-            this.removeselbtn.UseVisualStyleBackColor = false;
-            this.removeselbtn.Click += new System.EventHandler(this.Removeselbtn_Click);
+            removeselbtn.BackColor = Color.FromArgb(52, 60, 111);
+            removeselbtn.FlatAppearance.BorderSize = 0;
+            removeselbtn.FlatStyle = FlatStyle.Flat;
+            removeselbtn.ForeColor = Color.FromArgb(213, 216, 216);
+            removeselbtn.Location = new Point(12, 70);
+            removeselbtn.Name = "removeselbtn";
+            removeselbtn.Size = new Size(136, 23);
+            removeselbtn.TabIndex = 2;
+            removeselbtn.Text = "Remove Selected";
+            removeselbtn.UseVisualStyleBackColor = false;
+            removeselbtn.Click += Removeselbtn_Click;
             // 
             // Panel1
             // 
-            this.Panel1.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(28)))), ((int)(((byte)(27)))), ((int)(((byte)(55)))));
-            this.Panel1.Controls.Add(this.RemovedItemslstbx);
-            this.Panel1.Controls.Add(this.valueStashnum);
-            this.Panel1.Controls.Add(this.LocationStash);
-            this.Panel1.Controls.Add(this.Label3);
-            this.Panel1.Controls.Add(this.Label2);
-            this.Panel1.Controls.Add(this.Label4);
-            this.Panel1.Controls.Add(this.Label1);
-            this.Panel1.Controls.Add(this.restorebtn);
-            this.Panel1.Controls.Add(this.SaveAndCorruptbtn);
-            this.Panel1.Controls.Add(this.newfilestashbtn);
-            this.Panel1.Controls.Add(this.removeitembtn);
-            this.Panel1.Controls.Add(this.additemsbtn);
-            this.Panel1.Controls.Add(this.addbtn);
-            this.Panel1.Controls.Add(this.Openfilebtn);
-            this.Panel1.Controls.Add(this.RemoveAllbtn);
-            this.Panel1.Controls.Add(this.remove50btn);
-            this.Panel1.Controls.Add(this.removeselbtn);
-            this.Panel1.Dock = System.Windows.Forms.DockStyle.Left;
-            this.Panel1.Location = new System.Drawing.Point(0, 0);
-            this.Panel1.Name = "Panel1";
-            this.Panel1.Size = new System.Drawing.Size(160, 529);
-            this.Panel1.TabIndex = 160;
+            Panel1.BackColor = Color.FromArgb(28, 27, 55);
+            Panel1.Controls.Add(RemovedItemslstbx);
+            Panel1.Controls.Add(valueStashnum);
+            Panel1.Controls.Add(LocationStash);
+            Panel1.Controls.Add(Label3);
+            Panel1.Controls.Add(Label2);
+            Panel1.Controls.Add(Label4);
+            Panel1.Controls.Add(Label1);
+            Panel1.Controls.Add(restorebtn);
+            Panel1.Controls.Add(SaveAndCorruptbtn);
+            Panel1.Controls.Add(newfilestashbtn);
+            Panel1.Controls.Add(removeitembtn);
+            Panel1.Controls.Add(additemsbtn);
+            Panel1.Controls.Add(addbtn);
+            Panel1.Controls.Add(Openfilebtn);
+            Panel1.Controls.Add(RemoveAllbtn);
+            Panel1.Controls.Add(remove50btn);
+            Panel1.Controls.Add(removeselbtn);
+            Panel1.Dock = DockStyle.Left;
+            Panel1.Location = new Point(0, 0);
+            Panel1.Name = "Panel1";
+            Panel1.Size = new Size(160, 529);
+            Panel1.TabIndex = 160;
             // 
             // restorebtn
             // 
-            this.restorebtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.restorebtn.FlatAppearance.BorderSize = 0;
-            this.restorebtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.restorebtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.restorebtn.Image = global::LunarROMCorruptor.Properties.Resources.restart;
-            this.restorebtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.restorebtn.Location = new System.Drawing.Point(12, 41);
-            this.restorebtn.Name = "restorebtn";
-            this.restorebtn.Size = new System.Drawing.Size(136, 23);
-            this.restorebtn.TabIndex = 2;
-            this.restorebtn.Text = "Restore";
-            this.restorebtn.UseVisualStyleBackColor = false;
-            this.restorebtn.Click += new System.EventHandler(this.Restorebtn_Click);
+            restorebtn.BackColor = Color.FromArgb(52, 60, 111);
+            restorebtn.FlatAppearance.BorderSize = 0;
+            restorebtn.FlatStyle = FlatStyle.Flat;
+            restorebtn.ForeColor = Color.FromArgb(213, 216, 216);
+            restorebtn.Image = Properties.Resources.restart;
+            restorebtn.ImageAlign = ContentAlignment.MiddleLeft;
+            restorebtn.Location = new Point(12, 41);
+            restorebtn.Name = "restorebtn";
+            restorebtn.Size = new Size(136, 23);
+            restorebtn.TabIndex = 2;
+            restorebtn.Text = "Restore";
+            restorebtn.UseVisualStyleBackColor = false;
+            restorebtn.Click += Restorebtn_Click;
             // 
             // SaveAndCorruptbtn
             // 
-            this.SaveAndCorruptbtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SaveAndCorruptbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.SaveAndCorruptbtn.FlatAppearance.BorderSize = 0;
-            this.SaveAndCorruptbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SaveAndCorruptbtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.SaveAndCorruptbtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(200)))), ((int)(((byte)(150)))), ((int)(((byte)(255)))));
-            this.SaveAndCorruptbtn.Location = new System.Drawing.Point(12, 494);
-            this.SaveAndCorruptbtn.Name = "SaveAndCorruptbtn";
-            this.SaveAndCorruptbtn.Size = new System.Drawing.Size(136, 23);
-            this.SaveAndCorruptbtn.TabIndex = 2;
-            this.SaveAndCorruptbtn.Text = "Save stash and Corrupt";
-            this.SaveAndCorruptbtn.UseVisualStyleBackColor = false;
-            this.SaveAndCorruptbtn.Click += new System.EventHandler(this.SaveAndCorruptbtn_Click);
+            SaveAndCorruptbtn.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            SaveAndCorruptbtn.BackColor = Color.FromArgb(52, 60, 111);
+            SaveAndCorruptbtn.FlatAppearance.BorderSize = 0;
+            SaveAndCorruptbtn.FlatStyle = FlatStyle.Flat;
+            SaveAndCorruptbtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            SaveAndCorruptbtn.ForeColor = Color.FromArgb(200, 150, 255);
+            SaveAndCorruptbtn.Location = new Point(12, 494);
+            SaveAndCorruptbtn.Name = "SaveAndCorruptbtn";
+            SaveAndCorruptbtn.Size = new Size(136, 23);
+            SaveAndCorruptbtn.TabIndex = 2;
+            SaveAndCorruptbtn.Text = "Save stash and Corrupt";
+            SaveAndCorruptbtn.UseVisualStyleBackColor = false;
+            SaveAndCorruptbtn.Click += SaveAndCorruptbtn_Click;
             // 
             // Openfilebtn
             // 
-            this.Openfilebtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.Openfilebtn.FlatAppearance.BorderSize = 0;
-            this.Openfilebtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.Openfilebtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.Openfilebtn.Image = global::LunarROMCorruptor.Properties.Resources.upload;
-            this.Openfilebtn.ImageAlign = System.Drawing.ContentAlignment.MiddleLeft;
-            this.Openfilebtn.Location = new System.Drawing.Point(12, 12);
-            this.Openfilebtn.Name = "Openfilebtn";
-            this.Openfilebtn.Size = new System.Drawing.Size(136, 23);
-            this.Openfilebtn.TabIndex = 2;
-            this.Openfilebtn.Text = "Open File";
-            this.Openfilebtn.UseVisualStyleBackColor = false;
-            this.Openfilebtn.Click += new System.EventHandler(this.Openfilebtn_Click);
+            Openfilebtn.BackColor = Color.FromArgb(52, 60, 111);
+            Openfilebtn.FlatAppearance.BorderSize = 0;
+            Openfilebtn.FlatStyle = FlatStyle.Flat;
+            Openfilebtn.ForeColor = Color.FromArgb(213, 216, 216);
+            Openfilebtn.Image = Properties.Resources.upload;
+            Openfilebtn.ImageAlign = ContentAlignment.MiddleLeft;
+            Openfilebtn.Location = new Point(12, 12);
+            Openfilebtn.Name = "Openfilebtn";
+            Openfilebtn.Size = new Size(136, 23);
+            Openfilebtn.TabIndex = 2;
+            Openfilebtn.Text = "Open File";
+            Openfilebtn.UseVisualStyleBackColor = false;
+            Openfilebtn.Click += Openfilebtn_Click;
             // 
             // RemoveAllbtn
             // 
-            this.RemoveAllbtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.RemoveAllbtn.FlatAppearance.BorderSize = 0;
-            this.RemoveAllbtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.RemoveAllbtn.Font = new System.Drawing.Font("Segoe UI", 6F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.RemoveAllbtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.RemoveAllbtn.Location = new System.Drawing.Point(12, 128);
-            this.RemoveAllbtn.Name = "RemoveAllbtn";
-            this.RemoveAllbtn.Size = new System.Drawing.Size(136, 23);
-            this.RemoveAllbtn.TabIndex = 2;
-            this.RemoveAllbtn.Text = "Permanently Remove ALL from list";
-            this.RemoveAllbtn.UseVisualStyleBackColor = false;
-            this.RemoveAllbtn.Click += new System.EventHandler(this.RemoveAllbtn_Click);
+            RemoveAllbtn.BackColor = Color.FromArgb(52, 60, 111);
+            RemoveAllbtn.FlatAppearance.BorderSize = 0;
+            RemoveAllbtn.FlatStyle = FlatStyle.Flat;
+            RemoveAllbtn.Font = new Font("Segoe UI", 6F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            RemoveAllbtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RemoveAllbtn.Location = new Point(12, 128);
+            RemoveAllbtn.Name = "RemoveAllbtn";
+            RemoveAllbtn.Size = new Size(136, 23);
+            RemoveAllbtn.TabIndex = 2;
+            RemoveAllbtn.Text = "Permanently Remove ALL from list";
+            RemoveAllbtn.UseVisualStyleBackColor = false;
+            RemoveAllbtn.Click += RemoveAllbtn_Click;
             // 
             // ToolsPanel
             // 
-            this.ToolsPanel.Controls.Add(this.MutateTitleLbl);
-            this.ToolsPanel.Controls.Add(this.MutatePercentLbl);
-            this.ToolsPanel.Controls.Add(this.MutatePercentNumericUpDown);
-            this.ToolsPanel.Controls.Add(this.MutateModeLbl);
-            this.ToolsPanel.Controls.Add(this.MutateModeComboBox);
-            this.ToolsPanel.Controls.Add(this.MutateAmountLbl);
-            this.ToolsPanel.Controls.Add(this.MutateAmountNumericUpDown);
-            this.ToolsPanel.Controls.Add(this.MutateBtn);
-            this.ToolsPanel.Controls.Add(this.MutateCorruptBtn);
-            this.ToolsPanel.Controls.Add(this.MutateHelpLbl);
-            this.ToolsPanel.Controls.Add(this.ListToolsLbl);
-            this.ToolsPanel.Controls.Add(this.AppendStashBtn);
-            this.ToolsPanel.Controls.Add(this.SortStashBtn);
-            this.ToolsPanel.Controls.Add(this.DedupeStashBtn);
-            this.ToolsPanel.Controls.Add(this.StashCountLbl);
-            this.ToolsPanel.Dock = System.Windows.Forms.DockStyle.Right;
-            this.ToolsPanel.Location = new System.Drawing.Point(469, 0);
-            this.ToolsPanel.Name = "ToolsPanel";
-            this.ToolsPanel.Size = new System.Drawing.Size(170, 529);
-            this.ToolsPanel.TabIndex = 162;
+            ToolsPanel.Controls.Add(MutateTitleLbl);
+            ToolsPanel.Controls.Add(MutatePercentLbl);
+            ToolsPanel.Controls.Add(MutatePercentNumericUpDown);
+            ToolsPanel.Controls.Add(MutateModeLbl);
+            ToolsPanel.Controls.Add(MutateModeComboBox);
+            ToolsPanel.Controls.Add(MutateAmountLbl);
+            ToolsPanel.Controls.Add(MutateAmountNumericUpDown);
+            ToolsPanel.Controls.Add(MutateBtn);
+            ToolsPanel.Controls.Add(MutateCorruptBtn);
+            ToolsPanel.Controls.Add(MutateHelpLbl);
+            ToolsPanel.Controls.Add(ListToolsLbl);
+            ToolsPanel.Controls.Add(AppendStashBtn);
+            ToolsPanel.Controls.Add(SortStashBtn);
+            ToolsPanel.Controls.Add(DedupeStashBtn);
+            ToolsPanel.Controls.Add(StashCountLbl);
+            ToolsPanel.Dock = DockStyle.Right;
+            ToolsPanel.Location = new Point(469, 0);
+            ToolsPanel.Name = "ToolsPanel";
+            ToolsPanel.Size = new Size(170, 529);
+            ToolsPanel.TabIndex = 162;
             // 
             // MutateTitleLbl
             // 
-            this.MutateTitleLbl.AutoSize = true;
-            this.MutateTitleLbl.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.MutateTitleLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.MutateTitleLbl.Location = new System.Drawing.Point(10, 12);
-            this.MutateTitleLbl.Text = "Mutate stash";
-            this.MutateTitleLbl.Name = "MutateTitleLbl";
-            this.MutateTitleLbl.TabIndex = 200;
+            MutateTitleLbl.AutoSize = true;
+            MutateTitleLbl.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            MutateTitleLbl.ForeColor = Color.FromArgb(224, 224, 224);
+            MutateTitleLbl.Location = new Point(10, 12);
+            MutateTitleLbl.Name = "MutateTitleLbl";
+            MutateTitleLbl.Size = new Size(79, 15);
+            MutateTitleLbl.TabIndex = 200;
+            MutateTitleLbl.Text = "Mutate stash";
             // 
             // MutatePercentLbl
             // 
-            this.MutatePercentLbl.AutoSize = true;
-            this.MutatePercentLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.MutatePercentLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.MutatePercentLbl.Location = new System.Drawing.Point(10, 36);
-            this.MutatePercentLbl.Text = "Mutate % of the items:";
-            this.MutatePercentLbl.Name = "MutatePercentLbl";
-            this.MutatePercentLbl.TabIndex = 201;
+            MutatePercentLbl.AutoSize = true;
+            MutatePercentLbl.Font = new Font("Segoe UI", 7.5F);
+            MutatePercentLbl.ForeColor = Color.FromArgb(224, 224, 224);
+            MutatePercentLbl.Location = new Point(10, 36);
+            MutatePercentLbl.Name = "MutatePercentLbl";
+            MutatePercentLbl.Size = new Size(104, 12);
+            MutatePercentLbl.TabIndex = 201;
+            MutatePercentLbl.Text = "Mutate % of the items:";
             // 
             // MutatePercentNumericUpDown
             // 
-            this.MutatePercentNumericUpDown.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.MutatePercentNumericUpDown.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.MutatePercentNumericUpDown.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.MutatePercentNumericUpDown.Location = new System.Drawing.Point(12, 52);
-            this.MutatePercentNumericUpDown.Maximum = new decimal(new int[] { 100, 0, 0, 0 });
-            this.MutatePercentNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            this.MutatePercentNumericUpDown.Value = new decimal(new int[] { 10, 0, 0, 0 });
-            this.MutatePercentNumericUpDown.Size = new System.Drawing.Size(146, 22);
-            this.MutatePercentNumericUpDown.Name = "MutatePercentNumericUpDown";
-            this.MutatePercentNumericUpDown.TabIndex = 202;
+            MutatePercentNumericUpDown.BackColor = Color.FromArgb(52, 60, 111);
+            MutatePercentNumericUpDown.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            MutatePercentNumericUpDown.ForeColor = Color.FromArgb(230, 230, 230);
+            MutatePercentNumericUpDown.Location = new Point(12, 52);
+            MutatePercentNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            MutatePercentNumericUpDown.Name = "MutatePercentNumericUpDown";
+            MutatePercentNumericUpDown.Size = new Size(146, 22);
+            MutatePercentNumericUpDown.TabIndex = 202;
+            MutatePercentNumericUpDown.Value = new decimal(new int[] { 10, 0, 0, 0 });
             // 
             // MutateModeLbl
             // 
-            this.MutateModeLbl.AutoSize = true;
-            this.MutateModeLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.MutateModeLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.MutateModeLbl.Location = new System.Drawing.Point(10, 80);
-            this.MutateModeLbl.Text = "Mutation:";
-            this.MutateModeLbl.Name = "MutateModeLbl";
-            this.MutateModeLbl.TabIndex = 203;
+            MutateModeLbl.AutoSize = true;
+            MutateModeLbl.Font = new Font("Segoe UI", 7.5F);
+            MutateModeLbl.ForeColor = Color.FromArgb(224, 224, 224);
+            MutateModeLbl.Location = new Point(10, 80);
+            MutateModeLbl.Name = "MutateModeLbl";
+            MutateModeLbl.Size = new Size(47, 12);
+            MutateModeLbl.TabIndex = 203;
+            MutateModeLbl.Text = "Mutation:";
             // 
             // MutateModeComboBox
             // 
-            this.MutateModeComboBox.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.MutateModeComboBox.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.MutateModeComboBox.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.MutateModeComboBox.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.MutateModeComboBox.FormattingEnabled = true;
-            this.MutateModeComboBox.Items.AddRange(new object[] { "Random value", "Nudge value", "Move address" });
-            this.MutateModeComboBox.Location = new System.Drawing.Point(12, 96);
-            this.MutateModeComboBox.Size = new System.Drawing.Size(146, 21);
-            this.MutateModeComboBox.SelectedIndex = 0;
-            this.MutateModeComboBox.Name = "MutateModeComboBox";
-            this.MutateModeComboBox.TabIndex = 204;
+            MutateModeComboBox.BackColor = Color.FromArgb(52, 60, 111);
+            MutateModeComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            MutateModeComboBox.FlatStyle = FlatStyle.Flat;
+            MutateModeComboBox.ForeColor = Color.FromArgb(213, 216, 216);
+            MutateModeComboBox.FormattingEnabled = true;
+            MutateModeComboBox.Items.AddRange(new object[] { "Random value", "Nudge value", "Move address" });
+            MutateModeComboBox.Location = new Point(12, 96);
+            MutateModeComboBox.Name = "MutateModeComboBox";
+            MutateModeComboBox.Size = new Size(146, 21);
+            MutateModeComboBox.TabIndex = 204;
             // 
             // MutateAmountLbl
             // 
-            this.MutateAmountLbl.AutoSize = true;
-            this.MutateAmountLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.MutateAmountLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.MutateAmountLbl.Location = new System.Drawing.Point(10, 124);
-            this.MutateAmountLbl.Text = "Amount (nudge / move):";
-            this.MutateAmountLbl.Name = "MutateAmountLbl";
-            this.MutateAmountLbl.TabIndex = 205;
+            MutateAmountLbl.AutoSize = true;
+            MutateAmountLbl.Font = new Font("Segoe UI", 7.5F);
+            MutateAmountLbl.ForeColor = Color.FromArgb(224, 224, 224);
+            MutateAmountLbl.Location = new Point(10, 124);
+            MutateAmountLbl.Name = "MutateAmountLbl";
+            MutateAmountLbl.Size = new Size(116, 12);
+            MutateAmountLbl.TabIndex = 205;
+            MutateAmountLbl.Text = "Amount (nudge / move):";
             // 
             // MutateAmountNumericUpDown
             // 
-            this.MutateAmountNumericUpDown.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.MutateAmountNumericUpDown.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.MutateAmountNumericUpDown.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(230)))), ((int)(((byte)(230)))), ((int)(((byte)(230)))));
-            this.MutateAmountNumericUpDown.Location = new System.Drawing.Point(12, 140);
-            this.MutateAmountNumericUpDown.Maximum = new decimal(new int[] { -727379969, 232, 0, 0 });
-            this.MutateAmountNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
-            this.MutateAmountNumericUpDown.Value = new decimal(new int[] { 1, 0, 0, 0 });
-            this.MutateAmountNumericUpDown.Size = new System.Drawing.Size(146, 22);
-            this.MutateAmountNumericUpDown.Name = "MutateAmountNumericUpDown";
-            this.MutateAmountNumericUpDown.TabIndex = 206;
+            MutateAmountNumericUpDown.BackColor = Color.FromArgb(52, 60, 111);
+            MutateAmountNumericUpDown.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            MutateAmountNumericUpDown.ForeColor = Color.FromArgb(230, 230, 230);
+            MutateAmountNumericUpDown.Location = new Point(12, 140);
+            MutateAmountNumericUpDown.Maximum = new decimal(new int[] { -727379969, 232, 0, 0 });
+            MutateAmountNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            MutateAmountNumericUpDown.Name = "MutateAmountNumericUpDown";
+            MutateAmountNumericUpDown.Size = new Size(146, 22);
+            MutateAmountNumericUpDown.TabIndex = 206;
+            MutateAmountNumericUpDown.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // MutateBtn
             // 
-            this.MutateBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.MutateBtn.FlatAppearance.BorderSize = 0;
-            this.MutateBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.MutateBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.MutateBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.MutateBtn.Location = new System.Drawing.Point(12, 170);
-            this.MutateBtn.Size = new System.Drawing.Size(146, 23);
-            this.MutateBtn.Text = "Mutate list";
-            this.MutateBtn.UseVisualStyleBackColor = false;
-            this.MutateBtn.Name = "MutateBtn";
-            this.MutateBtn.TabIndex = 207;
-            this.MutateBtn.Click += new System.EventHandler(this.MutateBtn_Click);
+            MutateBtn.BackColor = Color.FromArgb(52, 60, 111);
+            MutateBtn.FlatAppearance.BorderSize = 0;
+            MutateBtn.FlatStyle = FlatStyle.Flat;
+            MutateBtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            MutateBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            MutateBtn.Location = new Point(12, 170);
+            MutateBtn.Name = "MutateBtn";
+            MutateBtn.Size = new Size(146, 23);
+            MutateBtn.TabIndex = 207;
+            MutateBtn.Text = "Mutate list";
+            MutateBtn.UseVisualStyleBackColor = false;
+            MutateBtn.Click += MutateBtn_Click;
             // 
             // MutateCorruptBtn
             // 
-            this.MutateCorruptBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.MutateCorruptBtn.FlatAppearance.BorderSize = 0;
-            this.MutateCorruptBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.MutateCorruptBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.MutateCorruptBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.MutateCorruptBtn.Location = new System.Drawing.Point(12, 199);
-            this.MutateCorruptBtn.Size = new System.Drawing.Size(146, 23);
-            this.MutateCorruptBtn.Text = "Mutate, save new && corrupt";
-            this.MutateCorruptBtn.UseVisualStyleBackColor = false;
-            this.MutateCorruptBtn.Name = "MutateCorruptBtn";
-            this.MutateCorruptBtn.TabIndex = 208;
-            this.MutateCorruptBtn.Click += new System.EventHandler(this.MutateCorruptBtn_Click);
+            MutateCorruptBtn.BackColor = Color.FromArgb(52, 60, 111);
+            MutateCorruptBtn.FlatAppearance.BorderSize = 0;
+            MutateCorruptBtn.FlatStyle = FlatStyle.Flat;
+            MutateCorruptBtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            MutateCorruptBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            MutateCorruptBtn.Location = new Point(12, 199);
+            MutateCorruptBtn.Name = "MutateCorruptBtn";
+            MutateCorruptBtn.Size = new Size(146, 23);
+            MutateCorruptBtn.TabIndex = 208;
+            MutateCorruptBtn.Text = "Mutate, save new && corrupt";
+            MutateCorruptBtn.UseVisualStyleBackColor = false;
+            MutateCorruptBtn.Click += MutateCorruptBtn_Click;
             // 
             // MutateHelpLbl
             // 
-            this.MutateHelpLbl.Size = new System.Drawing.Size(146, 54);
-            this.MutateHelpLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.MutateHelpLbl.ForeColor = System.Drawing.Color.Silver;
-            this.MutateHelpLbl.Location = new System.Drawing.Point(10, 226);
-            this.MutateHelpLbl.Text = "Makes a variation of this corruption. Only byte entries are mutated, the stash file is not changed until you save.";
-            this.MutateHelpLbl.Name = "MutateHelpLbl";
-            this.MutateHelpLbl.TabIndex = 209;
+            MutateHelpLbl.Font = new Font("Segoe UI", 7.5F);
+            MutateHelpLbl.ForeColor = Color.Silver;
+            MutateHelpLbl.Location = new Point(10, 226);
+            MutateHelpLbl.Name = "MutateHelpLbl";
+            MutateHelpLbl.Size = new Size(146, 54);
+            MutateHelpLbl.TabIndex = 209;
+            MutateHelpLbl.Text = "Makes a variation of this corruption. Only byte entries are mutated, the stash file is not changed until you save.";
             // 
             // ListToolsLbl
             // 
-            this.ListToolsLbl.AutoSize = true;
-            this.ListToolsLbl.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.ListToolsLbl.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(224)))), ((int)(((byte)(224)))), ((int)(((byte)(224)))));
-            this.ListToolsLbl.Location = new System.Drawing.Point(10, 286);
-            this.ListToolsLbl.Text = "List tools";
-            this.ListToolsLbl.Name = "ListToolsLbl";
-            this.ListToolsLbl.TabIndex = 210;
+            ListToolsLbl.AutoSize = true;
+            ListToolsLbl.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            ListToolsLbl.ForeColor = Color.FromArgb(224, 224, 224);
+            ListToolsLbl.Location = new Point(10, 286);
+            ListToolsLbl.Name = "ListToolsLbl";
+            ListToolsLbl.Size = new Size(56, 15);
+            ListToolsLbl.TabIndex = 210;
+            ListToolsLbl.Text = "List tools";
             // 
             // AppendStashBtn
             // 
-            this.AppendStashBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.AppendStashBtn.FlatAppearance.BorderSize = 0;
-            this.AppendStashBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.AppendStashBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.AppendStashBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.AppendStashBtn.Location = new System.Drawing.Point(12, 308);
-            this.AppendStashBtn.Size = new System.Drawing.Size(146, 23);
-            this.AppendStashBtn.Text = "Append stash file...";
-            this.AppendStashBtn.UseVisualStyleBackColor = false;
-            this.AppendStashBtn.Name = "AppendStashBtn";
-            this.AppendStashBtn.TabIndex = 211;
-            this.AppendStashBtn.Click += new System.EventHandler(this.AppendStashBtn_Click);
+            AppendStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            AppendStashBtn.FlatAppearance.BorderSize = 0;
+            AppendStashBtn.FlatStyle = FlatStyle.Flat;
+            AppendStashBtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            AppendStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            AppendStashBtn.Location = new Point(12, 308);
+            AppendStashBtn.Name = "AppendStashBtn";
+            AppendStashBtn.Size = new Size(146, 23);
+            AppendStashBtn.TabIndex = 211;
+            AppendStashBtn.Text = "Append stash file...";
+            AppendStashBtn.UseVisualStyleBackColor = false;
+            AppendStashBtn.Click += AppendStashBtn_Click;
             // 
             // SortStashBtn
             // 
-            this.SortStashBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.SortStashBtn.FlatAppearance.BorderSize = 0;
-            this.SortStashBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.SortStashBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.SortStashBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.SortStashBtn.Location = new System.Drawing.Point(12, 337);
-            this.SortStashBtn.Size = new System.Drawing.Size(146, 23);
-            this.SortStashBtn.Text = "Sort by address";
-            this.SortStashBtn.UseVisualStyleBackColor = false;
-            this.SortStashBtn.Name = "SortStashBtn";
-            this.SortStashBtn.TabIndex = 212;
-            this.SortStashBtn.Click += new System.EventHandler(this.SortStashBtn_Click);
+            SortStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            SortStashBtn.FlatAppearance.BorderSize = 0;
+            SortStashBtn.FlatStyle = FlatStyle.Flat;
+            SortStashBtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            SortStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            SortStashBtn.Location = new Point(12, 337);
+            SortStashBtn.Name = "SortStashBtn";
+            SortStashBtn.Size = new Size(146, 23);
+            SortStashBtn.TabIndex = 212;
+            SortStashBtn.Text = "Sort by address";
+            SortStashBtn.UseVisualStyleBackColor = false;
+            SortStashBtn.Click += SortStashBtn_Click;
             // 
             // DedupeStashBtn
             // 
-            this.DedupeStashBtn.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(52)))), ((int)(((byte)(60)))), ((int)(((byte)(111)))));
-            this.DedupeStashBtn.FlatAppearance.BorderSize = 0;
-            this.DedupeStashBtn.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.DedupeStashBtn.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.DedupeStashBtn.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(213)))), ((int)(((byte)(216)))), ((int)(((byte)(216)))));
-            this.DedupeStashBtn.Location = new System.Drawing.Point(12, 366);
-            this.DedupeStashBtn.Size = new System.Drawing.Size(146, 23);
-            this.DedupeStashBtn.Text = "Remove duplicates";
-            this.DedupeStashBtn.UseVisualStyleBackColor = false;
-            this.DedupeStashBtn.Name = "DedupeStashBtn";
-            this.DedupeStashBtn.TabIndex = 213;
-            this.DedupeStashBtn.Click += new System.EventHandler(this.DedupeStashBtn_Click);
+            DedupeStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            DedupeStashBtn.FlatAppearance.BorderSize = 0;
+            DedupeStashBtn.FlatStyle = FlatStyle.Flat;
+            DedupeStashBtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            DedupeStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            DedupeStashBtn.Location = new Point(12, 366);
+            DedupeStashBtn.Name = "DedupeStashBtn";
+            DedupeStashBtn.Size = new Size(146, 23);
+            DedupeStashBtn.TabIndex = 213;
+            DedupeStashBtn.Text = "Remove duplicates";
+            DedupeStashBtn.UseVisualStyleBackColor = false;
+            DedupeStashBtn.Click += DedupeStashBtn_Click;
             // 
             // StashCountLbl
             // 
-            this.StashCountLbl.AutoSize = true;
-            this.StashCountLbl.Font = new System.Drawing.Font("Segoe UI", 7.5F);
-            this.StashCountLbl.ForeColor = System.Drawing.Color.Silver;
-            this.StashCountLbl.Location = new System.Drawing.Point(10, 396);
-            this.StashCountLbl.Text = "0 items";
-            this.StashCountLbl.Name = "StashCountLbl";
-            this.StashCountLbl.TabIndex = 214;
+            StashCountLbl.AutoSize = true;
+            StashCountLbl.Font = new Font("Segoe UI", 7.5F);
+            StashCountLbl.ForeColor = Color.Silver;
+            StashCountLbl.Location = new Point(10, 396);
+            StashCountLbl.Name = "StashCountLbl";
+            StashCountLbl.Size = new Size(36, 12);
+            StashCountLbl.TabIndex = 214;
+            StashCountLbl.Text = "0 items";
             // 
             // SaveFileDialog
             // 
-            this.SaveFileDialog.Filter = "All Files *.*|*.*";
+            SaveFileDialog.Filter = "All Files *.*|*.*";
             // 
             // StashEditor
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(29)))), ((int)(((byte)(29)))), ((int)(((byte)(35)))));
-            this.ClientSize = new System.Drawing.Size(639, 529);
-            this.Controls.Add(this.stashListbox);
-            this.Controls.Add(this.Panel1);
-            this.Controls.Add(this.ToolsPanel);
-            this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MinimumSize = new System.Drawing.Size(560, 509);
-            this.Name = "StashEditor";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Stash Editor";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.StashEditor_FormClosing);
-            ((System.ComponentModel.ISupportInitialize)(this.valueStashnum)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.LocationStash)).EndInit();
-            this.Panel1.ResumeLayout(false);
-            this.Panel1.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.MutatePercentNumericUpDown)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.MutateAmountNumericUpDown)).EndInit();
-            this.ToolsPanel.ResumeLayout(false);
-            this.ToolsPanel.PerformLayout();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(6F, 13F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(29, 29, 35);
+            ClientSize = new Size(639, 529);
+            Controls.Add(stashListbox);
+            Controls.Add(Panel1);
+            Controls.Add(ToolsPanel);
+            Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Icon = (Icon)resources.GetObject("$this.Icon");
+            MinimumSize = new Size(655, 568);
+            Name = "StashEditor";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Stash Editor";
+            FormClosing += StashEditor_FormClosing;
+            ((System.ComponentModel.ISupportInitialize)valueStashnum).EndInit();
+            ((System.ComponentModel.ISupportInitialize)LocationStash).EndInit();
+            Panel1.ResumeLayout(false);
+            Panel1.PerformLayout();
+            ToolsPanel.ResumeLayout(false);
+            ToolsPanel.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)MutatePercentNumericUpDown).EndInit();
+            ((System.ComponentModel.ISupportInitialize)MutateAmountNumericUpDown).EndInit();
+            ResumeLayout(false);
 
         }
 

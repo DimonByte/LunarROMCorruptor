@@ -94,8 +94,8 @@ namespace LunarROMCorruptor
                 return;
             }
             if (!MutateList()) return;
-            string path = SaveNewStashFile();
-            Program.Form.CorruptUsingStashFile(path);
+            string? path = SaveNewStashFile("mutation");
+            if (path != null) Program.Form.CorruptUsingStashFile(path);
         }
 
         private void AppendStashBtn_Click(object? sender, EventArgs e)
@@ -164,7 +164,7 @@ namespace LunarROMCorruptor
                 stashListbox.Items.AddRange([.. lines]);
                 stashListbox.EndUpdate();
                 LoadedStashLocation = fileloc;
-                Text = $"Stash Editor - {Path.GetFileName(fileloc)}";
+                Text = $"Stash Editor - {StashLibrary.EntryForStashFile(fileloc)?.Name ?? Path.GetFileName(fileloc)}";
             }
             catch (Exception ex)
             {
@@ -244,19 +244,32 @@ namespace LunarROMCorruptor
         {
             SaveNewStashFile();
         }
-        private string SaveNewStashFile()
+        /// <summary>
+        /// Saves the list as a new stash in the stash library. A variation of a library stash keeps its info (file, engine, settings,
+        /// group) and remembers which stash it was based on. Returns the new stash file, or null if it couldn't be saved.
+        /// </summary>
+        private string? SaveNewStashFile(string suffix = "edited")
         {
-            Directory.CreateDirectory(IOManager.CorruptionStashDirectory);
-            string path;
-            do
+            var original = StashLibrary.EntryForStashFile(LoadedStashLocation);
+            var meta = original?.Meta.Clone() ?? (LoadedStashLocation != null && File.Exists(LoadedStashLocation) ? StashLibrary.MetadataFromStashFile(LoadedStashLocation) : new StashMetadata());
+            meta.BasedOn = original?.Name ?? meta.BasedOn;
+            meta.Name = string.IsNullOrEmpty(original?.Name) ? $"Stash - {DateTime.Now:yyyy-MM-dd HH.mm.ss}" : $"{original.Name} ({suffix})";
+            meta.Rating = 0;
+            meta.Entries = 0;
+            try
             {
-                path = Path.Combine(IOManager.CorruptionStashDirectory, new Random().Next(1000, 999999999) + ".stash");
-            } while (File.Exists(path));
-            WriteStash(path);
-            IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
-            TraceLogger.Log(path + " - Saved to a brand new stash file.");
-            LoadedStashLocation = path;
-            return path;
+                var entry = StashLibrary.CreateFromLines(meta, original?.Group ?? "", stashListbox.Items.Cast<object>().Select(i => i?.ToString() ?? ""));
+                StashLibrary.RaiseChanged();
+                TraceLogger.Log($"{entry.StashFile} - Saved to a brand new stash ({entry.Name}).");
+                LoadedStashLocation = entry.StashFile;
+                Text = $"Stash Editor - {entry.Name}";
+                return entry.StashFile;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Unable to save the stash: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return null;
+            }
         }
 
         private void WriteStash(string path)
@@ -268,19 +281,19 @@ namespace LunarROMCorruptor
             }
         }
 
-        private void SaveToExistingStashFile()
+        private bool SaveToExistingStashFile()
         {
             //Check if a stash file location is loaded first.
             if (LoadedStashLocation == null)
             {
                 MessageBox.Show("No stash file is loaded.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                return false;
             }
             //Check if corruption queue is enabled on the main form, if it is cancel the operation.
             if (Program.Form.CorruptionQueueChkbox.Checked)
             {
                 MessageBox.Show("Corruption queue is enabled. Please disable it and select a single file before corrupting.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                return false;
             }
             try
             {
@@ -289,10 +302,12 @@ namespace LunarROMCorruptor
             catch (Exception ex)
             {
                 MessageBox.Show($"Unable to save the stash: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
+                return false;
             }
-            IOManager.RefreshCorruptionStashList(Program.Form.StashFileList);
+            StashLibrary.StashFileChanged(LoadedStashLocation);
+            StashLibrary.RaiseChanged();
             TraceLogger.Log(LoadedStashLocation + " - Saved to existing stash file.");
+            return true;
         }
         private void StashEditor_FormClosing(object sender, FormClosingEventArgs e)
         {
@@ -331,11 +346,7 @@ namespace LunarROMCorruptor
         private void SaveAndCorruptbtn_Click(object sender, EventArgs e)
         {
             //Run a void function on Form1 that is called CorruptUsingStashFile
-            SaveToExistingStashFile();
-            if (LoadedStashLocation == null || Program.Form.CorruptionQueueChkbox.Checked)
-            {
-                return;
-            }
+            if (!SaveToExistingStashFile() || LoadedStashLocation == null) return;
             Program.Form.CorruptUsingStashFile(LoadedStashLocation);
         }
     }

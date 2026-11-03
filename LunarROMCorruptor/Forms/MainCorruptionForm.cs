@@ -70,58 +70,17 @@ namespace LunarROMCorruptor
         private string _corruptButtonIdleText = "Corrupt File";
         private StashEditor? _stashEditor;
         private readonly Dictionary<Control, bool> _enabledBeforeBusy = [];
-        private ByteViewImage? _byteViewInfo; //The image currently shown in ByteView and how its pixels map to file offsets
-        private bool _byteViewDragging;
-        private long _byteViewDragStart;
-        private long _byteViewDragEnd;
-        private int _byteViewRenderVersion;
-        private List<ExclusionEngine.NamedRegion>? _byteViewRegions; //Regions mode: the named regions of the shown file
-        private string? _byteViewRegionProfile; //Regions mode: the profile the regions were read with
         private LunarROMCorruptor.Forms.BisectForm? _bisectForm;
-        //Engine presets bar (top of the Corruption Engine tab)
-        private Panel _presetPanel = null!;
-        private ComboBox _presetComboBox = null!;
-        private Label _presetDescriptionLbl = null!;
-        private Button _presetDeleteBtn = null!;
-        private bool _presetListUpdating;
 
         public MainCorruptionForm()
         {
             InitializeComponent();
             InitializePresetBar();
+            InitializeStashBrowser();
+            InitializeByteView();
+            MainTabControl.SelectedIndexChanged += (_, _) => { if (MainTabControl.SelectedTab == GuidesTab) GuidesView.EnsureLoaded(); };
             FormClosing += MainCorruptionForm_FormClosing;
-            //ByteView targeting: drag on the image to set the start/end byte
-            ByteViewPictureBox.Cursor = Cursors.Cross;
-            ByteViewPictureBox.MouseDown += ByteViewPictureBox_MouseDown;
-            ByteViewPictureBox.MouseMove += ByteViewPictureBox_MouseMove;
-            ByteViewPictureBox.MouseUp += ByteViewPictureBox_MouseUp;
-            ByteViewPictureBox.Paint += ByteViewPictureBox_Paint;
-            ByteViewPictureBox.Resize += (_, _) =>
-            {
-                if (_byteViewInfo != null) ClampByteViewPan(_byteViewInfo);
-                ByteViewPictureBox.Invalidate();
-            };
-            //Zoom: scroll wheel, middle mouse drag to move, double-click to reset (ByteView tab only, not the small preview)
-            ByteViewPictureBox.MouseWheel += ByteViewPictureBox_MouseWheel;
-            ByteViewPictureBox.DoubleClick += (_, _) =>
-            {
-                ResetByteViewZoom();
-                if (_byteViewInfo != null) ByteViewInfoLbl.Text = DescribeByteView(_byteViewInfo);
-                ByteViewPictureBox.Invalidate();
-            };
-            ByteViewRegionProfileComboBox.Items.Add("Auto");
-            foreach (string profile in ExclusionEngine.Profiles.Keys) ByteViewRegionProfileComboBox.Items.Add(profile);
-            ByteViewRegionProfileComboBox.SelectedIndex = 0;
-            ByteViewRegionProfileComboBox.SelectedIndexChanged += (_, _) => { if (CorruptionCore.IsLoaded && SelectedByteViewMode == ByteViewMode.Regions) UpdateByteView(); };
             CorruptionCore.Exclusions.Changed += OnExclusionsChanged;
-            //The small ByteView preview on the main tab shows the same start/end range overlay
-            ByteViewCloneImage.Paint += ByteViewPictureBox_Paint;
-            ByteViewCloneImage.Resize += (_, _) => ByteViewCloneImage.Invalidate();
-            ByteViewModeComboBox.SelectedIndexChanged += (_, _) =>
-            {
-                ByteViewRegionProfileComboBox.Visible = SelectedByteViewMode == ByteViewMode.Regions;
-                if (CorruptionCore.IsLoaded && _byteViewInfo != null) UpdateByteView();
-            };
             FormClosed += (_, _) =>
             {
                 TraceLogger.OnLogEntryAdded -= OnTraceLogEntryAdded;
@@ -196,7 +155,7 @@ namespace LunarROMCorruptor
             AllowDrop = true;
             BrowseEmulatorbutton.Enabled = false;
             EmulatorLocationtxt.BackColor = Color.Gray;
-            IOManager.RefreshCorruptionStashList(StashFileList);
+            StashBrowser.Reload();
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
             GenerateSelectedByteDetails();
@@ -254,6 +213,8 @@ namespace LunarROMCorruptor
             {
                 TraceLogger.Log($"File loaded in to corruptioncore: {FileLocation}");
                 SetByteRange(CorruptionCore.MaxByte);
+                _lastCorruption = null;
+                StartSourceInfo(CorruptionCore.SourcePath!);
                 FileSelectiontxt.Text = CorruptionCore.SourcePath;
                 string directory = Path.GetDirectoryName(CorruptionCore.SourcePath!) ?? "";
                 SaveasTxt.Text = Path.Combine(directory, "CorruptedFile" + Path.GetExtension(CorruptionCore.SourcePath));
@@ -292,6 +253,17 @@ namespace LunarROMCorruptor
         //    //}
         //}
 
+        /// <summary>
+        /// Opens a guide on the 📖 Guides tab (e.g. "docs/Corruption-Engines.md", "vector2-engine").
+        /// </summary>
+        public void ShowGuide(string repoPath, string? anchor = null)
+        {
+            MainTabControl.SelectedTab = GuidesTab;
+            GuidesView.Open(repoPath, anchor);
+        }
+
+        private static string FormatByteCount(long bytes) => CorruptionCore.FormatSize(bytes, out _, out _);
+
         private void GenerateSelectedByteDetails()
         {
             //Generate details of the bytes selected in
@@ -316,7 +288,7 @@ namespace LunarROMCorruptor
                 ByteSelectionDetailsLbl.Text = $"Start: 0x{(long)StartByteNumb.Value:X} ({StartByteNumb.Value})\n" +
                     $"End: 0x{(long)EndByteNumb.Value:X} ({EndByteNumb.Value})\n" +
                     $"Length: {FormatByteCount((long)EndByteNumb.Value - (long)StartByteNumb.Value + 1)}\n" +
-                    $"Corrupted Bytes in Stash List Count: {StashBytesList.Items.Count}\n" +
+                    $"Corrupted Bytes in Stash List Count: {CorruptionCore.Stash.Count}\n" +
                     $"Number of Bytes to Corrupt: {NumberOfBytesToCorrupt}{(CorruptionCore.Exclusions.Count > 0 ? $"\n" +
                     $"Excluded Ranges: {CorruptionCore.Exclusions.Count} ({FormatByteCount(CorruptionCore.Exclusions.TotalBytes)})" : "")}";
             }
@@ -492,8 +464,7 @@ namespace LunarROMCorruptor
                 }
             }
             UserControl? newControl = GetEngineFrame(selectedEngine);
-            if (newControl != null)
-                newControl.Name = newControl.GetType().Name; //The engine tab finds the engine controls by their "...EngineControl" name
+            newControl?.Name = newControl.GetType().Name; //The engine tab finds the engine controls by their "...EngineControl" name
             if (selectedEngine == CorruptionEngineType.NightmareEngine)
                 NightmareEngineFrame.LoadAddresses(); //The loaded file may have changed since the exclusion type was last shown
 
@@ -507,7 +478,7 @@ namespace LunarROMCorruptor
                 }
                 newControl.BringToFront(); //Docked last, so it fills the space under the preset bar
             }
-            RefreshPresetList(selectedEngine);
+            PresetBar.ShowEngine(selectedEngine);
         }
 
         /// <summary>
@@ -533,198 +504,22 @@ namespace LunarROMCorruptor
 
         #region Engine presets
 
-        private Button PresetButton(string text, string tip, EventHandler onClick)
-        {
-            var button = new Button
-            {
-                Text = text,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                MinimumSize = new Size(0, 25),
-                Padding = new Padding(4, 0, 4, 0),
-                Margin = new Padding(3, 2, 0, 0),
-                BackColor = Color.FromArgb(52, 60, 111),
-                ForeColor = Color.FromArgb(213, 216, 216),
-                FlatStyle = FlatStyle.Flat,
-                UseVisualStyleBackColor = false
-            };
-            button.FlatAppearance.BorderSize = 0;
-            ToolTipHelper.SetToolTip(button, tip);
-            button.Click += onClick;
-            return button;
-        }
-
-        /// <summary>
-        /// Builds the preset bar at the top of the Corruption Engine tab: pick a built-in (★) or user (👤) preset to load it,
-        /// save the current engine settings, delete, import a shared preset or open the UserCorruptionEnginePresets folder.
-        /// </summary>
-        private void InitializePresetBar()
-        {
-            var row = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 30, WrapContents = false, AutoScroll = false, Padding = new Padding(2, 2, 2, 0), BackColor = Color.Transparent };
-            var label = new Label { Text = "Preset:", AutoSize = true, ForeColor = Color.FromArgb(192, 255, 255), Margin = new Padding(0, 7, 2, 0) };
-            _presetComboBox = new ComboBox
-            {
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                Width = 270,
-                MaxDropDownItems = 20,
-                BackColor = Color.FromArgb(45, 45, 64),
-                ForeColor = Color.White,
-                FlatStyle = FlatStyle.Flat,
-                Margin = new Padding(0, 3, 0, 0)
-            };
-            ToolTipHelper.SetToolTip(_presetComboBox, "Pick a preset to load its settings into the engine. ★ = built-in, 👤 = your presets (UserCorruptionEnginePresets folder).");
-            _presetComboBox.SelectionChangeCommitted += (_, _) => LoadSelectedPreset();
-            _presetComboBox.SelectedIndexChanged += (_, _) => UpdatePresetDescription();
-            _presetDeleteBtn = PresetButton("Delete", "Delete the selected user preset.", (_, _) => DeleteSelectedPreset());
-            row.Controls.Add(label);
-            row.Controls.Add(_presetComboBox);
-            row.Controls.Add(PresetButton("Save As...", "Save the current engine settings as a new user preset.", (_, _) => SaveCurrentPreset()));
-            row.Controls.Add(_presetDeleteBtn);
-            row.Controls.Add(PresetButton("Import...", "Import a .lrcpreset file someone shared (you can also drag it onto LRC).", (_, _) => ImportPresetDialog()));
-            row.Controls.Add(PresetButton("Open Folder", "Open the UserCorruptionEnginePresets folder (share presets by sending the .lrcpreset files).", (_, _) => OpenPresetFolder()));
-            _presetDescriptionLbl = new Label { Dock = DockStyle.Top, Height = 18, ForeColor = Color.Silver, Padding = new Padding(6, 0, 4, 0), AutoEllipsis = true, Text = "" };
-            _presetPanel = new Panel { Dock = DockStyle.Top, Height = 48, Name = "PresetBarPanel" };
-            _presetPanel.Controls.Add(_presetDescriptionLbl);
-            _presetPanel.Controls.Add(row);
-            CorruptionEngineTab.Controls.Add(_presetPanel);
-        }
-
         private CorruptionEngineType SelectedEngine => EngineParser.ParseEngineType(CorruptionEngineComboBox.Text);
 
-        private void RefreshPresetList(CorruptionEngineType engine, string? selectPath = null)
+        private void InitializePresetBar()
         {
-            _presetListUpdating = true;
-            try
-            {
-                _presetComboBox.BeginUpdate();
-                _presetComboBox.Items.Clear();
-                _presetComboBox.Items.Add("(choose a preset to load)");
-                foreach (var preset in EnginePresets.BuiltIn(engine)) _presetComboBox.Items.Add(preset);
-                foreach (var preset in EnginePresets.LoadUser(engine)) _presetComboBox.Items.Add(preset);
-                int index = 0;
-                if (selectPath != null)
-                {
-                    for (int k = 1; k < _presetComboBox.Items.Count; k++)
-                        if (_presetComboBox.Items[k] is EnginePreset p && CorruptionCore.PathsEqual(p.FilePath, selectPath)) index = k;
-                }
-                _presetComboBox.SelectedIndex = index;
-                _presetComboBox.EndUpdate();
-            }
-            finally
-            {
-                _presetListUpdating = false;
-            }
-            UpdatePresetDescription();
-        }
-
-        private void UpdatePresetDescription()
-        {
-            var preset = _presetComboBox.SelectedItem as EnginePreset;
-            _presetDescriptionLbl.Text = preset == null ? $"{_presetComboBox.Items.Count - 1} preset(s) for the {EngineParser.GetEngineDisplayName(SelectedEngine)}." : (string.IsNullOrWhiteSpace(preset.Description) ? preset.Name : preset.Description);
-            ToolTipHelper.SetToolTip(_presetDescriptionLbl, _presetDescriptionLbl.Text);
-            _presetDeleteBtn.Enabled = preset is { BuiltIn: false };
-        }
-
-        private bool ApplyPreset(EnginePreset preset)
-        {
-            var engine = EngineParser.ParseEngineType(preset.Engine);
-            if (engine == CorruptionEngineType.INVALID) return false;
-            if (engine != SelectedEngine)
-                CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engine); //Switches the engine tab (and the preset list)
-            var frame = GetEngineFrame(engine);
-            if (frame == null) return false;
-            int applied = EnginePresets.Apply(frame, preset.Settings, out var unknown);
-            TraceLogger.Log($"Engine preset loaded: {preset.Name} ({preset.Engine}, {applied} setting(s)).{(unknown.Count > 0 ? $" Ignored (not in this version): {string.Join(", ", unknown)}" : "")}");
-            return true;
-        }
-
-        private void LoadSelectedPreset()
-        {
-            if (_presetListUpdating || _presetComboBox.SelectedItem is not EnginePreset preset) return;
-            ApplyPreset(preset);
-            UpdatePresetDescription();
-        }
-
-        private void SaveCurrentPreset()
-        {
-            var engine = SelectedEngine;
-            var frame = GetEngineFrame(engine);
-            if (frame == null) return;
-            string suggested = _presetComboBox.SelectedItem is EnginePreset current ? (current.BuiltIn ? current.Name + " (copy)" : current.Name) : "";
-            string? name = InputBox.Ask($"Preset name for the {EngineParser.GetEngineDisplayName(engine)}", suggested)?.Trim();
-            if (string.IsNullOrEmpty(name)) return;
-            string description = InputBox.Ask("Description (optional): what does this preset do / what is it for?", _presetComboBox.SelectedItem is EnginePreset p && p.Name == name ? p.Description : "")?.Trim() ?? "";
-            var preset = new EnginePreset { Engine = EngineParser.GetEngineDisplayName(engine), Name = name, Description = description, Settings = EnginePresets.Capture(frame) };
-            try
-            {
-                string path;
-                try
-                {
-                    path = EnginePresets.Save(preset, overwrite: false);
-                }
-                catch (IOException) when (MessageBox.Show($"A preset called '{name}' already exists. Replace it?", $"{nameof(LunarROMCorruptor)} - Save preset", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
-                {
-                    path = EnginePresets.Save(preset, overwrite: true);
-                }
-                RefreshPresetList(engine, path);
-            }
-            catch (IOException)
-            {
-                //Not replaced
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Unable to save the engine preset: {ex.Message}", StatusSeverityType.Error, true);
-            }
-        }
-
-        private void DeleteSelectedPreset()
-        {
-            if (_presetComboBox.SelectedItem is not EnginePreset { BuiltIn: false, FilePath: not null } preset) return;
-            if (MessageBox.Show($"Delete the preset '{preset.Name}'?", $"{nameof(LunarROMCorruptor)} - Delete preset", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-            try
-            {
-                File.Delete(preset.FilePath);
-                TraceLogger.Log($"Engine preset deleted: {preset.FilePath}");
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Unable to delete the preset: {ex.Message}", StatusSeverityType.Error, true);
-            }
-            RefreshPresetList(SelectedEngine);
-        }
-
-        private void ImportPresetDialog()
-        {
-            using var dialog = new OpenFileDialog { Filter = $"LRC engine presets (*{EnginePresets.Extension};*.json)|*{EnginePresets.Extension};*.json|All files (*.*)|*.*", Multiselect = true, Title = "Import engine presets" };
-            if (dialog.ShowDialog() != DialogResult.OK) return;
-            foreach (string file in dialog.FileNames) ImportPresetFile(file);
+            PresetBar.EngineFrameProvider = GetEngineFrame;
+            PresetBar.EngineSwitchRequested += engine => CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engine);
         }
 
         /// <summary>
         /// Copies a shared preset into the user preset folder, switches to its engine and loads it.
         /// </summary>
-        public void ImportPresetFile(string file)
-        {
-            var preset = EnginePresets.Import(file);
-            if (preset == null) return;
-            ApplyPreset(preset);
-            RefreshPresetList(EngineParser.ParseEngineType(preset.Engine), preset.FilePath);
-            TraceLogger.Log($"Imported the {preset.Engine} preset '{preset.Name}'.", StatusSeverityType.Information);
-        }
+        public void ImportPresetFile(string file) => PresetBar.ImportPresetFile(file);
 
-        private void OpenPresetFolder()
-        {
-            try
-            {
-                Directory.CreateDirectory(EnginePresets.UserPresetDirectory);
-                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = EnginePresets.UserPresetDirectory, UseShellExecute = true });
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Unable to open the preset folder: {ex.Message}", StatusSeverityType.Error, true);
-            }
-        }
+        #endregion
+
+        #region Corruption settings
 
         /// <summary>
         /// Takes a snapshot of every setting on the UI thread so the corruption can safely run on a background thread.
@@ -1040,6 +835,8 @@ namespace LunarROMCorruptor
             string outputPath = SaveasTxt.Text;
             string sourcePath = CorruptionCore.SourcePath!;
             string engineName = EngineParser.GetEngineDisplayName(settings.Engine);
+            bool stashEnabled = EnableStashSavesChkbox.Checked; //Controls are only read on the UI thread
+            var description = DescribeCorruption(settings, outputPath);
             StashBytesList.Items.Clear();
 
             BeginBusy("Corrupting");
@@ -1051,9 +848,9 @@ namespace LunarROMCorruptor
                 result = await Task.Run(() =>
                 {
                     //The stash is always recorded so the corruption history works, the stash checkbox only controls the stash list/saving
-                    var r = CorruptionCore.StartCorruption(settings, outputPath, EnableStashSavesChkbox.Checked, token, progress);
+                    var r = CorruptionCore.StartCorruption(settings, outputPath, stashEnabled, token, progress);
                     if (r == CorruptionResult.Success)
-                        CorruptionHistory.Add(CorruptionCore.Stash, engineName, sourcePath, EnableStashSavesChkbox.Checked);
+                        CorruptionHistory.Add(CorruptionCore.Stash, engineName, sourcePath, stashEnabled, description);
                     return r;
                 });
             }
@@ -1067,6 +864,7 @@ namespace LunarROMCorruptor
                 if (result == CorruptionResult.Failed) StartFailureFeedback();
                 return result;
             }
+            _lastCorruption = description;
 
             if (FilesaveEnableAutoSaves.Checked) //Save the corrupted file copy into the file saves if auto saves is enabled.
             {
@@ -1095,24 +893,6 @@ namespace LunarROMCorruptor
             var objects = await Task.Run(() => stash.FormatLines(StashDisplayLimit).Cast<object>().ToArray());
             StashBytesList.BeginUpdate();
             StashBytesList.Items.AddRange(objects);
-            StashBytesList.EndUpdate();
-        }
-
-        private void LoadStashFileIntoList(string stashFileLocation)
-        {
-            StashBytesList.BeginUpdate();
-            StashBytesList.Items.Clear();
-            int count = 0;
-            foreach (var item in File.ReadLines(stashFileLocation))
-            {
-                if (++count > StashDisplayLimit)
-                {
-                    StashBytesList.Items.Clear();
-                    StashBytesList.Items.Add("LargeStash");
-                    break;
-                }
-                StashBytesList.Items.Add(item);
-            }
             StashBytesList.EndUpdate();
         }
 
@@ -1148,6 +928,12 @@ namespace LunarROMCorruptor
             else
             {
                 string path = files[0];
+                if (Path.GetExtension(path).Equals(StashLibrary.ExportExtension, StringComparison.OrdinalIgnoreCase) ||
+                    Path.GetExtension(path).Equals(".stash", StringComparison.OrdinalIgnoreCase))
+                {
+                    StashBrowser.ImportFiles([path], StashBrowser.SelectedGroup); //A shared stash goes into the stash list
+                    return;
+                }
                 if (Path.GetExtension(path).Equals(EnginePresets.Extension, StringComparison.OrdinalIgnoreCase))
                 {
                     ImportPresetFile(path); //A shared engine preset
@@ -1241,95 +1027,6 @@ namespace LunarROMCorruptor
             }
         }
 
-        /// <summary>
-        /// Shows the last corruptions with options to re-apply them, save them to the stash list or open them in the stash editor.
-        /// </summary>
-        private void CorruptionHistoryBtn_Click(object? sender, EventArgs e)
-        {
-            var menu = new ContextMenuStrip();
-            var entries = CorruptionHistory.Entries;
-            if (entries.Count == 0)
-            {
-                menu.Items.Add(new ToolStripMenuItem($"No corruptions yet (the last {CorruptionHistory.MaxEntries} are kept)") { Enabled = false });
-            }
-            for (int k = 0; k < entries.Count; k++)
-            {
-                var entry = entries[k];
-                var item = new ToolStripMenuItem($"#{k + 1}  {entry}");
-                item.DropDownItems.Add("Re-apply this corruption", null, (_, _) => ReapplyHistoryEntry(entry));
-                item.DropDownItems.Add("Save to stash list", null, (_, _) =>
-                {
-                    if (CorruptionHistory.SaveToStashList(entry) != null)
-                        IOManager.RefreshCorruptionStashList(StashFileList);
-                });
-                item.DropDownItems.Add("Open in Stash Editor", null, (_, _) =>
-                {
-                    if (_stashEditor == null || _stashEditor.IsDisposed)
-                        _stashEditor = new StashEditor();
-                    _stashEditor.AttemptStashLoad(entry.StashPath);
-                    _stashEditor.ShowDialog();
-                });
-                item.Enabled = !_busy && File.Exists(entry.StashPath);
-                menu.Items.Add(item);
-            }
-            menu.Closed += (_, _) => BeginInvoke(menu.Dispose);
-            menu.Show(CorruptionHistoryBtn, new Point(0, CorruptionHistoryBtn.Height));
-        }
-
-        private void ReapplyHistoryEntry(CorruptionHistoryEntry entry)
-        {
-            if (CorruptionQueueChkbox.Checked)
-            {
-                TraceLogger.Log("Corruption history can only be re-applied in single file mode.", StatusSeverityType.Warning, true);
-                return;
-            }
-            if (!CorruptionCore.PathsEqual(entry.SourcePath, CorruptionCore.SourcePath) &&
-                MessageBox.Show($"This corruption was made for {Path.GetFileName(entry.SourcePath)}, but {Path.GetFileName(CorruptionCore.SourcePath ?? "(no file)")} is loaded. Apply it anyway?",
-                    $"{nameof(LunarROMCorruptor)} - Corruption History", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
-            {
-                return;
-            }
-            CorruptUsingStashFile(entry.StashPath);
-        }
-
-        private void TransferStash_Click(object sender, EventArgs e) //This saves the stash
-        {
-            IOManager.TransferStash(CorruptionCore.Stash, StashFileList, FileSelectiontxt.Text, rnd);
-        }
-
-        private void StashEditorbtn_Click(object sender, EventArgs e)
-        {
-            //Reuse one editor window (it hides instead of closing), the old code created a new hidden window on every click.
-            if (_stashEditor == null || _stashEditor.IsDisposed)
-                _stashEditor = new StashEditor();
-            if (StashFileList.SelectedItems.Count > 0)
-            {
-                TraceLogger.Log("Attempting to load stash file into stash editor");
-                if (StashFileList.SelectedItem == null)
-                {
-                    TraceLogger.Log("No stash file selected to load into stash editor.", StatusSeverityType.Warning, true);
-                }
-                else
-                    _stashEditor.AttemptStashLoad(Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)!));
-            }
-            _stashEditor.ShowDialog();
-        }
-
-        private void RenameStash_Click(object sender, EventArgs e)
-        {
-            IOManager.RenameStash(StashFileList);
-        }
-
-        private void RefreshStash_Click(object sender, EventArgs e)
-        {
-            IOManager.RefreshCorruptionStashList(StashFileList);
-        }
-
-        private void DeleteStash_Click(object sender, EventArgs e)
-        {
-            IOManager.DeleteStash(StashFileList);
-        }
-
         private void CopySaveToCorruptedFileBtn_Click(object sender, EventArgs e)
         {
             IOManager.CopySaveToCorruptedFile(SaveasTxt.Text, FilesaveList);
@@ -1355,150 +1052,6 @@ namespace LunarROMCorruptor
             IOManager.DeleteFileSave(FilesaveList);
         }
 
-        private void Corruptusingstash_Click(object sender, EventArgs e)
-        {
-            //Applies the selected stash to whatever file is loaded right now (use "Corrupt File and Stash" to load the stash's own file first)
-            string? stash = SelectedStashPath();
-            if (stash != null) CorruptUsingStashFile(stash);
-        }
-
-        private string? SelectedStashPath()
-        {
-            if (StashFileList.SelectedItems.Count == 0 || StashFileList.SelectedItem == null)
-            {
-                TraceLogger.Log("No stash file selected. Please select a stash file first.", StatusSeverityType.Warning, true);
-                return null;
-            }
-            return Path.Combine(IOManager.CorruptionStashDirectory, StashFileList.GetItemText(StashFileList.SelectedItem)!);
-        }
-
-        private async void CorruptFileAndStashBtn_Click(object? sender, EventArgs e)
-        {
-            string? stash = SelectedStashPath();
-            if (stash != null) await CorruptFileAndStashAsync(stash);
-        }
-
-        private async void StashFileList_DoubleClick(object? sender, EventArgs e)
-        {
-            //Only when an item was double-clicked, not the empty space under the list
-            var point = StashFileList.PointToClient(Cursor.Position);
-            int index = StashFileList.IndexFromPoint(point);
-            if (index == ListBox.NoMatches) return;
-            StashFileList.ClearSelected();
-            StashFileList.SelectedIndex = index;
-            string? stash = SelectedStashPath();
-            if (stash != null) await CorruptFileAndStashAsync(stash);
-        }
-
-        /// <summary>
-        /// Quick load: loads the file from the stash's OpenLocation header, sets the save location from its SaveAsLocation header,
-        /// then applies the stash, so the result is exactly the same corruption that the stash was saved from.
-        /// </summary>
-        public async Task<bool> CorruptFileAndStashAsync(string stashFileLocation)
-        {
-            if (_busy) return false;
-            if (!File.Exists(stashFileLocation))
-            {
-                TraceLogger.Log($"Stash file not found: {stashFileLocation}", StatusSeverityType.Error, true);
-                return false;
-            }
-            string? openLocation, saveAsLocation;
-            try
-            {
-                if (!StashParser.TryReadHeaders(stashFileLocation, out openLocation, out saveAsLocation))
-                {
-                    TraceLogger.Log($"{Path.GetFileName(stashFileLocation)} has no file headers (it was made before stash headers were added), so LRC doesn't know which file it belongs to.\n\nLoad the file yourself and use \"Corrupt using Selected Stash\" instead.", StatusSeverityType.Warning, true);
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Unable to read the stash headers of {stashFileLocation}: {ex.Message}", StatusSeverityType.Error, true);
-                return false;
-            }
-            if (!File.Exists(openLocation))
-            {
-                TraceLogger.Log($"The file this stash was made for doesn't exist anymore:\n{openLocation}\n\nLoad the file yourself and use \"Corrupt using Selected Stash\" instead.", StatusSeverityType.Error, true);
-                return false;
-            }
-            if (CorruptionQueueChkbox.Checked)
-                CorruptionQueueChkbox.Checked = false; //Stashes are single file only
-            if (!CorruptionCore.IsLoaded || !CorruptionCore.PathsEqual(CorruptionCore.SourcePath, openLocation) || FileSelectiontxt.Text != CorruptionCore.SourcePath)
-            {
-                await LoadFile(openLocation!);
-                if (!CorruptionCore.IsLoaded || !CorruptionCore.PathsEqual(CorruptionCore.SourcePath, openLocation))
-                    return false; //LoadFile already told the user why
-            }
-            if (!string.IsNullOrWhiteSpace(saveAsLocation))
-            {
-                string? folder = Path.GetDirectoryName(saveAsLocation);
-                if (string.IsNullOrEmpty(folder) || Directory.Exists(folder))
-                {
-                    if (!CorruptionCore.PathsEqual(SaveasTxt.Text, saveAsLocation)) _inPlaceWarningShown = false;
-                    SaveasTxt.Text = saveAsLocation;
-                }
-                else
-                {
-                    TraceLogger.Log($"The stash's save location folder doesn't exist ({folder}), the default save location is used instead: {SaveasTxt.Text}", StatusSeverityType.Warning);
-                }
-            }
-            TraceLogger.Log($"Quick load from stash headers: {openLocation} -> {SaveasTxt.Text}");
-            return await CorruptUsingStashFileAsync(stashFileLocation);
-        }
-
-        /// <summary>
-        /// Applies a stash file to a fresh copy of the loaded file and saves it to the save location.
-        /// </summary>
-        public async void CorruptUsingStashFile(string StashFileLocation) => await CorruptUsingStashFileAsync(StashFileLocation);
-
-        public async Task<bool> CorruptUsingStashFileAsync(string StashFileLocation)
-        {
-            if (_busy) return false;
-            if (!File.Exists(StashFileLocation))
-            {
-                TraceLogger.Log($"Stash file not found: {StashFileLocation}", StatusSeverityType.Error, true);
-                return false;
-            }
-            if (!ValidateSingleFileSelection()) return false;
-
-            string outputPath = SaveasTxt.Text;
-            BeginBusy("Applying stash");
-            //Reset exclusion ranges to avoid conflicts with the stash file
-            CorruptionCore.Exclusions.Clear();
-            CorruptionResult result;
-            try
-            {
-                var token = _corruptionCts!.Token;
-                var progress = CreateProgress("Applying stash");
-                result = await Task.Run(() => CorruptionCore.ApplyStashFile(StashFileLocation, outputPath, token, progress));
-            }
-            finally
-            {
-                EndBusy();
-            }
-            if (result != CorruptionResult.Success)
-            {
-                if (result == CorruptionResult.Failed) StartFailureFeedback();
-                return false;
-            }
-
-            TraceLogger.Log($"Corrupted file with stash file successfully saved: {outputPath}");
-            StartSuccessFeedback();
-            RunEmulatorIfEnabled(outputPath);
-            try
-            {
-                //Set StashByteList to the files contents, each line is each item on the list
-                LoadStashFileIntoList(StashFileLocation);
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Unable to show the stash file contents: {ex.Message}", StatusSeverityType.Warning);
-            }
-            UpdateByteViewIfEnabled();
-            GenerateSelectedByteDetails();
-            return true;
-        }
-
         private void EnableStashSavesChkbox_CheckedChanged(object sender, EventArgs e)
         {
             StashBytesList.Enabled = EnableStashSavesChkbox.Checked;
@@ -1508,15 +1061,6 @@ namespace LunarROMCorruptor
             //Save changes to settings
             Settings.Default.StashSavesEnabled = EnableStashSavesChkbox.Checked;
             Settings.Default.Save();
-        }
-
-        private void StashList_MouseDown(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                StashFileList.SelectedIndex = StashFileList.IndexFromPoint(e.X, e.Y);
-                contextStripStash.Show(Cursor.Position);
-            }
         }
 
         #endregion
@@ -1633,146 +1177,6 @@ namespace LunarROMCorruptor
 
         #endregion
 
-        #region Automation
-
-        private void StartAutomationBtn_Click(object sender, EventArgs e)
-        {
-            //If the buttons text is "Start Automation", then start automation and change the text and color to stop and OrangeRed
-            if (StartAutomationBtn.Text == "Start Automation")
-            {
-                StartAutomationBtn.Text = "Stop Automation";
-                StartAutomationBtn.ForeColor = Color.OrangeRed;
-                TraceLogger.SuppressMessageBoxes = true; //Errors go to the log instead of stacking up message boxes
-                AutomationTimer.Start();
-            }
-            else
-            {
-                StopAutomation();
-            }
-        }
-
-        private void StopAutomation()
-        {
-            StartAutomationBtn.Text = "Start Automation";
-            StartAutomationBtn.ForeColor = Color.SpringGreen;
-            AutomationTimer.Stop();
-            TraceLogger.SuppressMessageBoxes = false;
-        }
-
-        private void RemoveTaskBtn_Click(object sender, EventArgs e)
-        {
-            //Removes selected item from the automation list
-            if (AutomationList.SelectedItem != null)
-                AutomationList.Items.Remove(AutomationList.SelectedItem);
-        }
-
-        private void AddTaskBtn_Click(object sender, EventArgs e)
-        {
-            //Adds automation task from the combo box into the automation list
-            if (AutomationTaskComboBox.SelectedItem != null)
-                AutomationList.Items.Add(AutomationTaskComboBox.SelectedItem);
-        }
-
-        private void DelayInAutomationNUD_ValueChanged(object sender, EventArgs e)
-        {
-            //Converts the NumericUpDown number from seconds to miliseconds to use on the timer
-            AutomationTimer.Interval = (int)Math.Max(1, DelayInAutomationNUD.Value * 1000);
-        }
-
-        private long RandomDecimal(decimal min, decimal max) => rnd.NextInt64((long)min, (long)max + 1);
-
-        private async void AutomationTimer_Tick(object sender, EventArgs e)
-        {
-            if (_busy || _automationTickRunning) return; //Don't stack corruptions if the previous one is still running
-            _automationTickRunning = true;
-            try
-            {
-                //Snapshot the task list, the user can change it while a corruption is running
-                var tasks = AutomationList.Items.Cast<object>().Select(i => i?.ToString() ?? "").ToList();
-                foreach (var item in tasks)
-                {
-                    if (!AutomationTimer.Enabled) break;
-                    switch (item)
-                    {
-                        case "Run Corruption":
-                            var result = await RunCorruptionAsync();
-                            if (result == null || result == CorruptionResult.Failed)
-                            {
-                                StopAutomation();
-                                TraceLogger.Log("Automation stopped because the corruption couldn't run. Check the log for the reason.", StatusSeverityType.Error, true);
-                                return;
-                            }
-                            break;
-                        case "Randomize Intensity":
-                            if (CorruptEverynthByteRadioBtn.Checked)
-                                EveryNthByte.Value = RandomDecimal(EveryNthByte.Minimum, EveryNthByte.Maximum);
-                            else
-                                Intensity.Value = RandomDecimal(Intensity.Minimum, Intensity.Maximum);
-                            break;
-                        case "Randomize Start Byte":
-                            //Keeps the start byte at or below the end byte
-                            StartByteNumb.Value = RandomDecimal(StartByteNumb.Minimum, EndByteNumb.Value);
-                            break;
-                        case "Randomize End Byte":
-                            EndByteNumb.Value = RandomDecimal(StartByteNumb.Value, EndByteNumb.Maximum);
-                            break;
-                        case "Randomize both Start byte and End byte":
-                            {
-                                long start = RandomDecimal(StartByteNumb.Minimum, StartByteNumb.Maximum);
-                                long end = rnd.NextInt64(start, (long)EndByteNumb.Maximum + 1);
-                                StartByteNumb.Value = Math.Min(start, (long)StartByteNumb.Maximum);
-                                EndByteNumb.Value = Math.Min(end, (long)EndByteNumb.Maximum);
-                            }
-                            break;
-                        case "Randomize Corruption Engine":
-                            {
-                                //Only byte engines are randomized. Merge needs a merge file and the Source Code Engine only makes sense for text files.
-                                var engines = new List<CorruptionEngineType> { CorruptionEngineType.NightmareEngine, CorruptionEngineType.LerpEngine, CorruptionEngineType.LogicEngine, CorruptionEngineType.ManualEngine, CorruptionEngineType.VectorEngine, CorruptionEngineType.BlocksEngine };
-                                if (File.Exists(MergeEngineFrame.MergeFileLocationTxt.Text))
-                                    engines.Add(CorruptionEngineType.MergeEngine);
-                                CorruptionEngineComboBox.Text = EngineParser.GetEngineDisplayName(engines[rnd.Next(engines.Count)]);
-                            }
-                            break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                StopAutomation();
-                TraceLogger.Log($"Automation stopped because of an error: {ex.Message}", StatusSeverityType.Error, true);
-            }
-            finally
-            {
-                _automationTickRunning = false;
-            }
-        }
-
-        private void MoveTaskUpBtn_Click(object sender, EventArgs e)
-        {
-            //Moves selected item on automation list up
-            if (AutomationList.SelectedIndex > 0 && AutomationList.SelectedItem is object item)
-            {
-                int index = AutomationList.SelectedIndex;
-                AutomationList.Items.RemoveAt(index);
-                AutomationList.Items.Insert(index - 1, item);
-                AutomationList.SelectedIndex = index - 1;
-            }
-        }
-
-        private void MoveTaskDownBtn_Click(object sender, EventArgs e)
-        {
-            //Moves selected item on automation list down
-            if (AutomationList.SelectedIndex >= 0 && AutomationList.SelectedIndex < AutomationList.Items.Count - 1 && AutomationList.SelectedItem is object item)
-            {
-                int index = AutomationList.SelectedIndex;
-                AutomationList.Items.RemoveAt(index);
-                AutomationList.Items.Insert(index + 1, item);
-                AutomationList.SelectedIndex = index + 1;
-            }
-        }
-
-        #endregion
-
         #region Help, ByteView, logs and misc
 
         private void RandomByteCorruptRadioBtn_CheckedChanged(object sender, EventArgs e)
@@ -1789,7 +1193,7 @@ namespace LunarROMCorruptor
 
         private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}Every stash remembers the file it was made for and its save location (the OpenLocation/SaveAsLocation lines at the top). \"Corrupt File and Stash\" (or double-clicking a stash) loads that file and applies the stash, giving the exact same corruption. \"Corrupt using Selected Stash\" applies it to the file that is loaded right now.{Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\") and the Datamosh Engine as File(offset).FRAME(frame).SET(DROP/REPLACE/REPEAT,n).{Environment.NewLine}{Environment.NewLine}Corruption History keeps the stash of the last {CorruptionHistory.MaxEntries} corruptions, so you can re-apply one or save it to the stash list. The Stash Editor's Mutate tool makes variations of a corruption you like.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}Stashes are kept in the stash list as folders with their info (file, engine and settings, range), a thumbnail and screenshots. Drag them into groups, hover for a preview, double-click for details, notes, ratings and screenshots, right-click for more. \"Corrupt stash\u2019s file using selected stash\" loads the file it was made for and replays it exactly. \"Corrupt loaded file using selected stash\" applies it to the file that is loaded right now. More in the Guides tab.{Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\") and the Datamosh Engine as File(offset).FRAME(frame).SET(DROP/REPLACE/REPEAT,n).{Environment.NewLine}{Environment.NewLine}Corruption History keeps the stash of the last {CorruptionHistory.MaxEntries} corruptions, so you can re-apply one or save it to the stash list. The Stash Editor's Mutate tool makes variations of a corruption you like.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
         private void ByteModeHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -1797,577 +1201,10 @@ namespace LunarROMCorruptor
             MessageBox.Show($"With Corrupt Every Nth Byte, you can apply regular corruptions to your file by specifying the interval to corrupt (e.g., every 1st byte, every 2nd byte, etc.).{Environment.NewLine}{Environment.NewLine}On the other hand, Intensity allows for randomized corruptions, where the corruptor selects random addresses to modify.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
-        private void ByteViewHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            MessageBox.Show($"ByteView shows the bytes of a file as an image. Convert/Update shows the latest corrupted file (or the loaded file if nothing has been corrupted yet). Large files are downsampled.{Environment.NewLine}{Environment.NewLine}" +
-                $"Modes:{Environment.NewLine}- Normal: every 3 bytes are one pixel (colour or greyscale).{Environment.NewLine}- Diff: the file in grey with every byte changed by the last corruption in red.{Environment.NewLine}- Entropy: how random each part of the file is. Dark = empty/padding, blue/green = tables and text, yellow = code, red = compressed or encrypted data.{Environment.NewLine}" +
-                $"- Regions: the named parts of the file for its type (picked automatically or with the list under the mode). Orange = header/boot (protected by the Nightmare+ Engine exclusion types), blue = code, green = data, pink = graphics, purple = compressed blocks. Hover to see the name of a region.{Environment.NewLine}{Environment.NewLine}" +
-                $"Excluded ranges (from Bisect Mode or EXCLUDE stash lines) are always shown in red: no engine changes them.{Environment.NewLine}{Environment.NewLine}" +
-                $"Targeting: drag over the image to set the Start/End byte to that area. The current range is highlighted in yellow. Right-click to reset the range to the whole file. Hover to see the offset under the mouse.{Environment.NewLine}{Environment.NewLine}" +
-                $"Zoom: use the scroll wheel over the image, drag with the middle mouse button to move around, double-click to reset the zoom.",
-                $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-        }
-
-        private void ByteViewSaveImageBtn_Click(object sender, EventArgs e)
-        {
-            var view = _byteViewInfo;
-            if (view == null) return;
-            using SaveFileDialog saveFileDialog = new();
-            saveFileDialog.Filter = "PNG Files (*.png)|*.png|JPEG Files (*.jpg;*.jpeg)|*.jpg;*.jpeg|All Files (*.*)|*.*";
-            saveFileDialog.Title = "Save Image";
-            if (saveFileDialog.ShowDialog() != DialogResult.OK) return;
-            try
-            {
-                using Bitmap imageToSave = new(view.Image);
-                var format = Path.GetExtension(saveFileDialog.FileName).ToLowerInvariant() is ".jpg" or ".jpeg" ? System.Drawing.Imaging.ImageFormat.Jpeg : System.Drawing.Imaging.ImageFormat.Png;
-                imageToSave.Save(saveFileDialog.FileName, format);
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"Unable to save the ByteView image: {ex.Message}", StatusSeverityType.Error, true);
-            }
-        }
-
-        private void ByteViewRefreshBtn_Click(object sender, EventArgs e)
-        {
-            if (!CorruptionCore.IsLoaded)
-            {
-                TraceLogger.Log("Attempted to refresh ByteView but no file is loaded. Please load a file before attempting to use ByteView.", StatusSeverityType.Error, true);
-                return;
-            }
-            UpdateByteView();
-        }
-
-        private void UpdateByteViewIfEnabled()
-        {
-            if (ByteViewupdateWhenCorruptedChkBox.Checked)
-            {
-                UpdateByteView();
-            }
-        }
-
-        private ByteViewMode SelectedByteViewMode => ByteViewModeComboBox.SelectedIndex switch
-        {
-            1 => ByteViewMode.Diff,
-            2 => ByteViewMode.Entropy,
-            3 => ByteViewMode.Regions,
-            _ => ByteViewMode.Normal
-        };
-
-        /// <summary>
-        /// Renders the latest corrupted file (or the loaded file if nothing has been corrupted yet) in ByteView on a background thread.
-        /// In Regions mode the named regions of the file are read at the same time.
-        /// </summary>
-        private async void UpdateByteView()
-        {
-            string? path = CorruptionCore.LastOutputPath != null && File.Exists(CorruptionCore.LastOutputPath) ? CorruptionCore.LastOutputPath : CorruptionCore.SourcePath;
-            if (path == null) return;
-            bool colour = byteViewColourChkbox.Checked, flipH = flipHorizontalChkbox.Checked, flipV = flipVerticalChkbox.Checked;
-            var mode = SelectedByteViewMode;
-            string? original = CorruptionCore.SourcePath;
-            string profileChoice = ByteViewRegionProfileComboBox.Text;
-            //For in-place corruption the original isn't on disk anymore, so the Diff uses the stash instead
-            long[]? stashOffsets = mode == ByteViewMode.Diff && CorruptionCore.PathsEqual(path, original) && CorruptionCore.Stash.Count > 0 ? [.. CorruptionCore.Stash.ByteOffsets] : null;
-            int version = ++_byteViewRenderVersion;
-            ByteViewRefreshBtn.Enabled = false;
-            ByteViewInfoLbl.Text = "Rendering...";
-            try
-            {
-                var (rendered, regions, profile) = await Task.Run(() =>
-                {
-                    var image = ByteView.Render(path, mode, colour, flipH, flipV, original, stashOffsets);
-                    List<ExclusionEngine.NamedRegion>? list = null;
-                    string? detected = null;
-                    if (image != null && mode == ByteViewMode.Regions)
-                    {
-                        using var data = FileBuffer.OpenRead(path);
-                        detected = string.IsNullOrEmpty(profileChoice) || profileChoice == "Auto" ? ExclusionEngine.DetectProfile(original ?? path, data) : profileChoice;
-                        list = detected != null ? ExclusionEngine.GetNamedRegions(detected, data) : [];
-                        //Big areas first, so the small ones are drawn on top of them
-                        list = [.. list.OrderByDescending(r => r.End - r.Start)];
-                    }
-                    return (image, list, detected);
-                });
-                if (version != _byteViewRenderVersion || rendered == null)
-                {
-                    rendered?.Dispose(); //A newer render was started (or this one failed)
-                    if (rendered == null) TraceLogger.Log("ByteView conversion failed: no image produced.", StatusSeverityType.Error);
-                    return;
-                }
-                var old = _byteViewInfo;
-                if (old == null || old.Width != rendered.Width || old.Height != rendered.Height || old.FlipH != rendered.FlipH || old.FlipV != rendered.FlipV)
-                    ResetByteViewZoom(); //Keep the zoom when the same layout is re-rendered (e.g. after a corruption)
-                _byteViewInfo = rendered;
-                _byteViewRegions = regions;
-                _byteViewRegionProfile = profile;
-                ByteViewCloneImage.Image = rendered.Image;
-                old?.Dispose();
-                ByteViewInfoLbl.Text = DescribeByteView(rendered);
-                InvalidateByteViewOverlays();
-            }
-            catch (Exception ex)
-            {
-                TraceLogger.Log($"ByteView failed: {ex.Message}", StatusSeverityType.Error);
-                ByteViewInfoLbl.Text = "ByteView failed, see the log.";
-            }
-            finally
-            {
-                ByteViewRefreshBtn.Enabled = !_busy;
-            }
-        }
-
-        private string DescribeByteView(ByteViewImage view)
-        {
-            string scale = $"1 px = {view.BytesPerPixel:N0} bytes";
-            if (_byteViewZoom > 1f) scale += $", zoom {_byteViewZoom:0.#}x";
-            return view.Mode switch
-            {
-                ByteViewMode.Diff when view.ChangedBytes >= 0 => $"{view.ChangedBytes:N0} changed bytes (red). {scale}",
-                ByteViewMode.Entropy => $"Dark = empty, blue/green = text/tables, yellow = code, red = compressed. {scale}",
-                ByteViewMode.Regions => _byteViewRegionProfile == null
-                    ? $"Unknown file type: pick a profile below. {scale}"
-                    : $"{_byteViewRegionProfile}: {(_byteViewRegions?.Count ?? 0)} region(s). Hover for names. {scale}",
-                _ => $"Drag to set the byte range, right-click to reset. {scale}"
-            };
-        }
-
-        private void ClearByteView()
-        {
-            _byteViewRenderVersion++;
-            ByteViewPictureBox.Image = null;
-            ByteViewCloneImage.Image = null; //Shares the bitmap that is disposed below
-            _byteViewInfo?.Dispose();
-            _byteViewInfo = null;
-            _byteViewRegions = null;
-            _byteViewRegionProfile = null;
-            ResetByteViewZoom();
-            ByteViewPictureBox.Invalidate();
-            ByteViewInfoLbl.Text = "Drag on the image to set the byte range.";
-        }
-
-        /// <summary>
-        /// Redraws the overlays (range, regions, excluded ranges, bisect) on the ByteView tab and on the small preview on the main tab.
-        /// </summary>
-        internal void InvalidateByteViewOverlays()
-        {
-            ByteViewPictureBox.Invalidate();
-            ByteViewCloneImage.Invalidate();
-        }
-
-        #region ByteView zoom
-
-        private const float MaxByteViewZoom = 64f;
-        private float _byteViewZoom = 1f; //1 = the whole image fits in the picture box
-        private PointF _byteViewPan; //Offset of the zoomed image from its centred position
-        private bool _byteViewPanning;
-        private Point _byteViewPanStart;
-        private PointF _byteViewPanOrigin;
-
-        private void ResetByteViewZoom()
-        {
-            _byteViewZoom = 1f;
-            _byteViewPan = PointF.Empty;
-            _byteViewPanning = false;
-        }
-
-        /// <summary>
-        /// Keeps the zoomed image covering the picture box (no panning past its edges).
-        /// </summary>
-        private void ClampByteViewPan(ByteViewImage view)
-        {
-            var client = ByteViewPictureBox.ClientSize;
-            float scale = Math.Min((float)client.Width / view.Width, (float)client.Height / view.Height) * _byteViewZoom;
-            float halfX = Math.Max(0, (view.Width * scale - client.Width) / 2f), halfY = Math.Max(0, (view.Height * scale - client.Height) / 2f);
-            _byteViewPan = new PointF(Math.Clamp(_byteViewPan.X, -halfX, halfX), Math.Clamp(_byteViewPan.Y, -halfY, halfY));
-        }
-
-        private void ByteViewPictureBox_MouseWheel(object? sender, MouseEventArgs e)
-        {
-            var view = _byteViewInfo;
-            if (view == null) return;
-            var before = GetByteViewImageRectangle(view, ByteViewPictureBox);
-            float ix = Math.Clamp((e.X - before.X) / before.Width, 0f, 1f), iy = Math.Clamp((e.Y - before.Y) / before.Height, 0f, 1f);
-            float zoom = Math.Clamp(_byteViewZoom * (e.Delta > 0 ? 1.25f : 0.8f), 1f, MaxByteViewZoom);
-            if (Math.Abs(zoom - _byteViewZoom) < 0.001f) return;
-            _byteViewZoom = zoom < 1.01f ? 1f : zoom;
-            _byteViewPan = PointF.Empty;
-            if (_byteViewZoom > 1f)
-            {
-                //Keep the point under the mouse in the same place
-                var centred = GetByteViewImageRectangle(view, ByteViewPictureBox);
-                _byteViewPan = new PointF(e.X - ix * centred.Width - centred.X, e.Y - iy * centred.Height - centred.Y);
-                ClampByteViewPan(view);
-            }
-            ByteViewInfoLbl.Text = DescribeByteView(view);
-            ByteViewPictureBox.Invalidate();
-        }
-
-        #endregion
-
-        /// <summary>
-        /// Where the image is drawn inside a picture box: fitted and centred (like SizeMode = Zoom), plus the scroll wheel zoom on the ByteView tab.
-        /// </summary>
-        private RectangleF GetByteViewImageRectangle(ByteViewImage view) => GetByteViewImageRectangle(view, ByteViewPictureBox);
-
-        private RectangleF GetByteViewImageRectangle(ByteViewImage view, PictureBox box)
-        {
-            var client = box.ClientSize;
-            bool zoomed = box == ByteViewPictureBox && _byteViewZoom > 1f;
-            float scale = Math.Min((float)client.Width / view.Width, (float)client.Height / view.Height) * (zoomed ? _byteViewZoom : 1f);
-            float w = view.Width * scale, h = view.Height * scale;
-            float x = (client.Width - w) / 2f, y = (client.Height - h) / 2f;
-            if (zoomed)
-            {
-                x += _byteViewPan.X;
-                y += _byteViewPan.Y;
-            }
-            return new RectangleF(x, y, w, h);
-        }
-
-        /// <summary>
-        /// Converts a mouse position on the picture box to a file offset. Returns -1 outside of the image.
-        /// </summary>
-        private long ByteViewOffsetAt(Point location, bool clampToImage)
-        {
-            var view = _byteViewInfo;
-            if (view == null) return -1;
-            var rect = GetByteViewImageRectangle(view);
-            if (!clampToImage && !rect.Contains(location)) return -1;
-            int x = (int)Math.Clamp((location.X - rect.X) * view.Width / rect.Width, 0, view.Width - 1);
-            int y = (int)Math.Clamp((location.Y - rect.Y) * view.Height / rect.Height, 0, view.Height - 1);
-            long offset = view.OffsetOf(x, y);
-            if (offset < 0 && clampToImage) offset = view.FileLength - 1; //Past the end of the data on the last row
-            return offset;
-        }
-
-        private void ByteViewPictureBox_MouseDown(object? sender, MouseEventArgs e)
-        {
-            if (_byteViewInfo == null) return;
-            if (e.Button == MouseButtons.Middle)
-            {
-                if (_byteViewZoom > 1f)
-                {
-                    _byteViewPanning = true;
-                    _byteViewPanStart = e.Location;
-                    _byteViewPanOrigin = _byteViewPan;
-                    ByteViewPictureBox.Cursor = Cursors.SizeAll;
-                }
-                return;
-            }
-            if (!CorruptionCore.IsLoaded || CorruptionQueueChkbox.Checked || _busy) return;
-            if (e.Button == MouseButtons.Right)
-            {
-                //Right-click resets the range to the whole file
-                StartByteNumb.Value = 0;
-                EndByteNumb.Value = EndByteNumb.Maximum;
-                TraceLogger.Log("ByteView: byte range reset to the whole file.");
-                return;
-            }
-            if (e.Button != MouseButtons.Left) return;
-            long offset = ByteViewOffsetAt(e.Location, false);
-            if (offset < 0) return;
-            _byteViewDragging = true;
-            _byteViewDragStart = _byteViewDragEnd = offset;
-            InvalidateByteViewOverlays();
-        }
-
-        /// <summary>
-        /// The smallest named region that contains an offset (Regions mode hover).
-        /// </summary>
-        private ExclusionEngine.NamedRegion? RegionAt(long offset)
-        {
-            var regions = _byteViewRegions;
-            if (regions == null) return null;
-            ExclusionEngine.NamedRegion? best = null;
-            foreach (var r in regions)
-            {
-                if (offset < r.Start || offset > r.End) continue;
-                if (best == null || r.End - r.Start < best.Value.End - best.Value.Start) best = r;
-            }
-            return best;
-        }
-
-        private void ByteViewPictureBox_MouseMove(object? sender, MouseEventArgs e)
-        {
-            var view = _byteViewInfo;
-            if (view == null) return;
-            if (_byteViewPanning)
-            {
-                _byteViewPan = new PointF(_byteViewPanOrigin.X + e.X - _byteViewPanStart.X, _byteViewPanOrigin.Y + e.Y - _byteViewPanStart.Y);
-                ClampByteViewPan(view);
-                ByteViewPictureBox.Invalidate();
-                return;
-            }
-            if (_byteViewDragging)
-            {
-                _byteViewDragEnd = ByteViewOffsetAt(e.Location, true);
-                long a = Math.Min(_byteViewDragStart, _byteViewDragEnd), b = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1;
-                ByteViewInfoLbl.Text = $"0x{a:X} - 0x{Math.Min(b, view.FileLength - 1):X}\n({FormatByteCount(Math.Min(b, view.FileLength - 1) - a + 1)})";
-                ByteViewPictureBox.Invalidate();
-                return;
-            }
-            long offset = ByteViewOffsetAt(e.Location, false);
-            if (offset < 0)
-            {
-                ByteViewInfoLbl.Text = DescribeByteView(view);
-                return;
-            }
-            string text = $"Offset 0x{offset:X}\n({offset:N0})";
-            if (ExcludeList.Contains(CorruptionCore.Exclusions.Snapshot(), offset)) text += "\nExcluded (no engine changes it)";
-            else if (view.Mode == ByteViewMode.Regions && RegionAt(offset) is { } region) text += $"\n{region.Name}";
-            else text += $"\n1 px = {view.BytesPerPixel:N0} bytes";
-            ByteViewInfoLbl.Text = text;
-        }
-
-        private void ByteViewPictureBox_MouseUp(object? sender, MouseEventArgs e)
-        {
-            if (_byteViewPanning && e.Button == MouseButtons.Middle)
-            {
-                _byteViewPanning = false;
-                ByteViewPictureBox.Cursor = Cursors.Cross;
-                return;
-            }
-            if (!_byteViewDragging || _byteViewInfo == null) return;
-            _byteViewDragging = false;
-            var view = _byteViewInfo;
-            long start = Math.Min(_byteViewDragStart, _byteViewDragEnd);
-            long end = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1; //Include every byte of the last pixel
-            if (_byteViewDragStart == _byteViewDragEnd)
-            {
-                //A single click just shows the offset, it doesn't change the range
-                InvalidateByteViewOverlays();
-                return;
-            }
-            start = Math.Clamp(start, 0, (long)EndByteNumb.Maximum);
-            end = Math.Clamp(end, start, (long)EndByteNumb.Maximum);
-            //Set the end first if the new start is past the current end, so start <= end is kept
-            if (start > EndByteNumb.Value)
-            {
-                EndByteNumb.Value = end;
-                StartByteNumb.Value = start;
-            }
-            else
-            {
-                StartByteNumb.Value = start;
-                EndByteNumb.Value = end;
-            }
-            TraceLogger.Log($"ByteView: byte range set to 0x{start:X} - 0x{end:X} ({FormatByteCount(end - start + 1)}).");
-            ByteViewInfoLbl.Text = $"Range set:\n0x{start:X} - 0x{end:X}\n({FormatByteCount(end - start + 1)})";
-            InvalidateByteViewOverlays();
-        }
-
-        private static string FormatByteCount(long bytes) => CorruptionCore.FormatSize(bytes, out _, out _);
-
-        /// <summary>
-        /// The image rectangles (in image pixels, before flips) that cover the bytes a to b.
-        /// </summary>
-        private static List<Rectangle> RangeRects(ByteViewImage view, long a, long b)
-        {
-            long pixels = (long)view.Width * view.Height;
-            long pa = Math.Clamp(a / view.BytesPerPixel, 0, pixels - 1);
-            long pb = Math.Clamp(b / view.BytesPerPixel, pa, pixels - 1);
-            long ra = pa / view.Width, rb = pb / view.Width;
-            var rects = new List<Rectangle>(3);
-            if (ra == rb)
-            {
-                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(pb - pa + 1), 1));
-            }
-            else
-            {
-                rects.Add(new Rectangle((int)(pa % view.Width), (int)ra, (int)(view.Width - pa % view.Width), 1));
-                if (rb - ra > 1) rects.Add(new Rectangle(0, (int)ra + 1, view.Width, (int)(rb - ra - 1)));
-                rects.Add(new Rectangle(0, (int)rb, (int)(pb % view.Width + 1), 1));
-            }
-            return rects;
-        }
-
-        private static void DrawRange(Graphics g, ByteViewImage view, RectangleF area, long a, long b, Brush fill, Pen? outline)
-        {
-            if (b < 0 || a >= view.FileLength) return;
-            float sx = area.Width / view.Width, sy = area.Height / view.Height;
-            foreach (var r in RangeRects(view, Math.Max(0, a), Math.Min(b, view.FileLength - 1)))
-            {
-                int x = view.FlipH ? view.Width - (r.X + r.Width) : r.X;
-                int y = view.FlipV ? view.Height - (r.Y + r.Height) : r.Y;
-                var rf = new RectangleF(area.X + x * sx, area.Y + y * sy, Math.Max(1f, r.Width * sx), Math.Max(1f, r.Height * sy));
-                g.FillRectangle(fill, rf);
-                if (outline != null) g.DrawRectangle(outline, rf.X, rf.Y, rf.Width, rf.Height);
-            }
-        }
-
-        private static Color RegionColour(ExclusionEngine.RegionKind kind) => kind switch
-        {
-            ExclusionEngine.RegionKind.Protected => Color.FromArgb(130, 255, 140, 0),
-            ExclusionEngine.RegionKind.Code => Color.FromArgb(70, 60, 140, 255),
-            ExclusionEngine.RegionKind.Graphics => Color.FromArgb(85, 255, 90, 200),
-            ExclusionEngine.RegionKind.Compressed => Color.FromArgb(110, 170, 80, 255),
-            ExclusionEngine.RegionKind.Excluded => Color.FromArgb(140, 255, 30, 30),
-            _ => Color.FromArgb(45, 60, 220, 120)
-        };
-
-        /// <summary>
-        /// Draws the ByteView image (ByteView tab only, with zoom) and the overlays: regions (Regions mode), excluded ranges (red),
-        /// the half left out of the current bisect test (cyan) and the selected/current byte range (yellow).
-        /// </summary>
-        private void ByteViewPictureBox_Paint(object? sender, PaintEventArgs e)
-        {
-            var view = _byteViewInfo;
-            var box = sender as PictureBox ?? ByteViewPictureBox; //Used by both the ByteView tab and the small preview (ByteViewCloneImage)
-            if (view == null) return;
-            var g = e.Graphics;
-            var area = GetByteViewImageRectangle(view, box);
-            if (box == ByteViewPictureBox)
-            {
-                //Only the visible part of the image is drawn, with sharp pixels once a pixel is bigger than a screen pixel
-                float sx = area.Width / view.Width, sy = area.Height / view.Height;
-                var client = box.ClientRectangle;
-                int x0 = (int)Math.Clamp(Math.Floor((client.Left - area.X) / sx), 0, view.Width - 1);
-                int y0 = (int)Math.Clamp(Math.Floor((client.Top - area.Y) / sy), 0, view.Height - 1);
-                int x1 = (int)Math.Clamp(Math.Ceiling((client.Right - area.X) / sx), x0 + 1, view.Width);
-                int y1 = (int)Math.Clamp(Math.Ceiling((client.Bottom - area.Y) / sy), y0 + 1, view.Height);
-                var dest = new RectangleF(area.X + x0 * sx, area.Y + y0 * sy, (x1 - x0) * sx, (y1 - y0) * sy);
-                if (sx >= 1f)
-                {
-                    g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
-                    g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Half;
-                }
-                g.DrawImage(view.Image, dest, new RectangleF(x0, y0, x1 - x0, y1 - y0), GraphicsUnit.Pixel);
-                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Default;
-                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.Default;
-            }
-            else if (box.Image == null) return;
-
-            //Regions
-            var regions = _byteViewRegions;
-            if (view.Mode == ByteViewMode.Regions && regions != null)
-            {
-                foreach (var r in regions)
-                {
-                    using var fill = new SolidBrush(RegionColour(r.Kind));
-                    DrawRange(g, view, area, r.Start, r.End, fill, null);
-                }
-            }
-
-            //Excluded ranges are always shown
-            var excluded = CorruptionCore.Exclusions.Snapshot();
-            if (excluded.Length > 0)
-            {
-                using var fill = new SolidBrush(RegionColour(ExclusionEngine.RegionKind.Excluded));
-                using var outline = new Pen(Color.FromArgb(230, 255, 60, 60));
-                foreach (var r in excluded) DrawRange(g, view, area, r.Start, r.End, fill, outline);
-            }
-
-            //Bisect: the half that the current test leaves out
-            if (_bisectForm is { Visible: true, Session: { TestPending: true, RemovedSpan: { } removed } })
-            {
-                using var fill = new SolidBrush(Color.FromArgb(70, 0, 220, 255));
-                using var outline = new Pen(Color.FromArgb(220, 0, 220, 255));
-                DrawRange(g, view, area, removed.Start, removed.End, fill, outline);
-            }
-
-            //Selected byte range
-            long a, b;
-            if (_byteViewDragging && box == ByteViewPictureBox)
-            {
-                a = Math.Min(_byteViewDragStart, _byteViewDragEnd);
-                b = Math.Max(_byteViewDragStart, _byteViewDragEnd) + view.BytesPerPixel - 1;
-            }
-            else
-            {
-                if (!CorruptionCore.IsLoaded || CorruptionQueueChkbox.Checked) return;
-                a = (long)StartByteNumb.Value;
-                b = (long)EndByteNumb.Value;
-                if (a == 0 && b >= view.FileLength - 1) return; //Whole file selected, nothing to highlight
-            }
-            using (var fill = new SolidBrush(Color.FromArgb(_byteViewDragging ? 110 : 70, 255, 230, 0)))
-            using (var outline = new Pen(Color.FromArgb(220, 255, 230, 0)))
-                DrawRange(g, view, area, a, b, fill, outline);
-        }
-
         private void FixChecksumsChkBox_CheckedChanged(object? sender, EventArgs e)
         {
             CorruptionCore.FixChecksums = FixChecksumsChkBox.Checked;
             Settings.Default.FixChecksums = FixChecksumsChkBox.Checked;
-            Settings.Default.Save();
-        }
-
-        private void BisectModeChkBox_CheckedChanged(object? sender, EventArgs e)
-        {
-            if (BisectModeChkBox.Checked)
-            {
-                var screen = Screen.FromControl(this).WorkingArea;
-                if (_bisectForm == null || _bisectForm.IsDisposed)
-                {
-                    _bisectForm = new LunarROMCorruptor.Forms.BisectForm(this);
-                    _bisectForm.ClosedByUser += () => BisectModeChkBox.Checked = false;
-                }
-                if (!_bisectForm.Visible)
-                {
-                    _bisectForm.Location = new Point(Math.Clamp(Left + (Width - _bisectForm.Width) / 2, screen.Left, screen.Right - _bisectForm.Width), Math.Clamp(Top + (Height - _bisectForm.Height) / 2, screen.Top, screen.Bottom - _bisectForm.Height));
-                    _bisectForm.Show(this);
-                    _bisectForm.Activate();
-                }
-            }
-            else
-            {
-                _bisectForm?.Hide();
-            }
-            InvalidateByteViewOverlays();
-        }
-
-        /// <summary>
-        /// Applies one Bisect test (a subset of the stash) to the save location, then runs the emulator and refreshes the stash list and ByteView.
-        /// </summary>
-        internal async Task<bool> ApplyEntriesForBisectAsync(IReadOnlyList<(long Offset, byte Value)> entries, string status)
-        {
-            if (_busy)
-            {
-                TraceLogger.Log("A corruption is still running, wait for it to finish first.", StatusSeverityType.Warning, true);
-                return false;
-            }
-            if (CorruptionQueueChkbox.Checked)
-            {
-                TraceLogger.Log("Bisect Mode only works with a single file, turn off Multi-File first.", StatusSeverityType.Warning, true);
-                return false;
-            }
-            if (!ValidateSingleFileSelection()) return false;
-            string outputPath = SaveasTxt.Text;
-            StashBytesList.Items.Clear();
-            BeginBusy(status);
-            CorruptionResult result;
-            try
-            {
-                var token = _corruptionCts!.Token;
-                var progress = CreateProgress(status);
-                result = await Task.Run(() => CorruptionCore.ApplyByteEntries(entries, outputPath, token, progress));
-            }
-            finally
-            {
-                EndBusy();
-            }
-            if (result != CorruptionResult.Success)
-            {
-                if (result == CorruptionResult.Failed) StartFailureFeedback();
-                return false;
-            }
-            TraceLogger.Log($"{status}: applied {CorruptionCore.Stash.ByteEntries.Count:N0} change(s) to {outputPath}.");
-            RunEmulatorIfEnabled(outputPath);
-            await HandleStashRenderingAsync();
-            UpdateByteViewIfEnabled();
-            InvalidateByteViewOverlays();
-            GenerateSelectedByteDetails();
-            return true;
-        }
-
-        private void ByteViewColourChkbox_CheckedChanged(object sender, EventArgs e)
-        {
-            Settings.Default.ByteViewColourMode = byteViewColourChkbox.Checked;
-            Settings.Default.Save();
-        }
-
-        private void ByteViewupdateWhenCorruptedChkBox_CheckedChanged(object sender, EventArgs e)
-        {
-            Settings.Default.ByteViewUpdateOnCorruption = ByteViewupdateWhenCorruptedChkBox.Checked;
             Settings.Default.Save();
         }
 
@@ -2482,14 +1319,97 @@ namespace LunarROMCorruptor
             SaveasTxt.SelectionLength = 0;
         }
 
-        private void ByteViewCloneImage_Click(object sender, EventArgs e)
-        {
-            MainTabControl.SelectedTab = ByteViewTab;
-        }
-
+        /// <summary>
+        /// Deletes the corrupted file at the save location. (It used to delete FileSelectiontxt, i.e. the ORIGINAL file.)
+        /// </summary>
         private void DeleteCorruptedFileBtn_Click(object sender, EventArgs e)
         {
-            IOManager.DeleteFile(FileSelectiontxt.Text, true);
+            string target = SaveasTxt.Text;
+            if (_busy || CorruptionQueueChkbox.Checked || string.IsNullOrWhiteSpace(target) || target == MultipleFilesSaveText) return;
+            if (CorruptionCore.IsInPlace(target))
+            {
+                TraceLogger.Log("The save location is the original file, so it isn't deleted. Use Restore File to undo the corruption instead.", StatusSeverityType.Warning, true);
+                return;
+            }
+            if (!File.Exists(target))
+            {
+                TraceLogger.Log($"There is no corrupted file to delete at {target}.", StatusSeverityType.Information, true);
+                return;
+            }
+            IOManager.DeleteFile(target, true);
+            if (!File.Exists(target))
+            {
+                CorruptionCore.InvalidateOutput(target); //The next corruption makes a full copy of the original again
+                UpdateByteViewIfEnabled();
+            }
+        }
+
+        private async void ExcludeRangeBtn_Click(object sender, EventArgs e)
+        {
+            if (!CanEditExclusions()) return;
+            long start = (long)StartByteNumb.Value, end = (long)EndByteNumb.Value; //The NumericUpDowns keep start <= end
+            if (start == 0 && end >= CorruptionCore.MaxByte &&
+                MessageBox.Show(this, "This excludes the whole file, so no engine will be able to change anything. Continue?", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
+                return;
+            CorruptionCore.Exclusions.Add(start, end);
+            TraceLogger.Log($"Excluded 0x{start:X} - 0x{end:X} ({FormatByteCount(end - start + 1)}). Every engine skips it from the next corruption on.");
+            await SyncStashExcludesAsync();
+        }
+
+        private async void RemoveSelctedExcludeRangeBtn_Click(object sender, EventArgs e)
+        {
+            if (!CanEditExclusions()) return;
+            long start = (long)StartByteNumb.Value, end = (long)EndByteNumb.Value;
+            long removed = CorruptionCore.Exclusions.Remove(start, end);
+            if (removed == 0)
+            {
+                TraceLogger.Log($"Nothing in 0x{start:X} - 0x{end:X} is excluded. Set the byte range over a red area on ByteView first.", StatusSeverityType.Information, true);
+                return;
+            }
+            TraceLogger.Log($"Removed {FormatByteCount(removed)} of excluded bytes in 0x{start:X} - 0x{end:X}.");
+            await SyncStashExcludesAsync();
+        }
+
+        private async void ResetExclusionsBtn_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(this, $"Remove all {CorruptionCore.Exclusions.Count} excluded range(s)? Every engine will be able to change those bytes again.", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+            CorruptionCore.Exclusions.Clear();
+            TraceLogger.Log("All excluded ranges were reset.");
+            await SyncStashExcludesAsync();
+        }
+
+        private bool CanEditExclusions()
+        {
+            if (_busy)
+            {
+                TraceLogger.Log("Wait for the corruption to finish before changing the excluded ranges.", StatusSeverityType.Warning, true);
+                return false;
+            }
+            if (!CorruptionCore.IsLoaded)
+            {
+                TraceLogger.Log("Load a file first. Excluded ranges belong to the loaded file.", StatusSeverityType.Warning, true);
+                return false;
+            }
+            if (CorruptionQueueChkbox.Checked)
+            {
+                TraceLogger.Log("Excluded ranges only work on the loaded file, not in Multi-File mode.", StatusSeverityType.Warning, true);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Writes the current excluded ranges into the current stash (as its EXCLUDE lines) and refreshes the stash list and ByteView,
+        /// so a stash saved now keeps the exclusions. Does nothing when there is no corruption yet: the next one records them anyway.
+        /// </summary>
+        internal async Task SyncStashExcludesAsync()
+        {
+            InvalidateByteViewOverlays();
+            var stash = CorruptionCore.Stash;
+            if (_busy || stash.Count == 0 && stash.OpenLocation == null) return;
+            stash.SetExcludes(CorruptionCore.Exclusions.Snapshot());
+            await HandleStashRenderingAsync();
         }
     }
 }

@@ -154,5 +154,29 @@ namespace LunarROMCorruptor.Properties {
                 this["FixChecksums"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool StashAutoScreenshot {
+            get {
+                return ((bool)(this["StashAutoScreenshot"]));
+            }
+            set {
+                this["StashAutoScreenshot"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool StashSortNewestFirst {
+            get {
+                return ((bool)(this["StashSortNewestFirst"]));
+            }
+            set {
+                this["StashSortNewestFirst"] = value;
+            }
+        }
     }
 }

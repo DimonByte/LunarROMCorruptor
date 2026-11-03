@@ -113,6 +113,16 @@ namespace LunarROMCorruptor.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        public static System.Drawing.Bitmap exclude {
+            get {
+                object obj = ResourceManager.GetObject("exclude", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         public static System.Drawing.Bitmap floppy_disk_arrow_in {
             get {
                 object obj = ResourceManager.GetObject("floppy-disk-arrow-in", resourceCulture);

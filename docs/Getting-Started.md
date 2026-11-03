@@ -10,7 +10,7 @@
 4. **Set the amount.** On Target Parameters, choose *Random byte mode* and an **Intensity** of about 10-100 for a first try. Raise it until things get interesting.
 5. **Corrupt.** Click **Corrupt File (size)**. The button shows the progress and doubles as **Cancel**. Cancelling puts the output back to the original.
 6. **Test it.** Turn on *Run program after corruption* (see [below](#run-emulator-program)) so your emulator opens the result automatically.
-7. **Keep the good ones.** Every corruption's stash is shown in the list under *Enable Stash Saves*. Click **▶** to save it to the stash list. Double-click a saved stash later to load its file and get exactly the same corruption again. See [Stashes, Saves & Bisect](Stash-and-Saves.md).
+7. **Keep the good ones.** Every corruption's stash is shown in the list under *Enable Stash Saves*. Click **▶** to save it to the stash list (with a screenshot of the emulator if it's running). Later, select it and click **Corrupt stash's file using selected stash** to load its file and get exactly the same corruption again. Double-click a stash to see its details and screenshots. See [Stashes, Saves & Bisect](Stash-and-Saves.md).
 
 Every corruption starts from the **original** file. Corruptions don't stack, so pressing Corrupt again gives a new corruption of the clean file.
 
@@ -38,6 +38,8 @@ Every corruption starts from the **original** file. Corruptions don't stack, so 
 | **Random byte mode** + **Intensity** | Makes *Intensity* corruptions at random places in the range. |
 | **Corrupt every nth byte mode** | Corrupts every *N*th byte from Start to End (1 = every byte, 1000 = one in a thousand). Gives the same spread every time. |
 | **Allow Large Intensity** | Raises the limit of Intensity / N from 1,000 to 10,000,000. |
+| **Exclude Range** | Excludes the bytes from Start to End: no engine changes them from the next corruption on. They're red on ByteView, and added to the current stash as an `EXCLUDE` line, so a stash you save keeps them. Bytes the last corruption already changed stay changed until you corrupt again. |
+| **Delete Selected Range** | Un-excludes every excluded byte between Start and End, and removes it from the current stash. A range that is only partly selected is trimmed (or split), so you can cut a hole in a big excluded area. |
 | **Byte details** (text under the range) | Start, End and length of the range, how many bytes will be corrupted, how many stash entries are listed, and the excluded ranges (from Bisect / `EXCLUDE` stash lines). |
 | **Stash list area** | See [Stashes, Saves & Bisect](Stash-and-Saves.md). |
 
@@ -55,6 +57,10 @@ The settings of the selected engine, plus the **Preset** bar at the top: pick a 
 | **Close if running and re-open** | Closes the program first if it's still running from the last corruption, so each test starts fresh. |
 | **Override Arguments** | Uses your own command line instead of just the file path. |
 | **Terminate Running Emulator** | Closes the program LRC started. |
+
+### Guides
+
+The guides you're reading are also on the **Guides** tab inside LRC. Each guide is downloaded from GitHub when you open it, so it's always the latest version. Without internet the copy that came with LRC is shown. Links between guides open inside LRC, **Open on GitHub** opens the page in your browser.
 
 ### Logs
 

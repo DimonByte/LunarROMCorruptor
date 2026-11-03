@@ -73,3 +73,5 @@ User presets are stored as small JSON files in `UserCorruptionEnginePresets` (ne
 | Source Code | Config tweak / Logic flip / Text glitch / Magic numbers / Total chaos | Numbers only, booleans + operators, strings, magic integers, everything. |
 
 Built-in presets are part of LRC and can't be changed. Load one, tweak it, and **Save As...** to make your own version.
+
+For contributors: the built-in presets are in `LunarROMCorruptor/Modules/Presets.cs` (`BuiltInEnginePresets`). Each one is a `P(engine, name, description, settings...)` line, with the settings by control name, the same names a saved `.lrcpreset` uses.

@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             BisectStatusLbl = new Label();
             BisectStartBtn = new Button();
             BisectCrashBtn = new Button();
@@ -39,6 +40,7 @@
             BisectApplyWithoutBtn = new Button();
             BisectExclusionsLbl = new Label();
             BisectResetExclusionsBtn = new Button();
+            BisectToolTip = new ToolTip(components);
             SuspendLayout();
             // 
             // BisectStatusLbl
@@ -137,7 +139,8 @@
             BisectExcludeBtn.Name = "BisectExcludeBtn";
             BisectExcludeBtn.Size = new Size(174, 30);
             BisectExcludeBtn.TabIndex = 7;
-            BisectExcludeBtn.Text = "Exclude suspects";
+            BisectExcludeBtn.Text = "Exclude suspects only";
+            BisectToolTip.SetToolTip(BisectExcludeBtn, "Adds the suspect changes to the excluded ranges (red in ByteView), so no engine changes those bytes again.\nNothing is re-applied and the bisect keeps going, so you can exclude them early and carry on.");
             BisectExcludeBtn.UseVisualStyleBackColor = false;
             BisectExcludeBtn.Click += BisectExcludeBtn_Click;
             // 
@@ -150,7 +153,8 @@
             BisectApplyWithoutBtn.Name = "BisectApplyWithoutBtn";
             BisectApplyWithoutBtn.Size = new Size(174, 30);
             BisectApplyWithoutBtn.TabIndex = 8;
-            BisectApplyWithoutBtn.Text = "Exclude + apply the rest";
+            BisectApplyWithoutBtn.Text = "Apply stash without suspects";
+            BisectToolTip.SetToolTip(BisectApplyWithoutBtn, "Excludes the suspects, then applies the whole original stash except those changes to the save location (and starts the emulator if that's on).\nThis ends the bisect: you get your corruption back without the crash. If it still crashes, press Start again to find the next culprit.");
             BisectApplyWithoutBtn.UseVisualStyleBackColor = false;
             BisectApplyWithoutBtn.Click += BisectApplyWithoutBtn_Click;
             // 
@@ -218,5 +222,6 @@
         private Button BisectApplyWithoutBtn;
         private Label BisectExclusionsLbl;
         private Button BisectResetExclusionsBtn;
+        private ToolTip BisectToolTip;
     }
 }

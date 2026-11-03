@@ -31,7 +31,7 @@ Tick **Multi-File** (or drop several files / a folder onto LRC) to corrupt a lis
 
 * Files are corrupted **in place**, but each one is journaled first: every run starts from the originals (runs don't stack), cancelling restores them, and **Restore File** puts every queue file back while LRC stays open.
 * When *End byte* is the end of the file, it means "the end of each file". Excluded ranges belong to the single loaded file and aren't used in the queue.
-* Stashes, auto saves, stash files and Save As are single-file features and are switched off in Multi-File mode. *Corrupt File and Stash* switches back to single-file mode.
+* Stashes, auto saves, stash files and Save As are single-file features and are switched off in Multi-File mode. Replaying a stash on its own file (**Corrupt stash's file using selected stash**) switches back to single-file mode.
 
 ---
 

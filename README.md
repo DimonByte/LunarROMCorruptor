@@ -36,7 +36,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 | [**Getting Started**](docs/Getting-Started.md) | Your first corruption, step by step, plus every option on the main window (byte range, intensity, checksums, emulator...). |
 | [**Corruption Engines**](docs/Corruption-Engines.md) | Every engine and **every setting explained**, with tips on what to use for what. |
 | [**Engine Presets**](docs/Engine-Presets.md) | The built-in presets, saving your own and sharing them (`UserCorruptionEnginePresets`). |
-| [**Stashes, Saves & Bisect**](docs/Stash-and-Saves.md) | Stash files, the stash headers and *Corrupt File and Stash*, the Stash Editor, Corruption History, Bisect Mode and File Saves. |
+| [**Stashes, Saves & Bisect**](docs/Stash-and-Saves.md) | The stash library (groups, screenshots, notes, ratings, sharing), replaying a stash on its own file, the Stash Editor, Corruption History, Bisect Mode and File Saves. |
 | [**ByteView**](docs/ByteView.md) | Seeing the file as an image, Diff / Entropy / Regions modes, dragging to pick the byte range. |
 | [**Automation & Multi-File**](docs/Automation-and-Multi-File.md) | Automation tasks, corrupting many files at once, running an emulator after each corruption. |
 
@@ -51,7 +51,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 | **Large File Support** | Files aren't loaded into memory and only the changed bytes are written, so 50 GB+ files work. |
 | **Background Corruption** | Corruption runs in the background with a progress bar. Click the corrupt button again to cancel (the output is put back to the original). |
 | **Precision Control** | Pick an exact byte range, then use *Every Nth Byte* for predictable results or *Random byte mode* (intensity) for chaos. |
-| **Stash Saves** | A stash stores only the changed bytes, so it takes almost no space and replays the exact same corruption. Stashes remember which file they belong to, so **Corrupt File and Stash** (or a double-click) loads the file and replays the stash in one click. |
+| **Stash Library** | A stash stores only the changed bytes, so it takes almost no space and replays the exact same corruption. Every stash also keeps its file, engine settings, range, a screenshot of the emulator, notes, tags and a rating. Organise them into groups (e.g. *SNES Mario*) by dragging, hover for a preview, double-click to load the file and replay it. Share one as a single `.lrcstash` file. |
 | **Stash Editor** | Edit single corrupted bytes, and **Mutate** a corruption you like into variations. Append, sort and remove duplicates too. |
 | **Bisect Mode** | Corruption crashed the game? Bisect finds the bytes that cause the crash in a few rounds and excludes them. |
 | **Checksum Fixing** | N64, Game Boy, GBA, SNES, Genesis and raw CD sector (EDC/ECC) checksums are fixed after corrupting, so the file still boots. |
@@ -60,6 +60,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 | **Automation** | Randomize intensity, byte range and engine on a timer and corrupt automatically. |
 | **Multi-File** | Drop a folder or several files to corrupt them all at once. Every file is restored before each run, and Restore puts them all back. |
 | **Run Emulator After Corruption** | Starts your emulator (or any program) with the corrupted file after every corruption. |
+| **Built-in Guides** | The *Guides* tab shows these guides inside LRC, always the latest version from GitHub (with an offline copy). |
 | **Take Ownership** | Forces access to a protected file. (With great power comes great responsibility... and tested backups.) |
 
 <div align="center">
@@ -95,7 +96,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 2. Pick an engine on the **Corruption Engine** tab, or choose a preset.
 3. On **Target Parameters**, choose the byte range and how much to corrupt (start small: *Random byte mode* with an intensity of 10 to 100).
 4. Click **Corrupt File**. Turn on *Run program after corruption* to start your emulator automatically.
-5. Like it? Save the stash with the **▶** button next to the stash list. Double-click it later to get exactly the same corruption.
+5. Like it? Save the stash with the **▶** button next to the stash list. Select it later and click **Corrupt stash's file using selected stash** to get exactly the same corruption.
 
 The full walkthrough is in [Getting Started](docs/Getting-Started.md).
 

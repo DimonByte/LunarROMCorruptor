@@ -20,6 +20,8 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //SOFTWARE.
 
+using LunarROMCorruptor.Modules;
+
 namespace LunarROMCorruptor
 {
     public partial class CorruptionQueueForm : Form
@@ -42,13 +44,24 @@ namespace LunarROMCorruptor
         /// </summary>
         public void AddFiles(IEnumerable<string> files)
         {
-            CorruptionQueueList.BeginUpdate();
+            //A set instead of Items.Contains for every file (that was very slow for big folders)
+            var existing = new HashSet<string>(CorruptionQueueList.Items.Cast<object>().Select(i => i?.ToString() ?? ""), StringComparer.OrdinalIgnoreCase);
+            string lrcFolder = Path.GetFullPath(Application.StartupPath).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            var toAdd = new List<object>();
+            int skipped = 0;
             foreach (var file in files)
             {
-                if (!CorruptionQueueList.Items.Contains(file))
-                    CorruptionQueueList.Items.Add(file);
+                string full;
+                try { full = Path.GetFullPath(file); } catch { continue; }
+                //Never queue LRC's own files (exe, dlls, settings, stashes): corrupting them would break LRC
+                if (full.StartsWith(lrcFolder, StringComparison.OrdinalIgnoreCase)) { skipped++; continue; }
+                if (existing.Add(full)) toAdd.Add(full);
             }
+            CorruptionQueueList.BeginUpdate();
+            CorruptionQueueList.Items.AddRange([.. toAdd]);
             CorruptionQueueList.EndUpdate();
+            if (skipped > 0)
+                TraceLogger.Log($"{skipped} file(s) inside the LunarROMCorruptor folder were not added to the queue (LRC's own files can't be corrupted).", StatusSeverityType.Warning, true);
         }
 
         private void SendFilestoCorruptorBTN_Click(object sender, EventArgs e)
@@ -81,7 +94,9 @@ namespace LunarROMCorruptor
         {
             //Open the folder dialog box and once a folder has been selected, get each file and add them as a item on the corruptionqueuelist
             //Change root folder of folder dialog to be the the application startup folder
-            folderBrowserDialog1.SelectedPath = Application.StartupPath;
+            //Starts in the last used folder (not in LRC's own folder, so LRC's files aren't queued by accident)
+            if (string.IsNullOrEmpty(folderBrowserDialog1.SelectedPath) || !Directory.Exists(folderBrowserDialog1.SelectedPath))
+                folderBrowserDialog1.SelectedPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
             if (folderBrowserDialog1.ShowDialog() != DialogResult.Cancel)
             {
                 AddFiles(Directory.GetFiles(folderBrowserDialog1.SelectedPath));

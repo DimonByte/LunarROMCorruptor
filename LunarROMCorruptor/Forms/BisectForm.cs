@@ -97,7 +97,7 @@ namespace LunarROMCorruptor.Forms
             {
                 var (Offset, Value) = s.Suspects.FirstOrDefault();
                 BisectStatusLbl.Text = s.SuspectCount == 1
-                    ? $"Found it after {s.Round - 1} round(s): the change at 0x{Offset:X} (set to {Value}) makes it crash.\n\nExclude it, or exclude it and apply the rest of the stash. If the rest still crashes, start again: there's more than one crashing change."
+                    ? $"Found it after {s.Round - 1} round(s): the change at 0x{Offset:X} (set to {Value}) makes it crash.\n\nExclude it, or apply the stash without it to get your corruption back without the crash. If that still crashes, start again: there's more than one crashing change."
                     : "No suspects are left. The crash probably needs changes from both halves; undo and answer differently, or start again.";
             }
             else if (s.TestPending)
@@ -193,11 +193,11 @@ namespace LunarROMCorruptor.Forms
             TraceLogger.Log($"Bisect: excluded {ranges.Count} range(s): {string.Join(", ", ranges.Take(20))}{(ranges.Count > 20 ? ", ..." : "")}");
         }
 
-        private void BisectExcludeBtn_Click(object? sender, EventArgs e)
+        private async void BisectExcludeBtn_Click(object? sender, EventArgs e)
         {
             if (Session == null) return;
             ExcludeSuspects();
-            _host.InvalidateByteViewOverlays();
+            await _host.SyncStashExcludesAsync(); //Redraws ByteView and keeps the current stash's EXCLUDE lines up to date
         }
 
         private async void BisectApplyWithoutBtn_Click(object? sender, EventArgs e)
@@ -211,13 +211,13 @@ namespace LunarROMCorruptor.Forms
             BisectStatusLbl.Text = $"Applied the stash without the suspects ({rest.Count:N0} change(s)). If it still crashes, press Start again to find the next crashing change.";
         }
 
-        private void BisectResetExclusionsBtn_Click(object? sender, EventArgs e)
+        private async void BisectResetExclusionsBtn_Click(object? sender, EventArgs e)
         {
             if (MessageBox.Show(this, $"Remove all {CorruptionCore.Exclusions.Count} excluded range(s)? Every engine will be able to change those bytes again.", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
             CorruptionCore.Exclusions.Clear();
             TraceLogger.Log("All excluded ranges were reset.");
-            _host.InvalidateByteViewOverlays();
+            await _host.SyncStashExcludesAsync();
         }
     }
 }

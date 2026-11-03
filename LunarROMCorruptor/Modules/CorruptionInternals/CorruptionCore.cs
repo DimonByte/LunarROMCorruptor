@@ -1313,6 +1313,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
     {
         private readonly List<ByteRange> _ranges = [];
         private readonly Lock _lock = new();
+        private ByteRange[]? _snapshot; //Cached copy, rebuilt only after a change (the ByteView reads it on every paint and mouse move)
 
         /// <summary>
         /// Raised (on the thread that made the change) whenever ranges are added or removed.
@@ -1325,6 +1326,46 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
 
         public void Add(long start, long end) => AddRange([new ByteRange(Math.Min(start, end), Math.Max(start, end))]);
 
+        /// <summary>
+        /// Un-excludes the bytes from start to end. Ranges that only partly overlap are trimmed (or split in two), so this works on
+        /// any selection, not only one that matches a range exactly (ranges are merged when they're added, so they rarely do).
+        /// Returns how many excluded bytes were removed.
+        /// </summary>
+        public long Remove(long start, long end)
+        {
+            long removed;
+            lock (_lock)
+            {
+                long before = _ranges.Sum(r => r.Length);
+                var result = Subtract(_ranges, Math.Min(start, end), Math.Max(start, end));
+                _ranges.Clear();
+                _ranges.AddRange(result);
+                removed = before - _ranges.Sum(r => r.Length);
+                if (removed > 0) _snapshot = null;
+            }
+            if (removed > 0) Changed?.Invoke();
+            return removed;
+        }
+
+        /// <summary>
+        /// The ranges with the bytes from start to end (inclusive) taken out.
+        /// </summary>
+        public static List<ByteRange> Subtract(IEnumerable<ByteRange> ranges, long start, long end)
+        {
+            var result = new List<ByteRange>();
+            foreach (var r in ranges)
+            {
+                if (r.End < start || r.Start > end)
+                {
+                    result.Add(r); //No overlap
+                    continue;
+                }
+                if (r.Start < start) result.Add(new ByteRange(r.Start, start - 1)); //The part before the selection
+                if (r.End > end) result.Add(new ByteRange(end + 1, r.End)); //The part after it
+            }
+            return result;
+        }
+
         public void AddRange(IEnumerable<ByteRange> ranges)
         {
             lock (_lock)
@@ -1333,19 +1374,28 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals
                 var merged = Merge(_ranges);
                 _ranges.Clear();
                 _ranges.AddRange(merged);
+                _snapshot = null;
             }
             Changed?.Invoke();
         }
 
         public void Clear()
         {
-            lock (_lock) _ranges.Clear();
+            lock (_lock)
+            {
+                _ranges.Clear();
+                _snapshot = null;
+            }
             Changed?.Invoke();
         }
 
+        /// <summary>
+        /// The sorted, merged ranges. The same array is returned until the list changes, so callers must not modify it
+        /// (and can compare references to see whether the list changed).
+        /// </summary>
         public ByteRange[] Snapshot()
         {
-            lock (_lock) return [.. _ranges];
+            lock (_lock) return _snapshot ??= [.. _ranges];
         }
 
         /// <summary>

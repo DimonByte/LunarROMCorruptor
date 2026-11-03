@@ -83,4 +83,23 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <!-- The guides (README + docs) are copied next to the exe for the Guides tab's offline copy. The tab downloads the latest version from GitHub. -->
+    <None Include="..\README.md" Link="Guides\README.md" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\docs\*.md" Link="Guides\docs\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Forms\MainCorruptionForm.Stash.cs">
+      <DependentUpon>MainCorruptionForm.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Forms\MainCorruptionForm.ByteView.cs">
+      <DependentUpon>MainCorruptionForm.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Forms\MainCorruptionForm.Automation.cs">
+      <DependentUpon>MainCorruptionForm.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
 </Project>

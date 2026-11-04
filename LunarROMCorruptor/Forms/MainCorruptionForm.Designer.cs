@@ -207,7 +207,7 @@
             FilesaveReloadbtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveReloadbtn.Image = Properties.Resources.refresh;
             FilesaveReloadbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveReloadbtn.Location = new Point(633, 202);
+            FilesaveReloadbtn.Location = new Point(22, 202);
             FilesaveReloadbtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveReloadbtn.Name = "FilesaveReloadbtn";
             FilesaveReloadbtn.Size = new Size(163, 27);
@@ -225,7 +225,7 @@
             FilesaveRenameBtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveRenameBtn.Image = Properties.Resources.input_field;
             FilesaveRenameBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveRenameBtn.Location = new Point(633, 230);
+            FilesaveRenameBtn.Location = new Point(22, 230);
             FilesaveRenameBtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveRenameBtn.Name = "FilesaveRenameBtn";
             FilesaveRenameBtn.Size = new Size(79, 27);
@@ -250,7 +250,7 @@
             FileSaveTab.Location = new Point(4, 24);
             FileSaveTab.Margin = new Padding(2, 3, 2, 3);
             FileSaveTab.Name = "FileSaveTab";
-            FileSaveTab.Size = new Size(803, 457);
+            FileSaveTab.Size = new Size(192, 72);
             FileSaveTab.TabIndex = 4;
             FileSaveTab.Text = "💾 File Saves";
             // 
@@ -277,7 +277,7 @@
             FileSaveOpenLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
             FileSaveOpenLocationBtn.Image = Properties.Resources.hyperlink;
             FileSaveOpenLocationBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FileSaveOpenLocationBtn.Location = new Point(633, 258);
+            FileSaveOpenLocationBtn.Location = new Point(22, 258);
             FileSaveOpenLocationBtn.Margin = new Padding(2, 3, 2, 3);
             FileSaveOpenLocationBtn.Name = "FileSaveOpenLocationBtn";
             FileSaveOpenLocationBtn.Size = new Size(163, 26);
@@ -295,7 +295,7 @@
             FilesaveDelete.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveDelete.Image = Properties.Resources.trash;
             FilesaveDelete.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveDelete.Location = new Point(713, 230);
+            FilesaveDelete.Location = new Point(102, 230);
             FilesaveDelete.Margin = new Padding(2, 3, 2, 3);
             FilesaveDelete.Name = "FilesaveDelete";
             FilesaveDelete.Size = new Size(83, 27);
@@ -313,7 +313,7 @@
             FilesaveSavebtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveSavebtn.Image = Properties.Resources.floppy_disk_arrow_in;
             FilesaveSavebtn.ImageAlign = ContentAlignment.TopCenter;
-            FilesaveSavebtn.Location = new Point(633, 31);
+            FilesaveSavebtn.Location = new Point(22, 31);
             FilesaveSavebtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveSavebtn.Name = "FilesaveSavebtn";
             FilesaveSavebtn.Size = new Size(163, 102);
@@ -331,7 +331,7 @@
             CopySaveToCorruptedFileBtn.ForeColor = Color.FromArgb(213, 216, 216);
             CopySaveToCorruptedFileBtn.Image = Properties.Resources.arrow_up_circle_solid;
             CopySaveToCorruptedFileBtn.ImageAlign = ContentAlignment.TopCenter;
-            CopySaveToCorruptedFileBtn.Location = new Point(633, 134);
+            CopySaveToCorruptedFileBtn.Location = new Point(22, 134);
             CopySaveToCorruptedFileBtn.Margin = new Padding(2, 3, 2, 3);
             CopySaveToCorruptedFileBtn.Name = "CopySaveToCorruptedFileBtn";
             CopySaveToCorruptedFileBtn.Size = new Size(163, 67);
@@ -353,7 +353,7 @@
             FilesaveList.Location = new Point(7, 31);
             FilesaveList.Margin = new Padding(2, 3, 2, 3);
             FilesaveList.Name = "FilesaveList";
-            FilesaveList.Size = new Size(622, 423);
+            FilesaveList.Size = new Size(11, 38);
             FilesaveList.TabIndex = 155;
             // 
             // FilesaveEnableAutoSaves
@@ -1161,7 +1161,7 @@
             ByteViewTab.Location = new Point(4, 24);
             ByteViewTab.Margin = new Padding(2);
             ByteViewTab.Name = "ByteViewTab";
-            ByteViewTab.Size = new Size(803, 457);
+            ByteViewTab.Size = new Size(192, 72);
             ByteViewTab.TabIndex = 8;
             ByteViewTab.Text = "\U0001fa9f ByteView";
             ByteViewTab.UseVisualStyleBackColor = true;
@@ -1193,7 +1193,7 @@
             // ByteViewContainer.Panel2
             // 
             ByteViewContainer.Panel2.Controls.Add(ByteViewPictureBox);
-            ByteViewContainer.Size = new Size(803, 457);
+            ByteViewContainer.Size = new Size(192, 72);
             ByteViewContainer.SplitterDistance = 120;
             ByteViewContainer.SplitterWidth = 6;
             ByteViewContainer.TabIndex = 177;
@@ -1343,7 +1343,7 @@
             ByteViewPictureBox.Location = new Point(0, 0);
             ByteViewPictureBox.Margin = new Padding(2);
             ByteViewPictureBox.Name = "ByteViewPictureBox";
-            ByteViewPictureBox.Size = new Size(675, 455);
+            ByteViewPictureBox.Size = new Size(64, 70);
             ByteViewPictureBox.SizeMode = PictureBoxSizeMode.Zoom;
             ByteViewPictureBox.TabIndex = 178;
             ByteViewPictureBox.TabStop = false;
@@ -1356,7 +1356,7 @@
             AutomationPage.Location = new Point(4, 24);
             AutomationPage.Margin = new Padding(4, 3, 4, 3);
             AutomationPage.Name = "AutomationPage";
-            AutomationPage.Size = new Size(803, 457);
+            AutomationPage.Size = new Size(192, 72);
             AutomationPage.TabIndex = 6;
             AutomationPage.Text = "⏱️ Automation";
             // 
@@ -1388,7 +1388,7 @@
             AutoCorruptPanel.Location = new Point(8, 31);
             AutoCorruptPanel.Margin = new Padding(2, 3, 2, 3);
             AutoCorruptPanel.Name = "AutoCorruptPanel";
-            AutoCorruptPanel.Size = new Size(788, 423);
+            AutoCorruptPanel.Size = new Size(177, 38);
             AutoCorruptPanel.TabIndex = 137;
             AutoCorruptPanel.Tag = "color:normal";
             // 
@@ -1401,7 +1401,7 @@
             AutomationTaskComboBox.ForeColor = Color.Silver;
             AutomationTaskComboBox.FormattingEnabled = true;
             AutomationTaskComboBox.Items.AddRange(new object[] { "Randomize Intensity", "Randomize Start Byte", "Randomize End Byte", "Randomize both Start byte and End byte", "Randomize Corruption Engine", "Run Corruption" });
-            AutomationTaskComboBox.Location = new Point(608, 46);
+            AutomationTaskComboBox.Location = new Point(-3, 46);
             AutomationTaskComboBox.Margin = new Padding(2, 3, 2, 3);
             AutomationTaskComboBox.Name = "AutomationTaskComboBox";
             AutomationTaskComboBox.Size = new Size(179, 21);
@@ -1421,7 +1421,7 @@
             AutomationList.Location = new Point(0, 0);
             AutomationList.Margin = new Padding(2, 3, 2, 3);
             AutomationList.Name = "AutomationList";
-            AutomationList.Size = new Size(598, 420);
+            AutomationList.Size = new Size(0, 23);
             AutomationList.TabIndex = 167;
             // 
             // DelayInSecLbl
@@ -1430,7 +1430,7 @@
             DelayInSecLbl.AutoSize = true;
             DelayInSecLbl.Font = new Font("Segoe UI", 8F);
             DelayInSecLbl.ForeColor = Color.FromArgb(230, 230, 230);
-            DelayInSecLbl.Location = new Point(602, 157);
+            DelayInSecLbl.Location = new Point(-9, 157);
             DelayInSecLbl.Margin = new Padding(2, 0, 2, 0);
             DelayInSecLbl.Name = "DelayInSecLbl";
             DelayInSecLbl.Size = new Size(157, 13);
@@ -1443,7 +1443,7 @@
             DelayInAutomationNUD.BackColor = Color.FromArgb(40, 40, 50);
             DelayInAutomationNUD.Font = new Font("Segoe UI", 8.25F, FontStyle.Bold, GraphicsUnit.Point, 0);
             DelayInAutomationNUD.ForeColor = Color.White;
-            DelayInAutomationNUD.Location = new Point(608, 175);
+            DelayInAutomationNUD.Location = new Point(-3, 175);
             DelayInAutomationNUD.Margin = new Padding(4, 3, 4, 3);
             DelayInAutomationNUD.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             DelayInAutomationNUD.Name = "DelayInAutomationNUD";
@@ -1460,7 +1460,7 @@
             RemoveTaskBtn.FlatStyle = FlatStyle.Flat;
             RemoveTaskBtn.ForeColor = Color.FromArgb(213, 216, 216);
             RemoveTaskBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            RemoveTaskBtn.Location = new Point(608, 74);
+            RemoveTaskBtn.Location = new Point(-3, 74);
             RemoveTaskBtn.Margin = new Padding(2, 3, 2, 3);
             RemoveTaskBtn.Name = "RemoveTaskBtn";
             RemoveTaskBtn.Size = new Size(177, 25);
@@ -1478,7 +1478,7 @@
             MoveTaskDownBtn.Font = new Font("Microsoft Sans Serif", 6F, FontStyle.Bold, GraphicsUnit.Point, 0);
             MoveTaskDownBtn.ForeColor = Color.FromArgb(213, 216, 216);
             MoveTaskDownBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            MoveTaskDownBtn.Location = new Point(698, 7);
+            MoveTaskDownBtn.Location = new Point(87, 7);
             MoveTaskDownBtn.Margin = new Padding(2, 3, 2, 3);
             MoveTaskDownBtn.Name = "MoveTaskDownBtn";
             MoveTaskDownBtn.Size = new Size(89, 33);
@@ -1496,7 +1496,7 @@
             MoveTaskUpBtn.Font = new Font("Microsoft Sans Serif", 6F, FontStyle.Bold, GraphicsUnit.Point, 0);
             MoveTaskUpBtn.ForeColor = Color.FromArgb(213, 216, 216);
             MoveTaskUpBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            MoveTaskUpBtn.Location = new Point(608, 7);
+            MoveTaskUpBtn.Location = new Point(-3, 7);
             MoveTaskUpBtn.Margin = new Padding(2, 3, 2, 3);
             MoveTaskUpBtn.Name = "MoveTaskUpBtn";
             MoveTaskUpBtn.Size = new Size(89, 33);
@@ -1513,7 +1513,7 @@
             AddTaskBtn.FlatStyle = FlatStyle.Flat;
             AddTaskBtn.ForeColor = Color.FromArgb(213, 216, 216);
             AddTaskBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            AddTaskBtn.Location = new Point(608, 100);
+            AddTaskBtn.Location = new Point(-3, 100);
             AddTaskBtn.Margin = new Padding(2, 3, 2, 3);
             AddTaskBtn.Name = "AddTaskBtn";
             AddTaskBtn.Size = new Size(177, 25);
@@ -1530,7 +1530,7 @@
             StartAutomationBtn.FlatStyle = FlatStyle.Flat;
             StartAutomationBtn.ForeColor = Color.FromArgb(213, 216, 216);
             StartAutomationBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            StartAutomationBtn.Location = new Point(608, 204);
+            StartAutomationBtn.Location = new Point(-3, 204);
             StartAutomationBtn.Margin = new Padding(2, 3, 2, 3);
             StartAutomationBtn.Name = "StartAutomationBtn";
             StartAutomationBtn.Size = new Size(177, 51);
@@ -1568,7 +1568,7 @@
             AboutTab.Margin = new Padding(4, 3, 4, 3);
             AboutTab.Name = "AboutTab";
             AboutTab.Padding = new Padding(4, 3, 4, 3);
-            AboutTab.Size = new Size(192, 72);
+            AboutTab.Size = new Size(803, 457);
             AboutTab.TabIndex = 5;
             AboutTab.Text = "ℹ️ About";
             // 
@@ -1583,7 +1583,7 @@
             AboutPanel.Location = new Point(8, 7);
             AboutPanel.Margin = new Padding(2, 3, 2, 3);
             AboutPanel.Name = "AboutPanel";
-            AboutPanel.Size = new Size(177, 59);
+            AboutPanel.Size = new Size(788, 444);
             AboutPanel.TabIndex = 136;
             AboutPanel.Tag = "color:normal";
             // 
@@ -1593,11 +1593,11 @@
             LicenseRTB.BackColor = Color.FromArgb(39, 43, 83);
             LicenseRTB.BorderStyle = BorderStyle.None;
             LicenseRTB.ForeColor = Color.FromArgb(230, 230, 230);
-            LicenseRTB.Location = new Point(178, 70);
+            LicenseRTB.Location = new Point(174, 68);
             LicenseRTB.Margin = new Padding(4, 3, 4, 3);
             LicenseRTB.Name = "LicenseRTB";
             LicenseRTB.ReadOnly = true;
-            LicenseRTB.Size = new Size(0, 0);
+            LicenseRTB.Size = new Size(611, 385);
             LicenseRTB.TabIndex = 159;
             LicenseRTB.Text = resources.GetString("LicenseRTB.Text");
             // 

@@ -19,7 +19,7 @@
 
 ## Overview
 
-LunarROMCorruptor (LRC) corrupts files on purpose, for glitch art, game "corruptions" and finding out how data is laid out. It was made for ROMs, but it works on **any file**: images, audio, video, save files, models, source code.
+LunarROMCorruptor (LRC) corrupts files on purpose, for glitch art, and game corruptions. It was made for ROMs, but it works on **any file**: images, audio, video, save files, models, source code.
 
 Instead of one corruption method, LRC has a set of **corruption engines**. Some change random bytes. Others understand what is in the file, such as floats, pointers, compressed blocks, video frames or source code values, so you get unique glitches.
 
@@ -51,9 +51,10 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 | **Large File Support** | Files aren't loaded into memory and only the changed bytes are written, so 50 GB+ files work. |
 | **Background Corruption** | Corruption runs in the background with a progress bar. Click the corrupt button again to cancel (the output is put back to the original). |
 | **Precision Control** | Pick an exact byte range, then use *Every Nth Byte* for predictable results or *Random byte mode* (intensity) for chaos. |
-| **Stash Library** | A stash stores only the changed bytes, so it takes almost no space and replays the exact same corruption. Every stash also keeps its file, engine settings, range, a screenshot of the emulator, notes, tags and a rating. Organise them into groups (e.g. *SNES Mario*) by dragging, hover for a preview, double-click to load the file and replay it. Share one as a single `.lrcstash` file. |
+| **Stash Library** | A stash stores only the changed bytes, so it takes almost no space and replays the exact same corruption. Every stash also keeps its file, engine settings, range, a screenshot of the emulator, notes, tags and a rating. Organise them into groups (e.g. *SNES Mario*) by dragging, hover for a preview, double-click to open the stash entry. Share one as a single `.lrcstash` file. |
 | **Stash Editor** | Edit single corrupted bytes, and **Mutate** a corruption you like into variations. Append, sort and remove duplicates too. |
-| **Bisect Mode** | Corruption crashed the game? Bisect finds the bytes that cause the crash in a few rounds and excludes them. |
+| **Bisect Mode** | Corruption crashed the game? Bisect finds the bytes that cause the crash in a few rounds and excludes them on all subsequent corruption attempts. |
+| **Customizable Exclusion Ranges** | Along with Bisect Mode, the user can select mutliple exclusion ranges on the loaded file and the corruption engines will ignore that range on all corruption attempts. |
 | **Checksum Fixing** | N64, Game Boy, GBA, SNES, Genesis and raw CD sector (EDC/ECC) checksums are fixed after corrupting, so the file still boots. |
 | **ByteView** | See the file as an image. Diff, Entropy and Regions modes show what changed and where code, graphics and compressed data are. Drag on it to pick the byte range. |
 | **Corruption History** | The last 3 corruptions are automatically kept, so you can re-apply or save one you liked. |

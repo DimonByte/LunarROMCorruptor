@@ -58,6 +58,7 @@ namespace LunarROMCorruptor.Controls
         public event Action<StashEntry>? EditRequested; //Open in the Stash Editor
         public event Action<StashEntry>? LoadSettingsRequested; //Load engine/range/intensity
         public event Action<StashEntry>? DetailsRequested;
+        public event Action<StashEntry>? LoadStashFileFromHeaderOnly; //Reads header of stash and loads that.
 
         /// <summary>
         /// Takes a screenshot of the running emulator (null if it isn't running).
@@ -818,5 +819,31 @@ namespace LunarROMCorruptor.Controls
         }
 
         #endregion
+
+        private void LoadStashsFileOnlyBtn_Click(object sender, EventArgs e)
+        {
+            //Use LoadStashFileFromHeaderOnly
+            if (RequireEntry() is { } entry2)
+            {
+                try
+                {
+                    if (entry2.Meta.Engine == null)
+                    {
+                        TraceLogger.Log($"Cannot load stash file from header only: Engine is null for {entry2.Name}", StatusSeverityType.Error, true);
+                        return;
+                    }
+                    else
+                    {
+                        LoadStashFileFromHeaderOnly!(entry2);
+                    }
+                    TraceLogger.Log($"Loaded stash file from header only: {entry2.Name}");
+                }
+                catch (Exception ex)
+                {
+                    TraceLogger.Log($"Unable to load stash file from header only: {ex.Message}", StatusSeverityType.Error, true);
+                }
+            }
+            if (RequireEntry() is { } entry) LoadSettingsRequested?.Invoke(entry);
+        }
     }
 }

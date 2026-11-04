@@ -24,6 +24,7 @@ using LunarROMCorruptor.Forms;
 using LunarROMCorruptor.Modules;
 using LunarROMCorruptor.Modules.CorruptionInternals;
 using LunarROMCorruptor.Modules.Helpers;
+using LunarROMCorruptor.Properties;
 
 namespace LunarROMCorruptor
 {
@@ -39,11 +40,26 @@ namespace LunarROMCorruptor
         {
             StashBrowser.QuickLoadRequested += async entry => await CorruptFileAndStashAsync(entry.StashFile);
             StashBrowser.ApplyToLoadedRequested += entry => CorruptUsingStashFile(entry.StashFile);
-            StashBrowser.EditRequested += entry => OpenInStashEditor(entry.StashFile);
+            StashBrowser.EditRequested += async entry => await OpenInStashEditor(entry.StashFile);
             StashBrowser.LoadSettingsRequested += LoadStashSettings;
             StashBrowser.DetailsRequested += ShowStashDetails;
             StashBrowser.EmulatorScreenshotProvider = CaptureEmulatorScreenshot;
             StashBrowser.ByteViewImageProvider = () => _byteViewInfo == null ? null : new Bitmap(_byteViewInfo.Image);
+            //Get file info from stash header, and load that into corruptioncore.
+            StashBrowser.LoadStashFileFromHeaderOnly += entry =>
+            {
+                if(entry.Meta.SourcePath != null && File.Exists(entry.Meta.SourcePath))
+                {
+                    TraceLogger.Log($"Quick load from stash headers: {entry.Meta.SourcePath} -> {entry.Meta.SaveAsPath ?? CorruptionCore.SourcePath}");
+                    //LoadROM from MainCorruptionForm.
+                    LoadFile(entry.Meta.SourcePath).Wait();
+                }
+                else
+                {
+                    TraceLogger.Log($"The file this stash was made for isn't there anymore: {entry.Meta.SourcePath}\n\nLoad the file yourself and use \"Corrupt loaded file using selected stash\" instead.", StatusSeverityType.Warning, true);
+                }
+                SaveasTxt.Text = entry.Meta.SaveAsPath ?? CorruptionCore.SourcePath;
+            };
         }
 
         /// <summary>
@@ -455,20 +471,25 @@ namespace LunarROMCorruptor
 
         #region Stash Editor and Corruption History
 
-        private void StashEditorbtn_Click(object sender, EventArgs e)
+        private async void StashEditorbtn_Click(object sender, EventArgs e)
         {
-            if (StashBrowser.SelectedEntry is { } entry) OpenInStashEditor(entry.StashFile);
-            else OpenInStashEditor(null);
+            if (StashBrowser.SelectedEntry is { } entry)
+            {
+                await OpenInStashEditor(entry.StashFile);
+            }
+            else await OpenInStashEditor(null);
         }
 
-        private void OpenInStashEditor(string? stashFile)
+        private async Task OpenInStashEditor(string? stashFile)
         {
             //Reuse one editor window (it hides instead of closing)
             if (_stashEditor == null || _stashEditor.IsDisposed)
                 _stashEditor = new StashEditor();
-            if (stashFile != null)
-                _stashEditor.AttemptStashLoad(stashFile);
+            //Start the load first and then show the window, so big stashes show their progress (and can be cancelled) in the editor
+            //instead of the main window freezing until the whole file is read. ShowDialog keeps pumping messages, so the load carries on.
+            Task? load = stashFile != null ? _stashEditor.AttemptStashLoadAsync(stashFile) : null;
             if (!_stashEditor.Visible) _stashEditor.ShowDialog(this);
+            if (load != null) await load;
         }
 
         private void RenameStash_Click(object sender, EventArgs e) => StashBrowser.RenameSelected();
@@ -494,7 +515,7 @@ namespace LunarROMCorruptor
                 var item = new ToolStripMenuItem($"#{k + 1}  {entry}");
                 item.DropDownItems.Add("Re-apply this corruption", null, (_, _) => ReapplyHistoryEntry(entry));
                 item.DropDownItems.Add("Save to stash list", null, async (_, _) => await SaveHistoryEntryAsync(entry));
-                item.DropDownItems.Add("Open in Stash Editor", null, (_, _) => OpenInStashEditor(entry.StashPath));
+                item.DropDownItems.Add("Open in Stash Editor", null, async (_, _) => await OpenInStashEditor(entry.StashPath));
                 item.Enabled = !_busy && File.Exists(entry.StashPath);
                 menu.Items.Add(item);
             }

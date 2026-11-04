@@ -159,13 +159,24 @@ namespace LunarROMCorruptor
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
             GenerateSelectedByteDetails();
+            InitFormDesignFixes();
             ByteViewModeComboBox.Text = "Regions";
             AttentionPictureBox.BringToFront();
+        }
+
+        private void InitFormDesignFixes()
+        {
             //This code under this comment fixes a .net bug where the trackbar allocates a huge amount of memory if the trackbar maximum value is set to a large amount.
             EndByteTrackbar.TickStyle = TickStyle.None;
             StartByteTrackBar.TickStyle = TickStyle.None;
             CorrupteverynthbyteTrackbar.TickStyle = TickStyle.None;
             IntensityTrackbar.TickStyle = TickStyle.None;
+            //HACK: For some bizzare reason VS Designer is resetting the sizes of these elements so they go off-screen. This code attempts to keep them in line...
+            AutomationList.Size = new Size(598, 408);
+            ByteViewTab.Size = new Size(192, 72);
+            ByteViewContainer.Size = new Size(192, 72);
+            ByteViewContainer.SplitterDistance = 120;
+            LicenseRTB.Size = new Size(611, 373);
         }
 
         public void LoadSettings()

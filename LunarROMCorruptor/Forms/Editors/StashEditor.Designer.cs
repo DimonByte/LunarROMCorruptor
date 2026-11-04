@@ -29,8 +29,12 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(StashEditor));
-            stashListbox = new ListBox();
-            RemovedItemslstbx = new ListBox();
+            stashListbox = new Controls.StashListView();
+            RemovedItemslstbx = new Controls.StashListView();
+            LoadingPanel = new Panel();
+            LoadStatusLbl = new Label();
+            LoadProgressBar = new ProgressBar();
+            LoadCancelBtn = new Button();
             valueStashnum = new NumericUpDown();
             LocationStash = new NumericUpDown();
             Label3 = new Label();
@@ -70,6 +74,7 @@
             ((System.ComponentModel.ISupportInitialize)LocationStash).BeginInit();
             Panel1.SuspendLayout();
             ToolsPanel.SuspendLayout();
+            LoadingPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)MutatePercentNumericUpDown).BeginInit();
             ((System.ComponentModel.ISupportInitialize)MutateAmountNumericUpDown).BeginInit();
             SuspendLayout();
@@ -80,13 +85,9 @@
             stashListbox.BorderStyle = BorderStyle.None;
             stashListbox.Dock = DockStyle.Fill;
             stashListbox.ForeColor = Color.FromArgb(224, 224, 224);
-            stashListbox.FormattingEnabled = true;
-            stashListbox.HorizontalScrollbar = true;
-            stashListbox.IntegralHeight = false;
             stashListbox.Location = new Point(160, 0);
             stashListbox.Name = "stashListbox";
-            stashListbox.SelectionMode = SelectionMode.MultiExtended;
-            stashListbox.Size = new Size(309, 529);
+            stashListbox.Size = new Size(309, 485);
             stashListbox.TabIndex = 161;
             // 
             // RemovedItemslstbx
@@ -96,14 +97,60 @@
             RemovedItemslstbx.BorderStyle = BorderStyle.None;
             RemovedItemslstbx.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point, 0);
             RemovedItemslstbx.ForeColor = Color.FromArgb(224, 224, 224);
-            RemovedItemslstbx.FormattingEnabled = true;
-            RemovedItemslstbx.HorizontalScrollbar = true;
-            RemovedItemslstbx.IntegralHeight = false;
             RemovedItemslstbx.Location = new Point(12, 282);
             RemovedItemslstbx.Name = "RemovedItemslstbx";
-            RemovedItemslstbx.SelectionMode = SelectionMode.MultiExtended;
             RemovedItemslstbx.Size = new Size(136, 148);
             RemovedItemslstbx.TabIndex = 160;
+            // 
+            // LoadingPanel
+            // 
+            LoadingPanel.BackColor = Color.FromArgb(28, 27, 55);
+            LoadingPanel.Controls.Add(LoadStatusLbl);
+            LoadingPanel.Controls.Add(LoadProgressBar);
+            LoadingPanel.Controls.Add(LoadCancelBtn);
+            LoadingPanel.Dock = DockStyle.Bottom;
+            LoadingPanel.Location = new Point(160, 485);
+            LoadingPanel.Name = "LoadingPanel";
+            LoadingPanel.Size = new Size(309, 44);
+            LoadingPanel.TabIndex = 163;
+            LoadingPanel.Visible = false;
+            // 
+            // LoadStatusLbl
+            // 
+            LoadStatusLbl.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            LoadStatusLbl.AutoEllipsis = true;
+            LoadStatusLbl.Font = new Font("Segoe UI", 7.5F);
+            LoadStatusLbl.ForeColor = Color.FromArgb(224, 224, 224);
+            LoadStatusLbl.Location = new Point(6, 4);
+            LoadStatusLbl.Name = "LoadStatusLbl";
+            LoadStatusLbl.Size = new Size(225, 15);
+            LoadStatusLbl.TabIndex = 0;
+            LoadStatusLbl.Text = "Loading...";
+            // 
+            // LoadProgressBar
+            // 
+            LoadProgressBar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            LoadProgressBar.Location = new Point(6, 22);
+            LoadProgressBar.Maximum = 1000;
+            LoadProgressBar.MarqueeAnimationSpeed = 30;
+            LoadProgressBar.Name = "LoadProgressBar";
+            LoadProgressBar.Size = new Size(225, 14);
+            LoadProgressBar.TabIndex = 1;
+            // 
+            // LoadCancelBtn
+            // 
+            LoadCancelBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            LoadCancelBtn.BackColor = Color.FromArgb(52, 60, 111);
+            LoadCancelBtn.FlatAppearance.BorderSize = 0;
+            LoadCancelBtn.FlatStyle = FlatStyle.Flat;
+            LoadCancelBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            LoadCancelBtn.Location = new Point(237, 11);
+            LoadCancelBtn.Name = "LoadCancelBtn";
+            LoadCancelBtn.Size = new Size(66, 23);
+            LoadCancelBtn.TabIndex = 2;
+            LoadCancelBtn.Text = "Cancel";
+            LoadCancelBtn.UseVisualStyleBackColor = false;
+            LoadCancelBtn.Click += LoadCancelBtn_Click;
             // 
             // valueStashnum
             // 
@@ -577,6 +624,7 @@
             BackColor = Color.FromArgb(29, 29, 35);
             ClientSize = new Size(639, 529);
             Controls.Add(stashListbox);
+            Controls.Add(LoadingPanel);
             Controls.Add(Panel1);
             Controls.Add(ToolsPanel);
             Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
@@ -592,6 +640,7 @@
             Panel1.PerformLayout();
             ToolsPanel.ResumeLayout(false);
             ToolsPanel.PerformLayout();
+            LoadingPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)MutatePercentNumericUpDown).EndInit();
             ((System.ComponentModel.ISupportInitialize)MutateAmountNumericUpDown).EndInit();
             ResumeLayout(false);
@@ -600,8 +649,12 @@
 
         #endregion
 
-        internal System.Windows.Forms.ListBox stashListbox;
-        internal System.Windows.Forms.ListBox RemovedItemslstbx;
+        internal LunarROMCorruptor.Controls.StashListView stashListbox;
+        internal LunarROMCorruptor.Controls.StashListView RemovedItemslstbx;
+        internal System.Windows.Forms.Panel LoadingPanel;
+        internal System.Windows.Forms.Label LoadStatusLbl;
+        internal System.Windows.Forms.ProgressBar LoadProgressBar;
+        internal System.Windows.Forms.Button LoadCancelBtn;
         internal System.Windows.Forms.NumericUpDown valueStashnum;
         internal System.Windows.Forms.NumericUpDown LocationStash;
         private System.Windows.Forms.Label Label3;

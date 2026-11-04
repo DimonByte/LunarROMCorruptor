@@ -778,20 +778,25 @@ namespace LunarROMCorruptor
         {
             if (Runemulatorchbox.Checked)
             {
-                if (File.Exists(EmulatorLocationtxt.Text))
-                {
-                    CommandRunner.StartEmulator(
-                        ReopenChbox.Checked,
-                        EmulatorLocationtxt.Text,
-                        fileToRun,
-                        OverrideArgumentschbox.Checked,
-                        OverrideArguments.Text
-                    );
-                }
-                else
-                {
-                    TraceLogger.Log("Emulator path is set to run after corruption but the file does not exist. Please check your emulator path settings. Aborting emulator launch.", StatusSeverityType.Error, true);
-                }
+                RunEmulatorAfterCheck(fileToRun);
+            }
+        }
+
+        private void RunEmulatorAfterCheck(string fileToRun)
+        {
+            if (File.Exists(EmulatorLocationtxt.Text))
+            {
+                CommandRunner.StartEmulator(
+                    ReopenChbox.Checked,
+                    EmulatorLocationtxt.Text,
+                    fileToRun,
+                    OverrideArgumentschbox.Checked,
+                    OverrideArguments.Text
+                );
+            }
+            else
+            {
+                TraceLogger.Log("Emulator path is set to run after corruption but the file does not exist. Please check your emulator path settings. Aborting emulator launch.", StatusSeverityType.Error, true);
             }
         }
 
@@ -1410,6 +1415,11 @@ namespace LunarROMCorruptor
             if (_busy || stash.Count == 0 && stash.OpenLocation == null) return;
             stash.SetExcludes(CorruptionCore.Exclusions.Snapshot());
             await HandleStashRenderingAsync();
+        }
+
+        private void StartEmulatorNowBtn_Click(object sender, EventArgs e)
+        {
+            RunEmulatorAfterCheck(SaveasTxt.Text);
         }
     }
 }

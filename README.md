@@ -66,6 +66,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 <div align="center">
     <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/CorruptionHistory.png" alt="Example of Corruption History" width="40%" />
     <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/MultiFile.png" alt="Example of Multi File" width="40%" />
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/Bisect.png" alt="Bisect Screenshot" width="40%" />
 </div>
 
 ---
@@ -87,6 +88,11 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 | [**Source Code**](docs/Corruption-Engines.md#source-code-engine) | Text / code values | `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 
 > **Where did the Exclusion Engine go?** It was the Nightmare Engine with exclusion types, so the two are now one engine: **Nightmare+**. Old stashes still work, and settings that mention "Nightmare Engine" or "Exclusion Engine" load into Nightmare+.
+
+<div align="center">
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/Engines.png" alt="Engines Screenshot" width="40%" />
+</div>
+
 
 ---
 

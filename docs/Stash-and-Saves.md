@@ -102,6 +102,10 @@ The headers are written at the top of every new stash. Stashes made before heade
 <a id="bisect-mode"></a>
 ## Bisect Mode
 
+<div align="center">
+    <img src="https://raw.githubusercontent.com/DimonByte/LunarROMCorruptor/master/static/images/Bisect.png" alt="Bisect Screenshot" width="40%" />
+</div>
+
 Found a corruption that is *almost* perfect, but crashes? **Bisect Mode** (checkbox above the stash list) finds the changes that cause the crash.
 
 1. Corrupt as usual until you get a crash.

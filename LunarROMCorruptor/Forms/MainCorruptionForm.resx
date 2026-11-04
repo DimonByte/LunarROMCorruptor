@@ -120,9 +120,6 @@
   <metadata name="ToolTipHelper.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>990, 17</value>
   </metadata>
-  <metadata name="ToolTipHelper.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>990, 17</value>
-  </metadata>
   <data name="BisectModeChkBox.ToolTip" xml:space="preserve">
     <value>Bisect Mode opens a small always-on-top window.
 After a emulator/game crash, press Start. Each round leaves out half of the suspect stash changes, applies the rest and starts your emulator. 

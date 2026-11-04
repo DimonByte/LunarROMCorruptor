@@ -153,6 +153,7 @@
             OverrideArgumentschbox = new CheckBox();
             StartEmulatorlbl = new Label();
             StartEmulatorPanel = new Panel();
+            StartEmulatorNowBtn = new Button();
             pictureBox1 = new PictureBox();
             TerminateEmulatorBtn = new Button();
             OpenEmulatorFolderLocationBtn = new Button();
@@ -206,7 +207,7 @@
             FilesaveReloadbtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveReloadbtn.Image = Properties.Resources.refresh;
             FilesaveReloadbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveReloadbtn.Location = new Point(22, 202);
+            FilesaveReloadbtn.Location = new Point(633, 202);
             FilesaveReloadbtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveReloadbtn.Name = "FilesaveReloadbtn";
             FilesaveReloadbtn.Size = new Size(163, 27);
@@ -224,7 +225,7 @@
             FilesaveRenameBtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveRenameBtn.Image = Properties.Resources.input_field;
             FilesaveRenameBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveRenameBtn.Location = new Point(22, 230);
+            FilesaveRenameBtn.Location = new Point(633, 230);
             FilesaveRenameBtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveRenameBtn.Name = "FilesaveRenameBtn";
             FilesaveRenameBtn.Size = new Size(79, 27);
@@ -249,7 +250,7 @@
             FileSaveTab.Location = new Point(4, 24);
             FileSaveTab.Margin = new Padding(2, 3, 2, 3);
             FileSaveTab.Name = "FileSaveTab";
-            FileSaveTab.Size = new Size(192, 72);
+            FileSaveTab.Size = new Size(803, 457);
             FileSaveTab.TabIndex = 4;
             FileSaveTab.Text = "💾 File Saves";
             // 
@@ -276,7 +277,7 @@
             FileSaveOpenLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
             FileSaveOpenLocationBtn.Image = Properties.Resources.hyperlink;
             FileSaveOpenLocationBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FileSaveOpenLocationBtn.Location = new Point(22, 258);
+            FileSaveOpenLocationBtn.Location = new Point(633, 258);
             FileSaveOpenLocationBtn.Margin = new Padding(2, 3, 2, 3);
             FileSaveOpenLocationBtn.Name = "FileSaveOpenLocationBtn";
             FileSaveOpenLocationBtn.Size = new Size(163, 26);
@@ -294,7 +295,7 @@
             FilesaveDelete.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveDelete.Image = Properties.Resources.trash;
             FilesaveDelete.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveDelete.Location = new Point(102, 230);
+            FilesaveDelete.Location = new Point(713, 230);
             FilesaveDelete.Margin = new Padding(2, 3, 2, 3);
             FilesaveDelete.Name = "FilesaveDelete";
             FilesaveDelete.Size = new Size(83, 27);
@@ -312,7 +313,7 @@
             FilesaveSavebtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveSavebtn.Image = Properties.Resources.floppy_disk_arrow_in;
             FilesaveSavebtn.ImageAlign = ContentAlignment.TopCenter;
-            FilesaveSavebtn.Location = new Point(22, 31);
+            FilesaveSavebtn.Location = new Point(633, 31);
             FilesaveSavebtn.Margin = new Padding(2, 3, 2, 3);
             FilesaveSavebtn.Name = "FilesaveSavebtn";
             FilesaveSavebtn.Size = new Size(163, 102);
@@ -330,7 +331,7 @@
             CopySaveToCorruptedFileBtn.ForeColor = Color.FromArgb(213, 216, 216);
             CopySaveToCorruptedFileBtn.Image = Properties.Resources.arrow_up_circle_solid;
             CopySaveToCorruptedFileBtn.ImageAlign = ContentAlignment.TopCenter;
-            CopySaveToCorruptedFileBtn.Location = new Point(22, 134);
+            CopySaveToCorruptedFileBtn.Location = new Point(633, 134);
             CopySaveToCorruptedFileBtn.Margin = new Padding(2, 3, 2, 3);
             CopySaveToCorruptedFileBtn.Name = "CopySaveToCorruptedFileBtn";
             CopySaveToCorruptedFileBtn.Size = new Size(163, 67);
@@ -352,7 +353,7 @@
             FilesaveList.Location = new Point(7, 31);
             FilesaveList.Margin = new Padding(2, 3, 2, 3);
             FilesaveList.Name = "FilesaveList";
-            FilesaveList.Size = new Size(11, 38);
+            FilesaveList.Size = new Size(622, 423);
             FilesaveList.TabIndex = 155;
             // 
             // FilesaveEnableAutoSaves
@@ -1546,7 +1547,7 @@
             GuidesTab.Margin = new Padding(2, 3, 2, 3);
             GuidesTab.Name = "GuidesTab";
             GuidesTab.Padding = new Padding(2, 3, 2, 3);
-            GuidesTab.Size = new Size(803, 457);
+            GuidesTab.Size = new Size(192, 72);
             GuidesTab.TabIndex = 9;
             GuidesTab.Text = "📖 Guides";
             // 
@@ -1556,7 +1557,7 @@
             GuidesView.Dock = DockStyle.Fill;
             GuidesView.Location = new Point(2, 3);
             GuidesView.Name = "GuidesView";
-            GuidesView.Size = new Size(799, 451);
+            GuidesView.Size = new Size(188, 66);
             GuidesView.TabIndex = 0;
             // 
             // AboutTab
@@ -1567,7 +1568,7 @@
             AboutTab.Margin = new Padding(4, 3, 4, 3);
             AboutTab.Name = "AboutTab";
             AboutTab.Padding = new Padding(4, 3, 4, 3);
-            AboutTab.Size = new Size(803, 457);
+            AboutTab.Size = new Size(192, 72);
             AboutTab.TabIndex = 5;
             AboutTab.Text = "ℹ️ About";
             // 
@@ -1582,7 +1583,7 @@
             AboutPanel.Location = new Point(8, 7);
             AboutPanel.Margin = new Padding(2, 3, 2, 3);
             AboutPanel.Name = "AboutPanel";
-            AboutPanel.Size = new Size(788, 444);
+            AboutPanel.Size = new Size(177, 59);
             AboutPanel.TabIndex = 136;
             AboutPanel.Tag = "color:normal";
             // 
@@ -1596,7 +1597,7 @@
             LicenseRTB.Margin = new Padding(4, 3, 4, 3);
             LicenseRTB.Name = "LicenseRTB";
             LicenseRTB.ReadOnly = true;
-            LicenseRTB.Size = new Size(585, 353);
+            LicenseRTB.Size = new Size(0, 0);
             LicenseRTB.TabIndex = 159;
             LicenseRTB.Text = resources.GetString("LicenseRTB.Text");
             // 
@@ -1965,9 +1966,9 @@
             Runemulatorchbox.Location = new Point(192, 10);
             Runemulatorchbox.Margin = new Padding(2, 3, 2, 3);
             Runemulatorchbox.Name = "Runemulatorchbox";
-            Runemulatorchbox.Size = new Size(179, 17);
+            Runemulatorchbox.Size = new Size(132, 17);
             Runemulatorchbox.TabIndex = 75;
-            Runemulatorchbox.Text = "Run program after corruption";
+            Runemulatorchbox.Text = "Run after corruption";
             Runemulatorchbox.UseVisualStyleBackColor = false;
             Runemulatorchbox.CheckedChanged += Runemulatorchbox_CheckedChanged;
             // 
@@ -2006,12 +2007,12 @@
             ReopenChbox.CheckState = CheckState.Checked;
             ReopenChbox.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             ReopenChbox.ForeColor = Color.FromArgb(213, 216, 216);
-            ReopenChbox.Location = new Point(372, 10);
+            ReopenChbox.Location = new Point(328, 10);
             ReopenChbox.Margin = new Padding(2, 3, 2, 3);
             ReopenChbox.Name = "ReopenChbox";
-            ReopenChbox.Size = new Size(176, 17);
+            ReopenChbox.Size = new Size(121, 17);
             ReopenChbox.TabIndex = 75;
-            ReopenChbox.Text = "Close if running and re-open";
+            ReopenChbox.Text = "Close and re-open";
             ReopenChbox.UseVisualStyleBackColor = false;
             ReopenChbox.CheckedChanged += ReopenChbox_CheckedChanged;
             // 
@@ -2044,6 +2045,7 @@
             // StartEmulatorPanel
             // 
             StartEmulatorPanel.BackColor = Color.FromArgb(28, 27, 55);
+            StartEmulatorPanel.Controls.Add(StartEmulatorNowBtn);
             StartEmulatorPanel.Controls.Add(pictureBox1);
             StartEmulatorPanel.Controls.Add(StartEmulatorlbl);
             StartEmulatorPanel.Controls.Add(TerminateEmulatorBtn);
@@ -2060,6 +2062,24 @@
             StartEmulatorPanel.Name = "StartEmulatorPanel";
             StartEmulatorPanel.Size = new Size(811, 91);
             StartEmulatorPanel.TabIndex = 142;
+            // 
+            // StartEmulatorNowBtn
+            // 
+            StartEmulatorNowBtn.BackColor = Color.FromArgb(52, 60, 111);
+            StartEmulatorNowBtn.FlatAppearance.BorderSize = 0;
+            StartEmulatorNowBtn.FlatStyle = FlatStyle.Flat;
+            StartEmulatorNowBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            StartEmulatorNowBtn.Image = Properties.Resources.arcade;
+            StartEmulatorNowBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            StartEmulatorNowBtn.Location = new Point(478, 5);
+            StartEmulatorNowBtn.Margin = new Padding(2, 3, 2, 3);
+            StartEmulatorNowBtn.Name = "StartEmulatorNowBtn";
+            StartEmulatorNowBtn.Size = new Size(137, 24);
+            StartEmulatorNowBtn.TabIndex = 170;
+            StartEmulatorNowBtn.Text = "Start program now";
+            StartEmulatorNowBtn.TextAlign = ContentAlignment.MiddleRight;
+            StartEmulatorNowBtn.UseVisualStyleBackColor = false;
+            StartEmulatorNowBtn.Click += StartEmulatorNowBtn_Click;
             // 
             // pictureBox1
             // 
@@ -2333,6 +2353,7 @@
         internal Button ExcludeRangeBtn;
         internal Button RemoveSelctedExcludeRangeBtn;
         internal Button ResetExclusionsBtn;
+        internal Button StartEmulatorNowBtn;
     }
 }
 

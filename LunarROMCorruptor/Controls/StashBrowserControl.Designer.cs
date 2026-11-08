@@ -118,48 +118,48 @@
             // 
             StashMenu.Items.AddRange(new ToolStripItem[] { QuickLoadMenuItem, ApplyToLoadedMenuItem, MenuSeparator1, DetailsMenuItem, EditMenuItem, LoadSettingsMenuItem, LoadStashsFileOnlyBtn, ScreenshotMenuItem, RatingMenuItem, MenuSeparator2, RenameMenuItem, NewGroupMenuItem, MoveToMenuItem, DeleteMenuItem, MenuSeparator3, ExportMenuItem, ImportMenuItem, OpenFolderMenuItem, MenuSeparator4, SortNewestMenuItem, AutoScreenshotMenuItem, RefreshMenuItem });
             StashMenu.Name = "StashMenu";
-            StashMenu.Size = new Size(322, 424);
+            StashMenu.Size = new Size(343, 446);
             StashMenu.Opening += StashMenu_Opening;
             // 
             // QuickLoadMenuItem
             // 
             QuickLoadMenuItem.Name = "QuickLoadMenuItem";
-            QuickLoadMenuItem.Size = new Size(321, 22);
+            QuickLoadMenuItem.Size = new Size(342, 22);
             QuickLoadMenuItem.Text = "Corrupt stash's file using this stash";
             QuickLoadMenuItem.Click += QuickLoadMenuItem_Click;
             // 
             // ApplyToLoadedMenuItem
             // 
             ApplyToLoadedMenuItem.Name = "ApplyToLoadedMenuItem";
-            ApplyToLoadedMenuItem.Size = new Size(321, 22);
+            ApplyToLoadedMenuItem.Size = new Size(342, 22);
             ApplyToLoadedMenuItem.Text = "Corrupt loaded file using this stash";
             ApplyToLoadedMenuItem.Click += ApplyToLoadedMenuItem_Click;
             // 
             // MenuSeparator1
             // 
             MenuSeparator1.Name = "MenuSeparator1";
-            MenuSeparator1.Size = new Size(318, 6);
+            MenuSeparator1.Size = new Size(339, 6);
             // 
             // DetailsMenuItem
             // 
             DetailsMenuItem.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             DetailsMenuItem.Name = "DetailsMenuItem";
             DetailsMenuItem.ShortcutKeyDisplayString = "Enter";
-            DetailsMenuItem.Size = new Size(321, 22);
+            DetailsMenuItem.Size = new Size(342, 22);
             DetailsMenuItem.Text = "Details, notes and screenshots...";
             DetailsMenuItem.Click += DetailsMenuItem_Click;
             // 
             // EditMenuItem
             // 
             EditMenuItem.Name = "EditMenuItem";
-            EditMenuItem.Size = new Size(321, 22);
+            EditMenuItem.Size = new Size(342, 22);
             EditMenuItem.Text = "Open in Stash Editor";
             EditMenuItem.Click += EditMenuItem_Click;
             // 
             // LoadSettingsMenuItem
             // 
             LoadSettingsMenuItem.Name = "LoadSettingsMenuItem";
-            LoadSettingsMenuItem.Size = new Size(321, 22);
+            LoadSettingsMenuItem.Size = new Size(342, 22);
             LoadSettingsMenuItem.Text = "Load its engine, range and intensity";
             LoadSettingsMenuItem.ToolTipText = "Loads the engine settings, byte range and intensity this stash was made with, so you can make new corruptions like it.";
             LoadSettingsMenuItem.Click += LoadSettingsMenuItem_Click;
@@ -167,8 +167,8 @@
             // LoadStashsFileOnlyBtn
             // 
             LoadStashsFileOnlyBtn.Name = "LoadStashsFileOnlyBtn";
-            LoadStashsFileOnlyBtn.Size = new Size(321, 22);
-            LoadStashsFileOnlyBtn.Text = "Load stash's file, its engine, range and intensity";
+            LoadStashsFileOnlyBtn.Size = new Size(342, 22);
+            LoadStashsFileOnlyBtn.Text = "Load file from stash, its engine, range and intensity";
             LoadStashsFileOnlyBtn.ToolTipText = "Loads the stash's file, engine settings, byte range and intensity this stash was made with, without corruption.";
             LoadStashsFileOnlyBtn.Click += LoadStashsFileOnlyBtn_Click;
             // 
@@ -176,7 +176,7 @@
             // 
             ScreenshotMenuItem.DropDownItems.AddRange(new ToolStripItem[] { ScreenshotEmulatorMenuItem, ScreenshotClipboardMenuItem, ScreenshotFileMenuItem, ScreenshotByteViewMenuItem });
             ScreenshotMenuItem.Name = "ScreenshotMenuItem";
-            ScreenshotMenuItem.Size = new Size(321, 22);
+            ScreenshotMenuItem.Size = new Size(342, 22);
             ScreenshotMenuItem.Text = "Add screenshot";
             // 
             // ScreenshotEmulatorMenuItem
@@ -210,79 +210,79 @@
             // RatingMenuItem
             // 
             RatingMenuItem.Name = "RatingMenuItem";
-            RatingMenuItem.Size = new Size(321, 22);
+            RatingMenuItem.Size = new Size(342, 22);
             RatingMenuItem.Text = "Rating";
             // 
             // MenuSeparator2
             // 
             MenuSeparator2.Name = "MenuSeparator2";
-            MenuSeparator2.Size = new Size(318, 6);
+            MenuSeparator2.Size = new Size(339, 6);
             // 
             // RenameMenuItem
             // 
             RenameMenuItem.Name = "RenameMenuItem";
             RenameMenuItem.ShortcutKeyDisplayString = "F2";
-            RenameMenuItem.Size = new Size(321, 22);
+            RenameMenuItem.Size = new Size(342, 22);
             RenameMenuItem.Text = "Rename";
             RenameMenuItem.Click += RenameMenuItem_Click;
             // 
             // NewGroupMenuItem
             // 
             NewGroupMenuItem.Name = "NewGroupMenuItem";
-            NewGroupMenuItem.Size = new Size(321, 22);
+            NewGroupMenuItem.Size = new Size(342, 22);
             NewGroupMenuItem.Text = "📁 New group...";
             NewGroupMenuItem.Click += NewGroupMenuItem_Click;
             // 
             // MoveToMenuItem
             // 
             MoveToMenuItem.Name = "MoveToMenuItem";
-            MoveToMenuItem.Size = new Size(321, 22);
+            MoveToMenuItem.Size = new Size(342, 22);
             MoveToMenuItem.Text = "Move to group";
             // 
             // DeleteMenuItem
             // 
             DeleteMenuItem.Name = "DeleteMenuItem";
             DeleteMenuItem.ShortcutKeyDisplayString = "Del";
-            DeleteMenuItem.Size = new Size(321, 22);
+            DeleteMenuItem.Size = new Size(342, 22);
             DeleteMenuItem.Text = "Delete";
             DeleteMenuItem.Click += DeleteMenuItem_Click;
             // 
             // MenuSeparator3
             // 
             MenuSeparator3.Name = "MenuSeparator3";
-            MenuSeparator3.Size = new Size(318, 6);
+            MenuSeparator3.Size = new Size(339, 6);
             // 
             // ExportMenuItem
             // 
             ExportMenuItem.Name = "ExportMenuItem";
-            ExportMenuItem.Size = new Size(321, 22);
+            ExportMenuItem.Size = new Size(342, 22);
             ExportMenuItem.Text = "Export to share (.lrcstash)...";
             ExportMenuItem.Click += ExportMenuItem_Click;
             // 
             // ImportMenuItem
             // 
             ImportMenuItem.Name = "ImportMenuItem";
-            ImportMenuItem.Size = new Size(321, 22);
+            ImportMenuItem.Size = new Size(342, 22);
             ImportMenuItem.Text = "Import (.lrcstash / .stash)...";
             ImportMenuItem.Click += ImportMenuItem_Click;
             // 
             // OpenFolderMenuItem
             // 
             OpenFolderMenuItem.Name = "OpenFolderMenuItem";
-            OpenFolderMenuItem.Size = new Size(321, 22);
+            OpenFolderMenuItem.Size = new Size(342, 22);
             OpenFolderMenuItem.Text = "Show in Explorer";
             OpenFolderMenuItem.Click += OpenFolderMenuItem_Click;
             // 
             // MenuSeparator4
             // 
             MenuSeparator4.Name = "MenuSeparator4";
-            MenuSeparator4.Size = new Size(318, 6);
+            MenuSeparator4.Size = new Size(339, 6);
             // 
             // SortNewestMenuItem
             // 
             SortNewestMenuItem.CheckOnClick = true;
             SortNewestMenuItem.Name = "SortNewestMenuItem";
-            SortNewestMenuItem.Size = new Size(321, 22);
+            SortNewestMenuItem.Size = new Size(342, 22);
             SortNewestMenuItem.Text = "Newest first (otherwise A-Z)";
             SortNewestMenuItem.Click += SortNewestMenuItem_Click;
             // 
@@ -290,7 +290,7 @@
             // 
             AutoScreenshotMenuItem.CheckOnClick = true;
             AutoScreenshotMenuItem.Name = "AutoScreenshotMenuItem";
-            AutoScreenshotMenuItem.Size = new Size(321, 22);
+            AutoScreenshotMenuItem.Size = new Size(342, 22);
             AutoScreenshotMenuItem.Text = "Screenshot the emulator when saving a stash";
             AutoScreenshotMenuItem.Click += AutoScreenshotMenuItem_Click;
             // 
@@ -298,7 +298,7 @@
             // 
             RefreshMenuItem.Name = "RefreshMenuItem";
             RefreshMenuItem.ShortcutKeyDisplayString = "F5";
-            RefreshMenuItem.Size = new Size(321, 22);
+            RefreshMenuItem.Size = new Size(342, 22);
             RefreshMenuItem.Text = "Refresh";
             RefreshMenuItem.Click += RefreshMenuItem_Click;
             // 

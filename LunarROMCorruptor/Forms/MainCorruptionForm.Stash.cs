@@ -46,7 +46,7 @@ namespace LunarROMCorruptor
             StashBrowser.EmulatorScreenshotProvider = CaptureEmulatorScreenshot;
             StashBrowser.ByteViewImageProvider = () => _byteViewInfo == null ? null : new Bitmap(_byteViewInfo.Image);
             //Get file info from stash header, and load that into corruptioncore.
-            StashBrowser.LoadStashFileFromHeaderOnly += entry =>
+            StashBrowser.LoadFileFromStashHeader += entry =>
             {
                 if(entry.Meta.SourcePath != null && File.Exists(entry.Meta.SourcePath))
                 {

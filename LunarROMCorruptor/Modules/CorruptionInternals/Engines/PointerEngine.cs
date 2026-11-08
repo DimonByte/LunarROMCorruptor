@@ -194,7 +194,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 "SNES" => PointerProfile.Snes24,
                 "GAMEBOY" => PointerProfile.GameBoy16,
                 "SEGA" => PointerProfile.Genesis,
-                "SEGA CD/SATURN" => PointerProfile.SaturnRam,
+                //Sega CD discs share the exclusion type with Saturn, but they're 68000 code with different RAM: use file offsets for them
+                "SEGA CD/SATURN" when ExclusionEngine.DetectSegaDisc(d) == ExclusionEngine.SegaDisc.Saturn => PointerProfile.SaturnRam,
                 "DREAMCAST" => PointerProfile.DreamcastRam,
                 "PS2" => PointerProfile.Ps2Ram,
                 "EXE" when ReadPe32(d) != null => PointerProfile.WindowsPe32,
@@ -480,8 +481,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         private static bool LooksLikePointer(FileBuffer d, Rules r, Settings s, uint v)
         {
             if (v < r.Min || v > r.Max) return false;
-            if (s.SkipFunctionPointers && (v & 1) != 0 && r.Profile is PointerProfile.GbaRom or PointerProfile.NdsRam) return false; //Thumb function pointer
-            if ((v & (r.Alignment - 1)) != 0) return false;
+            bool thumb = (v & 1) != 0 && r.Profile is PointerProfile.GbaRom or PointerProfile.NdsRam;
+            if (thumb && s.SkipFunctionPointers) return false; //Thumb function pointer
+            if (!thumb && (v & (r.Alignment - 1)) != 0) return false; //Thumb pointers are a halfword aligned address + 1
             if (r.FileBase >= 0 && v - r.FileBase >= d.Length) return false;
             if (r.MapToFile != null)
             {
@@ -595,12 +597,20 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             var d = ctx.Data!;
             var list = new List<Candidate>();
             long first = Math.Max((ctx.Start + 7) & ~7L, N64Rom.BootCodeEnd), last = ctx.End - 7;
+            var ops = new List<byte>();
+            long f3dEnds = 0, f3dex2Ends = 0;
             bool IsGbi(long at) => at >= 0 && at + 8 <= d.Length && GbiOpcodes.Contains((byte)(ReadWord(d, at, r.Order) >> 24));
             for (long p = first; p <= last; p += 8)
             {
                 if (((p - first) & 0xFFFFF) == 0) ctx.Token.ThrowIfCancellationRequested();
                 uint hi = ReadWord(d, p, r.Order);
                 byte op = (byte)(hi >> 24);
+                if ((hi == 0xB8000000 || hi == 0xDF000000) && ReadWord(d, p + 4, r.Order) == 0)
+                {
+                    //G_ENDDL tells the microcode family apart: 0xB8 = F3D/F3DEX, 0xDF = F3DEX2
+                    if (hi == 0xB8000000) f3dEnds++; else f3dex2Ends++;
+                    continue;
+                }
                 var target = op switch
                 {
                     0xFD => DisplayListTargets.Textures, //G_SETTIMG
@@ -616,7 +626,22 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 //Both neighbouring commands have to look like display list commands too
                 if (!IsGbi(p - 8) || !IsGbi(p + 8)) continue;
                 list.Add(new Candidate(p + 4, lo, (byte)target));
+                ops.Add(op);
             }
+
+            //The same opcode means different things in F3D and F3DEX2: 0x01 is G_MTX (a matrix pointer) in F3D but G_VTX in F3DEX2,
+            //0x04 is G_VTX in F3D but G_BRANCH_Z in F3DEX2, 0x06 is G_DL in F3D but G_TRI2 in F3DEX2. Keep only the opcodes of the
+            //microcode the display lists use, so a matrix is never swapped with a vertex buffer.
+            bool? f3dex2 = f3dex2Ends > f3dEnds * 4 ? true : f3dEnds > f3dex2Ends * 4 ? false : null;
+            if (f3dex2 != null)
+            {
+                byte vtx = f3dex2.Value ? (byte)0x01 : (byte)0x04, dl = f3dex2.Value ? (byte)0xDE : (byte)0x06;
+                var kept = new List<Candidate>(list.Count);
+                for (int k = 0; k < list.Count; k++)
+                    if (ops[k] == 0xFD || ops[k] == vtx || ops[k] == dl) kept.Add(list[k]);
+                list = kept;
+            }
+            TraceLogger.Log($"Pointer Engine: display list microcode {(f3dex2 == null ? "unknown (F3D and F3DEX2 opcodes are both used)" : f3dex2.Value ? "F3DEX2" : "F3D/F3DEX")} ({f3dEnds} F3D / {f3dex2Ends} F3DEX2 end commands).");
             return list;
         }
 

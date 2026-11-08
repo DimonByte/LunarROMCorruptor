@@ -119,7 +119,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             ],
             ["SEGA CD/SATURN"] =
             [
-                new(0x0000, 18 * IsoSector - 1, "System area / IP.BIN boot header, volume descriptors (ISO)"),
+                new(0x0000, 24 * IsoSector - 1, "System area / IP.BIN boot header, volume descriptors, path tables, root directory (ISO)"),
             ],
             ["DREAMCAST"] =
             [
@@ -221,6 +221,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                         long b = len % 1024 == 512 ? 512 : 0; //SMC/SWC copier header
                         if (b > 0)
                         {
+                            //The fixed ranges assume a headerless ROM; with a copier header they'd protect the wrong bytes
+                            r.RemoveAll(x => x.Start is 0x7FB0 or 0xFFB0);
                             r.Add(new(0x0000, 0x01FF, "512 byte copier (SMC/SWC) header"));
                             r.Add(new(b + 0x7FB0, b + 0x7FFF, "LoROM internal header + vectors (after copier header)"));
                             r.Add(new(b + 0xFFB0, b + 0xFFFF, "HiROM internal header + vectors (after copier header)"));
@@ -293,7 +295,8 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     {
                         bool raw = IsRawDisc(d);
                         long sector = raw ? RawSector : IsoSector;
-                        int sectors = profile == "SEGA CD/SATURN" ? 18 : 24;
+                        const int sectors = 24;
+                        r.RemoveAll(x => x.Start == 0); //Replaced by the range below, sized for this image's sector size (raw 2352 / cooked 2048)
                         r.Add(new(0, sectors * sector - 1, raw ? $"First {sectors} raw sectors (system area, volume descriptors, directory)" : $"First {sectors} ISO sectors (system area, volume descriptors, directory)"));
                         if (profile == "PS1")
                         {
@@ -324,6 +327,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 case "PC ENGINE":
                     if (len % 8192 == 512)
                     {
+                        r.RemoveAll(x => x.Start == 0x1FF6); //The fixed range assumes a headerless ROM
                         r.Add(new(0x0000, 0x01FF, "512 byte copier header"));
                         r.Add(new(0x0200 + 0x1FF6, 0x0200 + 0x1FFF, "HuC6280 interrupt + reset vectors (after copier header)"));
                     }
@@ -338,6 +342,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     break;
 
                 case "ATARI 7800":
+                    if (!HasMagic(d, 1, "ATARI7800")) r.RemoveAll(x => x.Start == 0); //Headerless .bin: offset 0 is game data, not an A78 header
                     if (len > 6) r.Add(new(len - 6, len - 1, "6502 NMI / RESET / IRQ vectors"));
                     break;
 
@@ -438,6 +443,13 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 if (len >= 0x200 && d.ReadUInt16(0x15C, false) == 0xCF56) return "NDS";
                 if (len >= 0x440 && d.ReadUInt32(0x1C, true) == 0xC2339F3D) return "GAMECUBE";
                 if (len >= 0x50000 && d.ReadUInt32(0x18, true) == 0x5D1C9EA3) return "WII";
+                //Sega disc images before the Genesis check: a Sega CD IP.BIN also has "SEGA MEGA DRIVE" at 0x100
+                switch (DetectSegaDisc(d))
+                {
+                    case SegaDisc.Dreamcast: return "DREAMCAST";
+                    case SegaDisc.Saturn:
+                    case SegaDisc.SegaCd: return "SEGA CD/SATURN";
+                }
                 if (HasMagic(d, 0x100, "SEGA") || HasMagic(d, 0x101, "SEGA")) return "SEGA";
                 foreach (long headerOffset in new long[] { 0x7FF0, 0x3FF0, 0x1FF0 })
                     if (HasMagic(d, headerOffset, "TMR SEGA")) return "SMS/GG";
@@ -449,7 +461,15 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 if (HasMagic(d, 0, "RIFF") && HasMagic(d, 8, "WAVE")) return "WAV";
                 if (len >= 2 && d.ReadUInt16(0, true) == 0xFFD8) return "JPEG";
                 string ext = Path.GetExtension(path ?? "").ToLowerInvariant();
-                if (IsRawDisc(d)) return ext == ".gdi" || ext == ".cdi" ? "DREAMCAST" : "PS1";
+                //Other disc images (Sega discs were detected above)
+                bool raw = IsRawDisc(d);
+                if (raw || ext == ".iso")
+                {
+                    //PS1 and PS2 discs both say "PLAYSTATION", SYSTEM.CNF tells them apart (PS2 boots with BOOT2, PS1 with BOOT)
+                    var ps = DetectPlayStation(d, raw);
+                    if (ps != null) return ps;
+                    if (raw) return "PS1";
+                }
                 return ext switch
                 {
                     ".sfc" or ".smc" or ".swc" or ".fig" => "SNES",
@@ -591,6 +611,43 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             for (int i = 1; i < 11; i++)
                 if (sync[i] != 0xFF) return false;
             return true;
+        }
+
+        public enum SegaDisc { None, SegaCd, Saturn, Dreamcast }
+
+        /// <summary>
+        /// Sega disc images start with the system ID of IP.BIN: at offset 0 in a cooked ISO, after the 16 byte sync + header of a raw Mode 1 sector.
+        /// </summary>
+        public static SegaDisc DetectSegaDisc(FileBuffer d)
+        {
+            foreach (long at in IsRawDisc(d) ? new long[] { 16, 24 } : new long[] { 0 })
+            {
+                if (HasMagic(d, at, "SEGA SEGAKATANA")) return SegaDisc.Dreamcast;
+                if (HasMagic(d, at, "SEGA SEGASATURN")) return SegaDisc.Saturn;
+                if (HasMagic(d, at, "SEGADISCSYSTEM")) return SegaDisc.SegaCd;
+            }
+            return SegaDisc.None;
+        }
+
+        /// <summary>
+        /// "PS1" or "PS2" for a PlayStation disc image (raw or cooked), null if it isn't one. The PVD system identifier says "PLAYSTATION" on both,
+        /// so SYSTEM.CNF decides: PS2 boots from "cdrom0:" (BOOT2), PS1 from "cdrom:" (BOOT).
+        /// </summary>
+        private static string? DetectPlayStation(FileBuffer d, bool raw)
+        {
+            long pvd = raw ? 16 * RawSector + 24 : 16 * IsoSector;
+            if (!HasMagic(d, pvd + 8, "PLAYSTATION")) return null;
+            byte[] buffer = new byte[1 << 20];
+            long limit = Math.Min(d.Length, 32L * 1024 * 1024);
+            for (long chunk = 0; chunk < limit; chunk += buffer.Length - 16)
+            {
+                int n = d.Read(chunk, buffer);
+                var span = buffer.AsSpan(0, n);
+                if (span.IndexOf("cdrom0:"u8) >= 0 || span.IndexOf("CDROM0:"u8) >= 0) return "PS2";
+                if (span.IndexOf("cdrom:"u8) >= 0 || span.IndexOf("CDROM:"u8) >= 0) return "PS1";
+                if (n < buffer.Length) break;
+            }
+            return raw ? "PS1" : "PS2"; //SYSTEM.CNF not found: PS1 games are CDs (usually raw BINs), PS2 games mostly DVD ISOs
         }
 
         private static long FindSignature(FileBuffer d, string signature, long sectorSize, long dataOffsetInSector, long searchLimit)

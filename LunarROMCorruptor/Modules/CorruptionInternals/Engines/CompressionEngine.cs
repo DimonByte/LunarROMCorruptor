@@ -71,6 +71,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             if ((formats & (Formats.Yaz0 | Formats.Yay0 | Formats.MIO0)) != 0)
             {
                 byte[] buffer = new byte[1 << 20];
+                long nextFree = long.MinValue; //End of the last block found: signatures before it are inside that block's data (or already seen)
                 for (long chunk = start & ~3L; chunk <= end; chunk += buffer.Length - 4)
                 {
                     token.ThrowIfCancellationRequested();
@@ -78,7 +79,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                     for (int k = 0; k + 4 <= n; k += 4) //Blocks are always 4 byte aligned (usually 16)
                     {
                         long offset = chunk + k;
-                        if (offset < start || offset > end) continue;
+                        if (offset < start || offset > end || offset < nextFree) continue;
                         Formats f = buffer[k] switch
                         {
                             (byte)'Y' when buffer[k + 1] == 'a' && buffer[k + 2] == 'z' && buffer[k + 3] == '0' => Formats.Yaz0,
@@ -92,8 +93,9 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                         {
                             blocks.Add(block.Value);
                             if (blocks.Count >= maxBlocks) return blocks;
-                            k += (block.Value.CompressedLength & ~3) - 4; //Skip over the block
-                            if (k < 0) k = 0;
+                            //Skip over the block. The chunks overlap by 4 bytes and a block can run into the next chunk, so the skip is
+                            //tracked as a file offset; otherwise a block at a chunk boundary was found (and corrupted) twice.
+                            nextFree = offset + Math.Max(4, block.Value.CompressedLength);
                         }
                     }
                     if (n < buffer.Length) break;

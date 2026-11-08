@@ -76,7 +76,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 
 | Engine | Works on | Best for... |
 | :--- | :--- | :--- |
-| [**Nightmare+**](docs/Corruption-Engines.md#nightmare-engine) | Bytes | Classic random/tilt corruption. Pick an *Exclusion Type* (or *Auto*) to keep headers and boot code safe. *None* = the original Nightmare Engine. |
+| [**Nightmare+**](docs/Corruption-Engines.md#nightmare-engine) | Bytes | Classic random/tilt corruption. Pick an *Exclusion Type* (or *Auto*, which also recognises PS1/PS2, Sega CD, Saturn and Dreamcast disc images) to keep headers and boot code safe. *None* = the original Nightmare Engine. |
 | [**Merge**](docs/Corruption-Engines.md#merge-engine) | Bytes | Mixing in the bytes of another file (copy, add or difference). |
 | [**Logic**](docs/Corruption-Engines.md#logic-engine) | Bits | `AND`, `OR`, `XOR`, `NOT`, `NAND`, `NOR`, `SWAP` and `SHIFT` on bytes. |
 | [**Lerp**](docs/Corruption-Engines.md#lerp-engine) | Bytes | Blending bytes with their neighbours for smooth smears. |
@@ -85,7 +85,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 | [**Blocks**](docs/Corruption-Engines.md#blocks-engine) | Blocks of data | Pixel sorting, shuffling, smearing and echo for images and audio. |
 | [**Pointer**](docs/Corruption-Engines.md#pointer-engine) | Pointers | Swapping which texture, model, sound or text the game loads. Supports N64, GBA, DS, PS1, GameCube/Wii, NES, SNES, Game Boy, Genesis, Saturn, Dreamcast, PS2, PSP and 32-bit Windows EXE/DLL files. |
 | [**Compression**](docs/Corruption-Engines.md#compression-engine) | Compressed blocks | Corrupting Yaz0/Yay0/MIO0/LZ10/LZ11 data *inside* the compression, so it glitches instead of crashing. |
-| [**Datamosh**](docs/Corruption-Engines.md#datamosh-engine) | AVI video frames | Real datamoshing: keyframe removal (melt) and frame repeats (bloom). |
+| [**Datamosh**](docs/Corruption-Engines.md#datamosh-engine) | AVI video frames | Real datamoshing: keyframe removal (melt) and P-frame repeats (bloom). Reads I/P/B frame types from MPEG-4 and H.264 data. |
 | [**Source Code**](docs/Corruption-Engines.md#source-code-engine) | Text / code values | `true` becomes `false`, `3.14` becomes `4`, strings get shuffled. Comments are skipped. |
 
 > **Where did the Exclusion Engine go?** It was the Nightmare Engine with exclusion types, so the two are now one engine: **Nightmare+**. Old stashes still work, and settings that mention "Nightmare Engine" or "Exclusion Engine" load into Nightmare+.

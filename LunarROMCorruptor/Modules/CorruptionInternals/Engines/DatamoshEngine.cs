@@ -42,7 +42,11 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             BOTH
         }
 
-        public enum FrameType { Keyframe, Delta, Empty, Unknown }
+        /// <summary>
+        /// Keyframe = I-frame (MPEG-4 I-VOP, H.264 IDR or I slice). Delta = reference motion frame (P/S-VOP, H.264 P slice with nal_ref_idc != 0).
+        /// Disposable = B-frame or non-reference frame: nothing is predicted from it, so repeating it only freezes the picture (no bloom).
+        /// </summary>
+        public enum FrameType { Keyframe, Delta, Disposable, Empty, Unknown }
 
         public sealed class Settings
         {
@@ -89,9 +93,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             var video = avi.Chunks.Where(c => c.IsVideo).ToList();
             int keyframes = video.Count(c => c.Type == FrameType.Keyframe);
             int deltas = video.Count(c => c.Type == FrameType.Delta);
-            TraceLogger.Log($"Datamosh Engine: {video.Count} video frames ({keyframes} keyframes, {deltas} motion frames), {avi.Chunks.Count - video.Count} other chunks.");
+            int disposable = video.Count(c => c.Type == FrameType.Disposable);
+            TraceLogger.Log($"Datamosh Engine: {video.Count} video frames ({keyframes} keyframes, {deltas} motion frames, {disposable} B/non-reference frames), {avi.Chunks.Count - video.Count} other chunks.");
             if (video.Count == 0)
                 throw new InvalidDataException("No video frames were found in this AVI file.");
+            if (disposable > 0 && s.Mode != MoshMode.REMOVE_KEYFRAMES)
+                TraceLogger.Log("This video has B-frames. They aren't used as a reference for other frames, so DUPLICATE_FRAMES only repeats P-frames (repeating a B-frame just freezes the picture). Encode with -bf 0 for the strongest bloom.", StatusSeverityType.Warning);
             if (keyframes == 0 && deltas == 0)
                 throw new InvalidDataException("Unable to tell keyframes from motion frames in this video. Re-encode it as Xvid/MPEG-4 AVI (see the Datamosh Engine help).");
             if (avi.IsH264 && s.Mode != MoshMode.DUPLICATE_FRAMES)
@@ -101,7 +108,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             if (s.Mode is MoshMode.REMOVE_KEYFRAMES or MoshMode.BOTH)
             {
                 var candidates = video.Where(c => c.Type == FrameType.Keyframe).Skip(Math.Max(0, s.KeepFirstKeyframes))
-                                      .Where(c => c.HeaderOffset >= ctx.Start && c.HeaderOffset <= ctx.End).ToList();
+                                      .Where(c => InRange(ctx, c)).ToList();
                 foreach (var c in Select(candidates, ctx))
                     actions[c] = new FrameAction(s.ReplaceRemoved ? ActionKind.Replace : ActionKind.Drop);
                 if (candidates.Count == 0)
@@ -110,7 +117,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             if (s.Mode is MoshMode.DUPLICATE_FRAMES or MoshMode.BOTH)
             {
                 var candidates = video.Where(c => c.Type == FrameType.Delta && !actions.ContainsKey(c))
-                                      .Where(c => c.HeaderOffset >= ctx.Start && c.HeaderOffset <= ctx.End).ToList();
+                                      .Where(c => InRange(ctx, c)).ToList();
                 foreach (var c in Select(candidates, ctx))
                     actions[c] = new FrameAction(ActionKind.Repeat, Math.Clamp(s.RepeatCount, 1, 1000));
                 if (candidates.Count == 0)
@@ -161,6 +168,12 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
             ActionKind.Replace => $"[x] File({offset}).FRAME({frameIndex}).SET(REPLACE)",
             _ => $"[x] File({offset}).FRAME({frameIndex}).SET(DROP)"
         };
+
+        /// <summary>
+        /// The frame starts inside the byte range and no part of it is in a Bisect / stash EXCLUDE range.
+        /// </summary>
+        private static bool InRange(CorruptionContext ctx, MoviChunk c) =>
+            c.HeaderOffset >= ctx.Start && c.HeaderOffset <= ctx.End && !ctx.IsExcluded(c.HeaderOffset, 8L + c.Size);
 
         private static List<MoviChunk> Select(List<MoviChunk> candidates, CorruptionContext ctx)
         {
@@ -334,7 +347,7 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
         public static FrameType DetectFrameType(ReadOnlySpan<byte> data, out bool h264)
         {
             h264 = false;
-            bool sawH264Slice = false;
+            bool mpeg4 = false; //Seen an MPEG-4 Part 2 header: its start codes 0x00-0x2F aren't H.264 NAL units
             for (int i = 0; i + 4 < data.Length; i++)
             {
                 if (data[i] != 0 || data[i + 1] != 0 || data[i + 2] != 1) continue;
@@ -342,19 +355,80 @@ namespace LunarROMCorruptor.Modules.CorruptionInternals.Engines
                 if (code == 0xB6) //MPEG-4 VOP start code, the next 2 bits are the coding type
                 {
                     if (i + 4 >= data.Length) break;
-                    int vopType = data[i + 4] >> 6;
-                    return vopType == 0 ? FrameType.Keyframe : FrameType.Delta;
+                    return (data[i + 4] >> 6) switch
+                    {
+                        0 => FrameType.Keyframe, //I-VOP
+                        2 => FrameType.Disposable, //B-VOP
+                        _ => FrameType.Delta //P-VOP, S-VOP (global motion)
+                    };
                 }
+                if (code is 0xB0 or 0xB5) mpeg4 = true; //Visual object sequence / visual object (invalid as H.264 NAL headers: forbidden bit set)
+                if (mpeg4 || (code & 0x80) != 0) continue;
                 int nalType = code & 0x1F;
-                if ((code & 0x80) == 0 && nalType == 5) //H.264 IDR slice
+                if (nalType == 5) //H.264 IDR slice
                 {
                     h264 = true;
                     return FrameType.Keyframe;
                 }
-                if ((code & 0x80) == 0 && nalType == 1) sawH264Slice = true; //H.264 non-IDR slice
+                if (nalType == 1) //H.264 non-IDR slice: the slice header says I, P or B
+                {
+                    h264 = true;
+                    int sliceType = ReadH264SliceType(data[(i + 4)..]);
+                    if (sliceType < 0) return FrameType.Delta;
+                    return (sliceType % 5) switch
+                    {
+                        2 or 4 => FrameType.Keyframe, //I / SI slice: refreshes the picture like a keyframe (open-GOP and intra-refresh encodes)
+                        1 => FrameType.Disposable, //B slice
+                        _ => (code & 0x60) == 0 ? FrameType.Disposable : FrameType.Delta //P/SP slice, nal_ref_idc 0 = nothing refers to it
+                    };
+                }
             }
-            h264 = sawH264Slice;
-            return sawH264Slice ? FrameType.Delta : FrameType.Unknown;
+            return FrameType.Unknown;
+        }
+
+        /// <summary>
+        /// Reads slice_type from an H.264 slice header (first_mb_in_slice ue(v), slice_type ue(v)). Emulation prevention bytes are skipped.
+        /// Returns -1 if it can't be read.
+        /// </summary>
+        private static int ReadH264SliceType(ReadOnlySpan<byte> data)
+        {
+            byte[] rbsp = data[..Math.Min(32, data.Length)].ToArray(); //The two fields are always in the first few bytes
+            int bytePos = 0, bitPos = 0, zeros = 0;
+            int ReadBit()
+            {
+                if (bytePos >= rbsp.Length) return -1;
+                if (bitPos == 0)
+                {
+                    //00 00 03 -> the 03 is an emulation prevention byte
+                    if (zeros >= 2 && rbsp[bytePos] == 0x03) { bytePos++; zeros = 0; if (bytePos >= rbsp.Length) return -1; }
+                    zeros = rbsp[bytePos] == 0 ? zeros + 1 : 0;
+                }
+                int bit = (rbsp[bytePos] >> (7 - bitPos)) & 1;
+                if (++bitPos == 8) { bitPos = 0; bytePos++; }
+                return bit;
+            }
+            int ReadUe()
+            {
+                int leadingZeros = 0;
+                while (true)
+                {
+                    int b = ReadBit();
+                    if (b < 0 || leadingZeros > 16) return -1;
+                    if (b == 1) break;
+                    leadingZeros++;
+                }
+                int value = 0;
+                for (int k = 0; k < leadingZeros; k++)
+                {
+                    int b = ReadBit();
+                    if (b < 0) return -1;
+                    value = value << 1 | b;
+                }
+                return (1 << leadingZeros) - 1 + value;
+            }
+            if (ReadUe() < 0) return -1; //first_mb_in_slice
+            int sliceType = ReadUe();
+            return sliceType is >= 0 and <= 9 ? sliceType : -1;
         }
 
         #endregion

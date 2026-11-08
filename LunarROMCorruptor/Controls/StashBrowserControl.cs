@@ -58,7 +58,7 @@ namespace LunarROMCorruptor.Controls
         public event Action<StashEntry>? EditRequested; //Open in the Stash Editor
         public event Action<StashEntry>? LoadSettingsRequested; //Load engine/range/intensity
         public event Action<StashEntry>? DetailsRequested;
-        public event Action<StashEntry>? LoadStashFileFromHeaderOnly; //Reads header of stash and loads that.
+        public event Action<StashEntry>? LoadFileFromStashHeader; //Reads header of stash and loads that.
 
         /// <summary>
         /// Takes a screenshot of the running emulator (null if it isn't running).
@@ -834,7 +834,7 @@ namespace LunarROMCorruptor.Controls
                     }
                     else
                     {
-                        LoadStashFileFromHeaderOnly!(entry2);
+                        LoadFileFromStashHeader!(entry2);
                     }
                     TraceLogger.Log($"Loaded stash file from header only: {entry2.Name}");
                 }

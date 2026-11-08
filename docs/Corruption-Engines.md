@@ -38,7 +38,7 @@ With an exclusion type, every corruption still lands on an allowed byte: Intensi
 | Exclusion Type | Protected (always) | Also read from the file |
 | :--- | :--- | :--- |
 | `NES` | iNES / NES 2.0 header (0x00-0x0F) | 512 byte trainer, NMI/RESET/IRQ vectors at the end of PRG-ROM |
-| `SNES` | LoROM (0x7FB0-0x7FFF) and HiROM (0xFFB0-0xFFFF) headers + vectors | 512 byte copier header, ExHiROM |
+| `SNES` | LoROM (0x7FB0-0x7FFF) and HiROM (0xFFB0-0xFFFF) headers + vectors | 512 byte copier header (the header ranges then move 0x200 bytes up), ExHiROM |
 | `N64` | ROM header, IPL3 boot code (0x0-0xFFF), game entry stub (0x1000-0x10FF). The boot checksum is rewritten after corrupting ([Fix Checksums](Getting-Started.md#fix-checksums)). | Checks the byte order (.z64/.v64/.n64) |
 | `N64 (STRICT CRC)` | Header, IPL3 and the whole first 1 MB of game code (the part the boot checksum covers) | For ROMs whose checksum LRC can't rewrite (unknown CIC / bad dump) |
 | `GAMEBOY` | RST/interrupt vectors, entry point, Nintendo logo, cartridge header + checksums (0x0-0x14F) | |
@@ -46,15 +46,17 @@ With an exclusion type, every corruption still lands on an allowed byte: Intensi
 | `NDS` | Cartridge header, reserved header area, secure area (0x0-0x7FFF) | File name table (FNT), file allocation table (FAT) |
 | `GAMECUBE` | boot.bin + bi2.bin (0x0-0x243F) | Apploader, DOL header, FST |
 | `WII` | Disc header, partition tables and region settings | Partition headers |
-| `PS1` | System area, license data, volume descriptors, path tables, root directory (raw BIN) | Raw (2352) vs cooked ISO (2048) sectors, the PS-X EXE header |
-| `PS2` | System area, volume descriptors, path tables, root directory (ISO) | Raw vs cooked sectors |
+| `PS1` | First 24 sectors: system area, license data, volume descriptors, path tables, root directory | Raw (2352) vs cooked ISO (2048) sector size, the PS-X EXE header |
+| `PS2` | First 24 sectors: system area, volume descriptors, path tables, root directory | Raw vs cooked sector size, the boot ELF header + program/section tables |
 | `SEGA` | 68000 vector table + Genesis / Mega Drive header (0x0-0x1FF) | |
 | `SMS/GG` | Z80 RST + interrupt vectors (0x0-0xFF) | `TMR SEGA` header |
-| `SEGA CD/SATURN` | System area / IP.BIN, volume descriptors | Raw vs cooked sectors |
-| `DREAMCAST` | IP.BIN boot sectors, volume descriptors | |
-| `PC ENGINE` | HuC6280 interrupt + reset vectors | 512 byte copier header |
+| `SEGA CD/SATURN` | First 24 sectors: system area / IP.BIN, volume descriptors, path tables, root directory | Raw vs cooked sector size |
+| `DREAMCAST` | IP.BIN boot sectors, volume descriptors (data track) | Raw vs cooked sector size |
+| `PC ENGINE` | HuC6280 interrupt + reset vectors | 512 byte copier header (the vectors then move 0x200 bytes up) |
 | `ATARI 2600` / `VIRTUAL BOY` / `WONDERSWAN` | (nothing fixed) | 6502 vectors at the end of each bank / ROM header + vectors / boot jump + ROM footer |
-| `ATARI 7800` / `ATARI LYNX` | A78 / LNX header (+ Lynx boot loader) | 7800: 6502 vectors at the end of the file |
+| `ATARI 7800` / `ATARI LYNX` | A78 / LNX header (+ Lynx boot loader) | 7800: 6502 vectors at the end of the file. The A78 header is only protected when the file has one (headerless `.bin` dumps start with game data) |
+
+**Auto** detects disc images from their contents, not just the extension: Sega CD, Saturn and Dreamcast discs by the system ID in IP.BIN (cooked or raw), PS1 vs PS2 discs (both say `PLAYSTATION`) by `SYSTEM.CNF` (`cdrom0:` = PS2, `cdrom:` = PS1).
 | `EXE` | DOS (MZ) header | DOS stub, PE signature, COFF/optional header, data directories and section headers |
 | `ELF` | ELF identification + header | Program and section header tables |
 | `BIOS` | Start of the image (option ROM / flash descriptor header) | Boot block + reset vector at the end of the image |
@@ -183,7 +185,7 @@ Pointers that sit in **tables** (several pointers in a row) usually point to the
 | **Max shift (bytes)** | `SHIFT` only: the largest move. Moves keep the platform's alignment (4 bytes for most, 8 for N64 display lists, 1 byte for 16/24-bit pointers). |
 | **Table window (bytes)** | `SWAP` / `DUPLICATE` look for a partner within this many bytes. Smaller = partners from the same table (more stable), bigger = more variety. `SWAP` falls back to any pointer of the same kind if none is close. |
 | **Only pointers in tables** | Only uses pointers that have other pointers right next to them. Strongly recommended: a lone number that looks like an address is often just a number. For 16-bit and 24-bit pointers a table needs 3-4 entries in a row that point close to each other. |
-| **Skip function pointers** | Leaves pointers to **code** alone (swapping those jumps into the wrong function and crashes). GBA/DS: odd addresses (Thumb code). N64: pointers to a function start in the boot segment. Windows EXE: pointers into code sections. |
+| **Skip function pointers** | Leaves pointers to **code** alone (swapping those jumps into the wrong function and crashes). GBA/DS: odd addresses (Thumb code). N64: pointers to a function start in the boot segment. Windows EXE: pointers into code sections. Turned off, GBA/DS Thumb pointers (odd addresses) are included too. |
 | **Custom range (hex)** / **Custom range is big-endian** | `Custom range` only: the lowest and highest address that counts as a pointer, and the byte order. Use it for platforms not in the list (e.g. `02000000`-`023FFFFF` for DS RAM). |
 | **N64 display list targets** | `N64 display lists` only: which display list commands to change. **Textures** (`G_SETTIMG`), **Vertices** (`G_VTX`, mixes up model shapes), **Sub display lists** (`G_DL`, swaps whole model parts). |
 
@@ -193,7 +195,7 @@ Pointers that sit in **tables** (several pointers in a row) usually point to the
 | Pointer type | Size / byte order | Addresses | Notes |
 | :--- | :--- | :--- | :--- |
 | `N64 RAM pointers` | 32-bit, big-endian | `0x80000400`-`0x807FFFFF` | .z64/.v64/.n64 byte order detected, header + boot code skipped |
-| `N64 display lists` | 32-bit, big-endian | Segmented addresses in F3D/F3DEX/F3DEX2 commands | The neighbouring commands must be valid display list commands too |
+| `N64 display lists` | 32-bit, big-endian | Segmented addresses in F3D/F3DEX/F3DEX2 commands | The neighbouring commands must be valid display list commands too. The microcode (F3D/F3DEX or F3DEX2) is detected from the `G_ENDDL` commands, so only its own opcodes are used (in F3D `0x01` is a matrix, not a vertex buffer) |
 | `GBA ROM pointers` | 32-bit, little-endian | `0x08000000`+ (must point inside the ROM) | |
 | `DS RAM pointers` | 32-bit, little-endian | `0x02000000`-`0x023FFFFF` | |
 | `PS1 RAM pointers` | 32-bit, little-endian | `0x80010000`-`0x801FFFFF` | |
@@ -202,7 +204,7 @@ Pointers that sit in **tables** (several pointers in a row) usually point to the
 | `SNES 24-bit pointers` | 24-bit (bank + address), little-endian | Must map into the ROM | LoROM / HiROM detected from the internal header, copier header skipped, WRAM (banks 7E/7F) ignored |
 | `Game Boy 16-bit pointers` | 16-bit, little-endian | `0x0150`-`0x7FFF` | Bank 0 + switchable bank. Tables of 4+ |
 | `Genesis/Mega Drive ROM pointers` | 32-bit, big-endian | `0x200`-`0x3FFFFF` (= file offsets) | Word-aligned (68000), vector table + header skipped |
-| `Saturn RAM pointers` | 32-bit, big-endian | `0x06000000`-`0x060FFFFF` (high work RAM) | |
+| `Saturn RAM pointers` | 32-bit, big-endian | `0x06000000`-`0x060FFFFF` (high work RAM) | Auto picks it for Saturn discs (Sega CD discs get file offsets) |
 | `Dreamcast RAM pointers` | 32-bit, little-endian | `0x8C010000`-`0x8CFFFFFF` | |
 | `PS2 RAM pointers` | 32-bit, little-endian | `0x00100000`-`0x01FFFFFF` | Best on ELFs / files extracted from the disc |
 | `PSP RAM pointers` | 32-bit, little-endian | `0x08804000`-`0x09FFFFFF` | Best on EBOOT/PRX files. Auto detects PSP ISOs |
@@ -241,11 +243,13 @@ Real datamoshing for **AVI** videos. Instead of changing bytes it removes and re
 * Removing **keyframes** (I-frames) makes the motion of the next scene smear over the old picture (the classic "melt").
 * Repeating **motion frames** (P-frames) keeps pushing the pixels in the same direction ("bloom").
 
+Frame types are read from the video data: MPEG-4 I/P/B-VOPs, and for H.264 the IDR slices plus the slice type of every other slice (so non-IDR I-frames from open-GOP encodes count as keyframes too). B-frames and non-reference frames are never repeated, because nothing is predicted from them: repeating one only freezes the picture. Frames that overlap a Bisect / stash `EXCLUDE` range are left alone.
+
 **Unit:** *Every Nth* = every Nth keyframe/frame (Every Nth = 1 removes them all), Intensity = that many random ones.
 
 | Setting | What it does |
 | :--- | :--- |
-| **Mosh type** | `REMOVE_KEYFRAMES`: removes keyframes (melt).<br>`DUPLICATE_FRAMES`: repeats P-frames (bloom).<br>`BOTH`: both at once. |
+| **Mosh type** | `REMOVE_KEYFRAMES`: removes keyframes (melt).<br>`DUPLICATE_FRAMES`: repeats P-frames (bloom). B-frames are skipped.<br>`BOTH`: both at once. |
 | **Keep first keyframes** | How many keyframes at the start are never removed, so the video starts with a picture (1 is usual). |
 | **Repeat each frame (times)** | `DUPLICATE_FRAMES` / `BOTH`: how many times each chosen P-frame is repeated. |
 | **Replace removed keyframes with the previous frame** | On: a removed keyframe is replaced by a copy of the previous frame, so the video keeps its length and the audio stays in sync. Off: keyframes are dropped (shorter video, the audio can drift). |

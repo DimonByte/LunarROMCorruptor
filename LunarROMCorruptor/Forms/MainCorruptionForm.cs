@@ -34,6 +34,7 @@ using LunarROMCorruptor.Modules.CorruptionInternals;
 using LunarROMCorruptor.Modules.CorruptionInternals.Engines;
 using LunarROMCorruptor.Modules.Helpers;
 using LunarROMCorruptor.Properties;
+using System.Diagnostics;
 using System.Media;
 
 namespace LunarROMCorruptor
@@ -78,6 +79,7 @@ namespace LunarROMCorruptor
             InitializePresetBar();
             InitializeStashBrowser();
             InitializeByteView();
+            InitializeSession();
             MainTabControl.SelectedIndexChanged += (_, _) => { if (MainTabControl.SelectedTab == GuidesTab) GuidesView.EnsureLoaded(); };
             FormClosing += MainCorruptionForm_FormClosing;
             CorruptionCore.Exclusions.Changed += OnExclusionsChanged;
@@ -158,10 +160,13 @@ namespace LunarROMCorruptor
             StashBrowser.Reload();
             IOManager.RefreshFileSaves(FilesaveList);
             LoadSettings();
+            LoadSettingsTab();
             GenerateSelectedByteDetails();
             InitFormDesignFixes();
             ByteViewModeComboBox.Text = "Regions";
             AttentionPictureBox.BringToFront();
+            RestoreSessionLayout();
+            SessionHistoryView.RefreshList();
         }
 
         private void InitFormDesignFixes()
@@ -237,32 +242,22 @@ namespace LunarROMCorruptor
                 if (NightmareEngineFrame.Visible) NightmareEngineFrame.LoadAddresses();
                 GenerateSelectedByteDetails();
                 UpdateByteViewIfEnabled();
-                //If file extension is n64, v64, or z64, enable Big-Endian checkbox in vector2 engine. Actually have a file extension checker for all big-endian ROMS.
-                //CheckForBigEndianROM(FileLocation);
-                //if (Path.GetExtension(FileLocation).ToLower() == ".n64" || Path.GetExtension(FileLocation).ToLower() == ".v64" || Path.GetExtension(FileLocation).ToLower() == ".z64")
-                //{
-                //    VectorEngineFrame.VectorBigEndianChkBox.Enabled = true;
-                //}
+                AddRecentFile(CorruptionCore.SourcePath!);
+                StashBrowser.LoadedFile = CorruptionCore.SourcePath;
+                UpdateFileStatus();
+                UpdateStateStatus("Not corrupted yet");
+                StatusLastLbl.Text = "No corruption yet";
+                SetStatus($"Loaded {Path.GetFileName(CorruptionCore.SourcePath)}.");
                 TraceLogger.Log($"File loaded successfully and UI updated for file: {FileLocation}");
             }
             else
             {
                 TraceLogger.Log($"Failed to load file: {FileLocation}", StatusSeverityType.Error);
+                SetStatus($"Couldn't load {Path.GetFileName(FileLocation)} (see the Logs tab).", StatusKind.Warning);
             }
             AttentionPictureBox.Hide();
             AttentionPictureBox.Image = Resources.dragicon;
         }
-
-        //private void CheckForBigEndianROM(string FileLocation)
-        //{
-        //    if (FileLocation == null) return;
-        //    //The following extensions are known to be big-endian ROMs, so enable the Big-Endian checkbox in the Vector2 engine if the file has one of these extensions:
-        //    //.n64, .v64, .z64, .nds, .gba, .gbc, .gb, .sms, .sgb, .smd, .gen, .md, .gg, .pce, .pcecd, .wsw, .wswcd, .wswcd2, .wswcd3
-        //    //if (Path.GetExtension(FileLocation).ToLower() == ".n64" || Path.GetExtension(FileLocation).ToLower() == ".v64" || Path.GetExtension(FileLocation).ToLower() == ".z64")
-        //    //{
-        //    //    VectorEngineFrame.VectorBigEndianChkBox.Enabled = true;
-        //    //}
-        //}
 
         /// <summary>
         /// Opens a guide on the 📖 Guides tab (e.g. "docs/Corruption-Engines.md", "vector2-engine").
@@ -346,6 +341,7 @@ namespace LunarROMCorruptor
             if (CorruptionQueueChkbox.Checked)
             {
                 CorruptionQueueFormSettings.ShowDialog();
+                UpdateFileStatus();
                 return;
             }
             //Main Function - If the user didn't cancel, load file.
@@ -631,6 +627,7 @@ namespace LunarROMCorruptor
                 control.Enabled = false;
             }
             AllowDrop = false;
+            SessionHistoryView.Busy = true;
             CorruptionProgressBar.Value = 0;
             CorruptionProgressBar.Visible = true;
             CorruptButton.Text = $"{status} - click to cancel";
@@ -644,6 +641,7 @@ namespace LunarROMCorruptor
                 control.Enabled = enabled;
             _enabledBeforeBusy.Clear();
             AllowDrop = true;
+            SessionHistoryView.Busy = false;
             CorruptionProgressBar.Visible = false;
             CorruptButton.Text = CorruptionQueueChkbox.Checked ? "Corrupt Files" : _corruptButtonIdleText;
             UseWaitCursor = false;
@@ -701,6 +699,7 @@ namespace LunarROMCorruptor
             CorruptionCore.Stash.Clear();
 
             BeginBusy("Corrupting queue");
+            var timer = Stopwatch.StartNew();
             var token = _corruptionCts!.Token;
             int succeeded = 0, failed = 0;
             CorruptionResult overall = CorruptionResult.Success;
@@ -732,6 +731,8 @@ namespace LunarROMCorruptor
                 StartFailureFeedback();
                 return CorruptionResult.Failed;
             }
+            ReportCorruption("Multi-File corruption", $"{succeeded:N0} file(s){(failed > 0 ? $", {failed:N0} failed" : "")}", timer.Elapsed);
+            UpdateStateStatus($"Queue: {succeeded:N0} file(s) corrupted", "Restore File (Ctrl+R) puts every queue file back.");
             //Run the file picked in the queue window, or the first file of the queue
             string runFile = !string.IsNullOrWhiteSpace(CorruptionQueueFormSettings.SelectedRunFileTXT.Text) ? CorruptionQueueFormSettings.SelectedRunFileTXT.Text : selectedFiles[0];
             RunEmulatorIfEnabled(runFile);
@@ -856,6 +857,7 @@ namespace LunarROMCorruptor
             StashBytesList.Items.Clear();
 
             BeginBusy("Corrupting");
+            var timer = Stopwatch.StartNew();
             CorruptionResult result;
             try
             {
@@ -878,9 +880,12 @@ namespace LunarROMCorruptor
             if (result != CorruptionResult.Success)
             {
                 if (result == CorruptionResult.Failed) StartFailureFeedback();
+                SetStatus(result == CorruptionResult.Cancelled ? "Corruption cancelled." : "Corruption failed (see the Logs tab).", StatusKind.Warning);
                 return result;
             }
             _lastCorruption = description;
+            ReportCorruption(engineName, $"{CorruptionCore.Stash.Count:N0} change(s)", timer.Elapsed);
+            ShowCorruptedState(outputPath);
 
             if (FilesaveEnableAutoSaves.Checked) //Save the corrupted file copy into the file saves if auto saves is enabled.
             {
@@ -940,6 +945,7 @@ namespace LunarROMCorruptor
                 CorruptionQueueFormSettings.TopMost = true;
                 CorruptionQueueFormSettings.ShowDialog();
                 CorruptionQueueFormSettings.TopMost = false;
+                UpdateFileStatus();
             }
             else
             {
@@ -1004,7 +1010,7 @@ namespace LunarROMCorruptor
                 //Queue mode: every queue file that LRC corrupted is put back to its original
                 if (!CorruptionCore.HasUnrestoredQueueChanges)
                 {
-                    MessageBox.Show("None of the queue files are currently corrupted by LRC, there is nothing to restore.", $"{nameof(LunarROMCorruptor)} - Restore", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    SetStatus("None of the queue files are corrupted by LRC, there is nothing to restore.", StatusKind.Warning);
                     return;
                 }
                 BeginBusy("Restoring queue");
@@ -1017,7 +1023,8 @@ namespace LunarROMCorruptor
                 {
                     EndBusy();
                 }
-                MessageBox.Show($"{count} queue file(s) restored to their originals.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatus($"{count} queue file(s) restored to their originals.", StatusKind.Success);
+                UpdateStateStatus("Queue restored");
                 return;
             }
             if (!CorruptionCore.IsLoaded)
@@ -1038,14 +1045,23 @@ namespace LunarROMCorruptor
             }
             if (restored)
             {
-                MessageBox.Show("ROM restored successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatus($"{Path.GetFileName(target)} restored to the original.", StatusKind.Success);
+                UpdateStateStatus($"Restored → {Path.GetFileName(target)}", target);
                 UpdateByteViewIfEnabled();
+            }
+            else
+            {
+                SetStatus("Nothing was restored (see the Logs tab).", StatusKind.Warning);
             }
         }
 
         private void CopySaveToCorruptedFileBtn_Click(object sender, EventArgs e)
         {
-            IOManager.CopySaveToCorruptedFile(SaveasTxt.Text, FilesaveList);
+            if (IOManager.CopySaveToCorruptedFile(SaveasTxt.Text, FilesaveList))
+            {
+                SetStatus($"Copied {FilesaveList.GetItemText(FilesaveList.SelectedItem)} to {Path.GetFileName(SaveasTxt.Text)}.", StatusKind.Success);
+                UpdateStateStatus($"File save → {Path.GetFileName(SaveasTxt.Text)}", SaveasTxt.Text);
+            }
         }
 
         private void FilesaveReloadbtn_Click(object sender, EventArgs e)
@@ -1169,6 +1185,8 @@ namespace LunarROMCorruptor
             Changesaveasbtn.Enabled = !CorruptionQueueChkbox.Checked;
             //Disable stash editor button
             StashEditorbtn.Enabled = !CorruptionQueueChkbox.Checked;
+            StashBrowser.LoadedFile = CorruptionQueueChkbox.Checked ? null : CorruptionCore.SourcePath;
+            UpdateFileStatus();
         }
 
         private void FileSaveOpenLocationBtn_Click(object sender, EventArgs e)
@@ -1207,15 +1225,9 @@ namespace LunarROMCorruptor
             GenerateSelectedByteDetails();
         }
 
-        private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            MessageBox.Show($"Auto Saves and Stash Files are two different ways of saving your corruptions.{Environment.NewLine}{Environment.NewLine}Auto Saves save the entire file after corruption in the Auto Saves folder in the {nameof(LunarROMCorruptor)} directory.{Environment.NewLine}{Environment.NewLine}Stash files only save the bytes that are changed, so it takes up less storage space and allow the user to also edit each byte that was affected by using the Stash Editor. (e.g. changing a characters colour){Environment.NewLine}{Environment.NewLine}Stashes are kept in the stash list as folders with their info (file, engine and settings, range), a thumbnail and screenshots. Drag them into groups, hover for a preview, double-click for details, notes, ratings and screenshots, right-click for more. \"Corrupt stash\u2019s file using selected stash\" loads the file it was made for and replays it exactly. \"Corrupt loaded file using selected stash\" applies it to the file that is loaded right now. More in the Guides tab.{Environment.NewLine}{Environment.NewLine}The Source Code Engine saves its changes in the stash as File(offset).VARLINE(\"name\",line).SET(\"value\") and the Datamosh Engine as File(offset).FRAME(frame).SET(DROP/REPLACE/REPEAT,n).{Environment.NewLine}{Environment.NewLine}Corruption History keeps the stash of the last {CorruptionHistory.MaxEntries} corruptions, so you can re-apply one or save it to the stash list. The Stash Editor's Mutate tool makes variations of a corruption you like.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-        }
+        private void StashAndAutoSaveHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => ShowGuide("docs/Stash-and-Saves.md");
 
-        private void ByteModeHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            MessageBox.Show($"With Corrupt Every Nth Byte, you can apply regular corruptions to your file by specifying the interval to corrupt (e.g., every 1st byte, every 2nd byte, etc.).{Environment.NewLine}{Environment.NewLine}On the other hand, Intensity allows for randomized corruptions, where the corruptor selects random addresses to modify.", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-        }
+        private void ByteModeHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => ShowGuide("docs/Getting-Started.md", "target-parameters");
 
         private void FixChecksumsChkBox_CheckedChanged(object? sender, EventArgs e)
         {
@@ -1231,7 +1243,7 @@ namespace LunarROMCorruptor
                 //write to working directory of the program
                 string logFilePath = Path.Combine(Application.StartupPath, $"LRC_Log_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
                 File.WriteAllText(logFilePath, TraceLoggerTxtBox.Text);
-                MessageBox.Show($"Log saved successfully to {logFilePath}", $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                SetStatus($"Log saved to {logFilePath}", StatusKind.Success);
             }
             catch (Exception ex)
             {
@@ -1301,6 +1313,7 @@ namespace LunarROMCorruptor
                 if (answer == DialogResult.Yes)
                     CorruptionCore.RestoreQueueFiles();
             }
+            SaveSession();
         }
 
         #endregion
@@ -1431,6 +1444,16 @@ namespace LunarROMCorruptor
         private void StartEmulatorNowBtn_Click(object sender, EventArgs e)
         {
             RunEmulatorAfterCheck(SaveasTxt.Text);
+        }
+
+        private void ResetSettingsBtn_Click(object sender, EventArgs e)
+        {
+            if (MessageBox.Show(this, "Reset all settings to their defaults? This will not affect the current file or stash.", Text, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                Settings.Default.Reset();
+                LoadSettings();
+                TraceLogger.Log("All settings were reset to their defaults.");
+            }
         }
     }
 }

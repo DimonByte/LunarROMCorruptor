@@ -10,7 +10,7 @@
 4. **Set the amount.** On Target Parameters, choose *Random byte mode* and an **Intensity** of about 10-100 for a first try. Raise it until things get interesting.
 5. **Corrupt.** Click **Corrupt File (size)**. The button shows the progress and doubles as **Cancel**. Cancelling puts the output back to the original.
 6. **Test it.** Turn on *Run program after corruption* (see [below](#run-emulator-program)) so your emulator opens the result automatically.
-7. **Keep the good ones.** Every corruption's stash is shown in the list under *Enable Stash Saves*. Click **▶** to save it to the stash list (with a screenshot of the emulator if it's running). Later, select it and click **Corrupt stash's file using selected stash** to load its file and get exactly the same corruption again. Double-click a stash to see its details and screenshots. See [Stashes, Saves & Bisect](Stash-and-Saves.md).
+7. **Keep the good ones.** Every corruption's stash is shown in the list under *Enable Stash Saves*. Click **▶** to save it to the stash list (with a screenshot of the emulator if it's running). Later, select it and click **Replay on original file** to load its file and get exactly the same corruption again. Double-click a stash to see its details and screenshots. See [Stashes, Saves & Bisect](Stash-and-Saves.md).
 
 Every corruption starts from the **original** file. Corruptions don't stack, so pressing Corrupt again gives a new corruption of the clean file.
 
@@ -20,14 +20,14 @@ Every corruption starts from the **original** file. Corruptions don't stack, so 
 
 | Control | What it does |
 | :--- | :--- |
-| **Open File** | Loads a file. In Multi-File mode this button is **Edit Queue...** instead. |
+| **Open File** | Loads a file (Ctrl+O). In Multi-File mode this button is **Edit Queue...** instead. The **▾** next to it lists the last 10 files you opened. |
 | **Change Save Point** | Where the corrupted file is written. |
-| **Restore File** | Puts the save location back to the original. In Multi-File mode it restores every queue file. |
+| **Restore File** | Puts the save location back to the original (Ctrl+R). In Multi-File mode it restores every queue file. |
 | **Multi-File** | Corrupts a list of files at once. See [Automation & Multi-File](Automation-and-Multi-File.md#multi-file-corruption-queue). |
 | **Engine** | The corruption engine. Its settings are on the Corruption Engine tab. |
 | **Mute** | No sound after a successful corruption. |
 | <a id="fix-checksums"></a>**Fix Checksums** | After corrupting, recalculates the checksums that consoles/emulators check, so the file still boots: **N64** (boot CRC, CIC 6101/6102/6103/6105/6106), **Game Boy** (header + global checksum), **GBA** (header complement), **SNES** (checksum + complement), **Genesis** and **raw CD sectors** (Mode 1 / Mode 2 EDC + ECC, only for the sectors that changed). A checksum is only rewritten when LRC could reproduce the original one, so unknown or bad dumps are never touched. Checksum bytes aren't added to the stash (they're recalculated every time). |
-| **Take Ownership** | If the file can't be read or written (protected/system file), LRC tries to take ownership and grant itself access. Use with care. |
+| **Status bar** | The bottom of the window shows the last message (e.g. *restored*, *stash saved*), the loaded file with its type and size, whether the save location is corrupted, and how many changes the last corruption made and how long it took. |
 
 ### Target Parameters
 
@@ -41,7 +41,7 @@ Every corruption starts from the **original** file. Corruptions don't stack, so 
 | **Exclude Range** | Excludes the bytes from Start to End: no engine changes them from the next corruption on. They're red on ByteView, and added to the current stash as an `EXCLUDE` line, so a stash you save keeps them. Bytes the last corruption already changed stay changed until you corrupt again. |
 | **Delete Selected Range** | Un-excludes every excluded byte between Start and End, and removes it from the current stash. A range that is only partly selected is trimmed (or split), so you can cut a hole in a big excluded area. |
 | **Byte details** (text under the range) | Start, End and length of the range, how many bytes will be corrupted, how many stash entries are listed, and the excluded ranges (from Bisect / `EXCLUDE` stash lines). |
-| **Stash list area** | See [Stashes, Saves & Bisect](Stash-and-Saves.md). |
+| **Stashes / File Saves** | The area on the right switches between the stash list and the file saves. See [Stashes, Saves & Bisect](Stash-and-Saves.md). Drag the bar between the parameters and the stash area to give the stash list more room. |
 
 Engines that understand the data use Intensity / N in their own unit (floats, pointers, blocks, frames, source code values). The [engine page](Corruption-Engines.md) says which.
 
@@ -57,6 +57,30 @@ The settings of the selected engine, plus the **Preset** bar at the top: pick a 
 | **Close if running and re-open** | Closes the program first if it's still running from the last corruption, so each test starts fresh. |
 | **Override Arguments** | Uses your own command line instead of just the file path. |
 | **Terminate Running Emulator** | Closes the program LRC started. |
+
+### Session History
+
+**⏳ History** lists the last 20 corruptions of this session (with *Enable Stash Saves* on): time, engine, file, changes and range. **Revert to this** (or double-click) re-applies one to the save location, **Save as stash** keeps it in the stash list, **Open in Stash Editor** opens it. The history is deleted when LRC closes.
+
+### Settings
+
+| Setting | What it does |
+| :--- | :--- |
+| **Take Ownership** | If the file can't be read or written (protected/system file), LRC tries to take ownership and grant itself access. Use with care. |
+| **Reopen the last file when LRC starts** | LRC also remembers the window size and position, the last tab, the last engine and the size of the stash area. |
+| **Screenshot the emulator when saving a stash** | Uses a screenshot of the running emulator as the stash's thumbnail. |
+| **Warn before saving a stash with more than N entries** | Big stashes are slow to load. |
+| **Default override arguments** | Filled in to *Override Arguments* every time LRC starts (and ticked, if you choose). |
+
+### Keyboard shortcuts
+
+| Keys | What it does |
+| :--- | :--- |
+| **F5** or **Ctrl+Enter** | Corrupt (or cancel the running corruption) |
+| **Ctrl+R** | Restore File |
+| **F6** | Start the emulator program |
+| **Ctrl+O** | Open File (or Edit Queue in Multi-File mode) |
+| **Ctrl+S** | Save the last corruption as a stash |
 
 ### Guides
 

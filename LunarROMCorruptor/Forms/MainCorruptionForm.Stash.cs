@@ -56,7 +56,7 @@ namespace LunarROMCorruptor
                 }
                 else
                 {
-                    TraceLogger.Log($"The file this stash was made for isn't there anymore: {entry.Meta.SourcePath}\n\nLoad the file yourself and use \"Corrupt loaded file using selected stash\" instead.", StatusSeverityType.Warning, true);
+                    TraceLogger.Log($"The file this stash was made for isn't there anymore: {entry.Meta.SourcePath}\n\nLoad the file yourself and use \"Apply to current file\" instead.", StatusSeverityType.Warning, true);
                 }
                 SaveasTxt.Text = entry.Meta.SaveAsPath ?? CorruptionCore.SourcePath;
             };
@@ -150,7 +150,7 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("There is no corruption to save yet. Corrupt the file first (with Enable Stash Saves on).", StatusSeverityType.Warning, true);
                 return;
             }
-            if (stash.Count > 50000 &&
+            if (Settings.Default.LargeStashWarning && stash.Count > Settings.Default.LargeStashThreshold &&
                 MessageBox.Show($"This is a large stash ({stash.Count:N0} entries) which may take a while to load in the future. Are you sure you want to save anyway?",
                     $"Warning - {nameof(LunarROMCorruptor)}", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
                 return;
@@ -174,6 +174,7 @@ namespace LunarROMCorruptor
             AddAutomaticPreview(entry);
             StashBrowser.Reload(entry.Folder);
             TraceLogger.Log($"Stash saved as '{entry.Name}'. Rename it with F2, double-click it for details and screenshots.");
+            SetStatus($"Stash saved as '{entry.Name}' (F2 renames it).", StatusKind.Success);
         }
 
         /// <summary>
@@ -207,7 +208,7 @@ namespace LunarROMCorruptor
 
         private void Corruptusingstash_Click(object sender, EventArgs e)
         {
-            //Applies the selected stash to whatever file is loaded right now (use "Corrupt stash's file" to load the stash's own file first)
+            //Applies the selected stash to whatever file is loaded right now (use "Replay on original file" to load the stash's own file first)
             if (SelectedStashOrWarn() is { } entry) CorruptUsingStashFile(entry.StashFile);
         }
 
@@ -245,7 +246,7 @@ namespace LunarROMCorruptor
             {
                 if (!StashParser.TryReadHeaders(stashFileLocation, out openLocation, out saveAsLocation))
                 {
-                    TraceLogger.Log($"This stash has no file headers (it was made before stash headers were added), so LRC doesn't know which file it belongs to.\n\nLoad the file yourself and use \"Corrupt loaded file using selected stash\" instead.", StatusSeverityType.Warning, true);
+                    TraceLogger.Log($"This stash has no file headers (it was made before stash headers were added), so LRC doesn't know which file it belongs to.\n\nLoad the file yourself and use \"Apply to current file\" instead.", StatusSeverityType.Warning, true);
                     return false;
                 }
             }
@@ -267,7 +268,7 @@ namespace LunarROMCorruptor
             //Warn before replacing a different loaded file
             bool replacesLoadedFile = CorruptionCore.IsLoaded && !CorruptionCore.PathsEqual(CorruptionCore.SourcePath, openLocation);
             if (replacesLoadedFile && MessageBox.Show($"This stash was made for {Path.GetFileName(openLocation)}.\n\nDo you want to load that file and corrupt using the selected stash?\n\nThe currently loaded file ({Path.GetFileName(CorruptionCore.SourcePath)}) will be replaced.",
-                $"{nameof(LunarROMCorruptor)} - Corrupt stash's file", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                $"{nameof(LunarROMCorruptor)} - Replay on original file", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return false;
             //Is it still the same file? (A different version/region of a ROM gives a different corruption.)
             if (entry != null && (entry.Meta.SourceSize >= 0 || entry.Meta.SourceCrc32 != null))
@@ -353,6 +354,7 @@ namespace LunarROMCorruptor
 
             string outputPath = SaveasTxt.Text;
             BeginBusy("Applying stash");
+            var timer = System.Diagnostics.Stopwatch.StartNew();
             //Reset exclusion ranges to avoid conflicts with the stash file
             CorruptionCore.Exclusions.Clear();
             CorruptionResult result;
@@ -380,6 +382,8 @@ namespace LunarROMCorruptor
             _lastCorruption.SaveAsPath = outputPath;
 
             TraceLogger.Log($"Corrupted file with stash file successfully saved: {outputPath}");
+            ReportCorruption(entry != null ? $"Stash '{entry.Name}' applied" : "Stash applied", $"{CorruptionCore.Stash.Count:N0} change(s)", timer.Elapsed);
+            ShowCorruptedState(outputPath);
             StartSuccessFeedback();
             RunEmulatorIfEnabled(outputPath);
             try
@@ -519,6 +523,8 @@ namespace LunarROMCorruptor
                 item.Enabled = !_busy && File.Exists(entry.StashPath);
                 menu.Items.Add(item);
             }
+            menu.Items.Add(new ToolStripSeparator());
+            menu.Items.Add("Show all in the ⏳ History tab", null, (_, _) => MainTabControl.SelectedTab = HistoryTab);
             menu.Closed += (_, _) => BeginInvoke(menu.Dispose);
             menu.Show(CorruptionHistoryBtn, new Point(0, CorruptionHistoryBtn.Height));
         }
@@ -534,6 +540,7 @@ namespace LunarROMCorruptor
                 var entry = StashLibrary.Create(meta, StashBrowser.SelectedGroup, path => File.Copy(history.StashPath, path, true));
                 StashBrowser.Reload(entry.Folder);
                 TraceLogger.Log($"History entry saved to the stash list as '{entry.Name}'.");
+                SetStatus($"Saved to the stash list as '{entry.Name}'.", StatusKind.Success);
             }
             catch (Exception ex)
             {
@@ -604,6 +611,7 @@ namespace LunarROMCorruptor
             string outputPath = SaveasTxt.Text;
             StashBytesList.Items.Clear();
             BeginBusy(status);
+            var timer = System.Diagnostics.Stopwatch.StartNew();
             CorruptionResult result;
             try
             {
@@ -621,6 +629,8 @@ namespace LunarROMCorruptor
                 return false;
             }
             TraceLogger.Log($"{status}: applied {CorruptionCore.Stash.ByteEntries.Count:N0} change(s) to {outputPath}.");
+            ReportCorruption(status, $"{CorruptionCore.Stash.ByteEntries.Count:N0} change(s)", timer.Elapsed);
+            ShowCorruptedState(outputPath);
             RunEmulatorIfEnabled(outputPath);
             await HandleStashRenderingAsync();
             UpdateByteViewIfEnabled();

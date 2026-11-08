@@ -83,16 +83,7 @@ namespace LunarROMCorruptor
             };
         }
 
-        private void ByteViewHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-        {
-            MessageBox.Show($"ByteView shows the bytes of a file as an image. Convert/Update shows the latest corrupted file (or the loaded file if nothing has been corrupted yet). Large files are downsampled.{Environment.NewLine}{Environment.NewLine}" +
-                $"Modes:{Environment.NewLine}- Normal: every 3 bytes are one pixel (colour or greyscale).{Environment.NewLine}- Diff: the file in grey with every byte changed by the last corruption in red.{Environment.NewLine}- Entropy: how random each part of the file is. Dark = empty/padding, blue/green = tables and text, yellow = code, red = compressed or encrypted data.{Environment.NewLine}" +
-                $"- Regions: the named parts of the file for its type (picked automatically or with the list under the mode). Orange = header/boot (protected by the Nightmare+ Engine exclusion types), blue = code, green = data, pink = graphics, purple = compressed blocks. Hover to see the name of a region.{Environment.NewLine}{Environment.NewLine}" +
-                $"Excluded ranges (from Bisect Mode or EXCLUDE stash lines) are always shown in red: no engine changes them.{Environment.NewLine}{Environment.NewLine}" +
-                $"Targeting: drag over the image to set the Start/End byte to that area. The current range is highlighted in yellow. Right-click to reset the range to the whole file. Hover to see the offset under the mouse.{Environment.NewLine}{Environment.NewLine}" +
-                $"Zoom: use the scroll wheel over the image, drag with the middle mouse button to move around, double-click to reset the zoom.",
-                $"{nameof(LunarROMCorruptor)} - Information", MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-        }
+        private void ByteViewHelp_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e) => ShowGuide("docs/ByteView.md");
 
         private void ByteViewSaveImageBtn_Click(object sender, EventArgs e)
         {

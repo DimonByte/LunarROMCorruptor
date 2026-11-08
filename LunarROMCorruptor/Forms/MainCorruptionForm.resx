@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <metadata name="ToolTipHelper.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>990, 17</value>
+    <value>1208, 17</value>
   </metadata>
   <data name="BisectModeChkBox.ToolTip" xml:space="preserve">
     <value>Bisect Mode opens a small always-on-top window.
@@ -127,13 +127,22 @@ You answer “Still crashes” or “Works now”. The left-out half is shown in
 When it’s done (about 17 rounds for 100,000 changes), use “Apply stash without suspects” to keep the corruption without the crash. You can also stop and exclude the remaining suspects early.
 It also has undo, re-test, and reset exclusions.</value>
   </data>
+  <data name="AttemptProtectedFileOverrideChkBox.ToolTip" xml:space="preserve">
+    <value>This will attempt to take file ownership of the file that is getting corrupted. Useful for files that are protected by the operating system. 
+However, note that is can result in a broken system if you're not careful. Use with caution.</value>
+  </data>
   <data name="FixChecksumsChkBox.ToolTip" xml:space="preserve">
     <value>It covers N64, Game Boy, GBA, SNES, Genesis, and the per-sector error-check data in raw CD images (PS1/Saturn/Sega CD .bin).
 It only rewrites a checksum it can reproduce from the original file first, so hacks and unknown formats are left alone.</value>
   </data>
-  <data name="AttemptProtectedFileOverrideChkBox.ToolTip" xml:space="preserve">
-    <value>This will attempt to take file ownership of the file that is getting corrupted. Useful for files that are protected by the operating system. 
-However, note that is can result in a broken system if you're not careful. Use with caution.</value>
+  <data name="ShortcutsListLbl.Text" xml:space="preserve">
+    <value>Corrupt (or cancel the running corruption)
+Restore the file
+Start the emulator program
+Open a file (or edit the Multi-File queue)
+Save the last corruption as a stash
+Filter the stash list (when the list has focus)
+Rename / delete / open details of the selected stash</value>
   </data>
   <data name="LicenseRTB.Text" xml:space="preserve">
     <value>MIT License
@@ -192,19 +201,28 @@ Using this corruptor in online games or those protected by anti-cheat software m
 It's essential to recognize that this program comes with no warranties of any kind and is provided "AS IS." Users are personally responsible for backing up their data before use and for any consequences arising from the appropriate or inappropriate use of the program. Refrain from corrupting multiplayer game files, as anti-cheat software may be triggered.</value>
   </data>
   <metadata name="EmulatorFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>164, 17</value>
+    <value>530, 17</value>
   </metadata>
   <metadata name="MainSaveFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>318, 17</value>
+    <value>684, 17</value>
   </metadata>
   <metadata name="MainOpenFileDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>476, 17</value>
+    <value>841, 17</value>
   </metadata>
   <metadata name="CorruptButtonColorChanger.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
-    <value>639, 17</value>
+    <value>1003, 17</value>
   </metadata>
   <metadata name="AutomationTimer.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>381, 17</value>
+  </metadata>
+  <metadata name="StatusBar.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
     <value>17, 17</value>
+  </metadata>
+  <metadata name="StatusTimer.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>120, 17</value>
+  </metadata>
+  <metadata name="RecentFilesMenu.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>237, 17</value>
   </metadata>
   <assembly alias="System.Drawing" name="System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
   <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">

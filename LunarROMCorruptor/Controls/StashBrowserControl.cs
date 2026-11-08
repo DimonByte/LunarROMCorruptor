@@ -41,17 +41,28 @@ namespace LunarROMCorruptor.Controls
         /// </summary>
         private sealed class NodeInfo
         {
-            public required string Folder;
+            public required string Folder; //For a file heading (Group by file) this is a key, not a real folder
             public StashEntry? Entry;
             public bool SourceMissing;
+            public bool FileHeading; //A "Group by file" heading: not a real folder, so it can't be renamed, deleted or dropped on
             public bool IsGroup => Entry == null;
         }
+
+        /// <summary>
+        /// How the stashes are listed (the order of the sort box).
+        /// </summary>
+        public enum StashSortMode { Name, Newest, Oldest, Rating, File, GroupByFile }
+
+        private const string FileHeadingPrefix = "\u0001file:";
 
         private readonly HashSet<string> _expanded = new(StringComparer.OrdinalIgnoreCase);
         private StashLibrary.GroupNode? _library;
         private bool _reloading;
+        private bool _loadingSettings;
         private StashEntry? _previewEntry;
         private TreeNode? _dropTarget;
+        private string? _loadedFile; //The file loaded in the main window (for "Loaded file only")
+        private long _loadedFileSize = -1;
 
         public event Action<StashEntry>? QuickLoadRequested; //Load the stash's own file and replay it
         public event Action<StashEntry>? ApplyToLoadedRequested; //Replay it on the loaded file
@@ -59,6 +70,7 @@ namespace LunarROMCorruptor.Controls
         public event Action<StashEntry>? LoadSettingsRequested; //Load engine/range/intensity
         public event Action<StashEntry>? DetailsRequested;
         public event Action<StashEntry>? LoadFileFromStashHeader; //Reads header of stash and loads that.
+        public event Action<string>? StatusRequested; //A message for the main window's status bar
 
         /// <summary>
         /// Takes a screenshot of the running emulator (null if it isn't running).
@@ -79,9 +91,17 @@ namespace LunarROMCorruptor.Controls
             if (!IsInDesignMode())
             {
                 StashLibrary.Changed += OnLibraryChanged;
-                SortNewestMenuItem.Checked = Settings.Default.StashSortNewestFirst;
-                AutoScreenshotMenuItem.Checked = Settings.Default.StashAutoScreenshot;
+                _loadingSettings = true;
+                //Older versions only had "Newest first" (on/off)
+                SortMode = Enum.TryParse<StashSortMode>(Settings.Default.StashSortMode, out var mode) ? mode
+                    : Settings.Default.StashSortNewestFirst ? StashSortMode.Newest : StashSortMode.Name;
+                OnlyLoadedFileChk.Checked = Settings.Default.StashOnlyLoadedFile;
+                ShowPreviewMenuItem.Checked = Settings.Default.StashShowPreview;
+                BodySplit.Panel2Collapsed = !ShowPreviewMenuItem.Checked;
+                SetPreviewHeight(Settings.Default.StashPreviewHeight);
+                _loadingSettings = false;
             }
+            UpdateLoadedFileOption();
             for (int stars = 0; stars <= 5; stars++)
             {
                 int value = stars;
@@ -96,7 +116,55 @@ namespace LunarROMCorruptor.Controls
         /// <summary>
         /// Whether a stash saved from the main form should get a screenshot of the running emulator.
         /// </summary>
-        public bool AutoScreenshot => AutoScreenshotMenuItem.Checked;
+        public bool AutoScreenshot => Settings.Default.StashAutoScreenshot;
+
+        /// <summary>
+        /// How the stashes are sorted (or grouped by file).
+        /// </summary>
+        [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public StashSortMode SortMode
+        {
+            get => SortCombo.SelectedIndex < 0 ? StashSortMode.Name : (StashSortMode)SortCombo.SelectedIndex;
+            set => SortCombo.SelectedIndex = Math.Clamp((int)value, 0, SortCombo.Items.Count - 1);
+        }
+
+        /// <summary>
+        /// The file loaded in the main window, used by "Loaded file only". Null when no single file is loaded.
+        /// </summary>
+        [Browsable(false), DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public string? LoadedFile
+        {
+            get => _loadedFile;
+            set
+            {
+                if (Modules.CorruptionInternals.CorruptionCore.PathsEqual(_loadedFile, value) || (_loadedFile == null && value == null)) return;
+                _loadedFile = string.IsNullOrWhiteSpace(value) ? null : value;
+                try { _loadedFileSize = _loadedFile != null && File.Exists(_loadedFile) ? new FileInfo(_loadedFile).Length : -1; }
+                catch { _loadedFileSize = -1; }
+                UpdateLoadedFileOption();
+                if (OnlyLoadedFileChk.Checked) BuildTree((StashTree.SelectedNode?.Tag as NodeInfo)?.Folder);
+            }
+        }
+
+        private void UpdateLoadedFileOption()
+        {
+            OnlyLoadedFileChk.Enabled = _loadedFile != null;
+            HintTip.SetToolTip(OnlyLoadedFileChk, _loadedFile == null
+                ? "Only show the stashes made for the loaded file. (Load a file first.)"
+                : $"Only show the stashes made for {Path.GetFileName(_loadedFile)}.");
+        }
+
+        /// <summary>
+        /// True when a stash was made for the loaded file: the same path, or a file with the same name (and size, when known) that moved.
+        /// </summary>
+        private bool IsForLoadedFile(StashEntry e)
+        {
+            if (_loadedFile == null) return true;
+            var m = e.Meta;
+            if (Modules.CorruptionInternals.CorruptionCore.PathsEqual(m.SourcePath, _loadedFile)) return true;
+            return m.SourceFileName.Length > 0 && m.SourceFileName.Equals(Path.GetFileName(_loadedFile), StringComparison.OrdinalIgnoreCase)
+                && (m.SourceSize < 0 || _loadedFileSize < 0 || m.SourceSize == _loadedFileSize);
+        }
 
         #region Icons
 
@@ -200,7 +268,8 @@ namespace LunarROMCorruptor.Controls
                 if (_library == null) return;
                 string[] words = FilterTxt.Text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 _existsCache.Clear();
-                AddGroupChildren(StashTree.Nodes, _library, words);
+                if (SortMode == StashSortMode.GroupByFile) AddFileHeadings(StashTree.Nodes, _library, words);
+                else AddGroupChildren(StashTree.Nodes, _library, words);
                 if (selectFolder != null)
                 {
                     var node = FindNode(StashTree.Nodes, selectFolder);
@@ -216,6 +285,51 @@ namespace LunarROMCorruptor.Controls
                 StashTree.EndUpdate();
                 _reloading = false;
             }
+            UpdatePreview();
+        }
+
+        private bool Shown(StashEntry e, string[] words) => Matches(e, words) && (!OnlyLoadedFileChk.Checked || !OnlyLoadedFileChk.Enabled || IsForLoadedFile(e));
+
+        private IEnumerable<StashEntry> Sort(IEnumerable<StashEntry> stashes) => SortMode switch
+        {
+            StashSortMode.Newest or StashSortMode.GroupByFile => stashes.OrderByDescending(e => e.Meta.Created),
+            StashSortMode.Oldest => stashes.OrderBy(e => e.Meta.Created),
+            StashSortMode.Rating => stashes.OrderByDescending(e => e.Meta.Rating).ThenByDescending(e => e.Meta.Created),
+            StashSortMode.File => stashes.OrderBy(e => e.Meta.SourceFileName, StringComparer.CurrentCultureIgnoreCase).ThenByDescending(e => e.Meta.Created),
+            _ => stashes.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
+        };
+
+        private TreeNode StashNode(StashEntry entry)
+        {
+            bool missing = SourceMissing(entry.Meta.SourcePath);
+            int icon = missing ? IconStashMissing : entry.HasThumbnail ? IconStashPicture : IconStash;
+            return new TreeNode(entry.Name, icon, icon) { Tag = new NodeInfo { Folder = entry.Folder, Entry = entry, SourceMissing = missing } };
+        }
+
+        private static IEnumerable<StashEntry> AllStashes(StashLibrary.GroupNode group) => group.Stashes.Concat(group.Groups.SelectMany(AllStashes));
+
+        /// <summary>
+        /// "Group by file": one heading per file (with its platform), holding every stash made for it, wherever it is in the groups.
+        /// </summary>
+        private void AddFileHeadings(TreeNodeCollection nodes, StashLibrary.GroupNode library, string[] words)
+        {
+            var byFile = AllStashes(library).Where(e => Shown(e, words))
+                .GroupBy(e => e.Meta.SourceFileName.Length == 0 ? "" : e.Meta.SourceFileName, StringComparer.OrdinalIgnoreCase)
+                .OrderBy(g => g.Key.Length == 0 ? 1 : 0).ThenBy(g => g.Key, StringComparer.CurrentCultureIgnoreCase);
+            foreach (var file in byFile)
+            {
+                string? platform = file.Select(e => e.Meta.Platform).FirstOrDefault(p => !string.IsNullOrEmpty(p));
+                string title = file.Key.Length == 0 ? "(unknown file)" : platform == null ? file.Key : $"{file.Key}  [{platform}]";
+                string key = FileHeadingPrefix + file.Key;
+                var heading = new TreeNode(title, IconGroup, IconGroup) { Tag = new NodeInfo { Folder = key, FileHeading = true } };
+                foreach (var entry in Sort(file)) heading.Nodes.Add(StashNode(entry));
+                nodes.Add(heading);
+                if (words.Length > 0 || _expanded.Contains(key))
+                {
+                    heading.Expand();
+                    heading.ImageIndex = heading.SelectedImageIndex = IconGroupOpen;
+                }
+            }
         }
 
         /// <summary>
@@ -228,24 +342,19 @@ namespace LunarROMCorruptor.Controls
             {
                 var node = new TreeNode(sub.Name, IconGroup, IconGroup) { Tag = new NodeInfo { Folder = sub.Path } };
                 bool hasMatches = AddGroupChildren(node.Nodes, sub, words);
-                if (words.Length > 0 && !hasMatches) continue;
+                bool filtering = words.Length > 0 || (OnlyLoadedFileChk.Checked && OnlyLoadedFileChk.Enabled);
+                if (filtering && !hasMatches) continue;
                 nodes.Add(node);
-                if (words.Length > 0 || _expanded.Contains(sub.Path))
+                if (filtering || _expanded.Contains(sub.Path))
                 {
                     node.Expand();
                     node.ImageIndex = node.SelectedImageIndex = IconGroupOpen;
                 }
                 any = true;
             }
-            IEnumerable<StashEntry> stashes = group.Stashes.Where(e => Matches(e, words));
-            stashes = SortNewestMenuItem.Checked
-                ? stashes.OrderByDescending(e => e.Meta.Created)
-                : stashes.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase);
-            foreach (var entry in stashes)
+            foreach (var entry in Sort(group.Stashes.Where(e => Shown(e, words))))
             {
-                bool missing = SourceMissing(entry.Meta.SourcePath);
-                int icon = missing ? IconStashMissing : entry.HasThumbnail ? IconStashPicture : IconStash;
-                nodes.Add(new TreeNode(entry.Name, icon, icon) { Tag = new NodeInfo { Folder = entry.Folder, Entry = entry, SourceMissing = missing } });
+                nodes.Add(StashNode(entry));
                 any = true;
             }
             return any;
@@ -272,7 +381,7 @@ namespace LunarROMCorruptor.Controls
         {
             foreach (TreeNode node in nodes)
             {
-                if (node.Tag is NodeInfo info && Modules.CorruptionInternals.CorruptionCore.PathsEqual(info.Folder, folder)) return node;
+                if (node.Tag is NodeInfo info && (info.FileHeading ? info.Folder == folder : Modules.CorruptionInternals.CorruptionCore.PathsEqual(info.Folder, folder))) return node;
                 var found = FindNode(node.Nodes, folder);
                 if (found != null) return found;
             }
@@ -312,7 +421,7 @@ namespace LunarROMCorruptor.Controls
         {
             get
             {
-                if (StashTree.SelectedNode?.Tag is not NodeInfo info) return "";
+                if (StashTree.SelectedNode?.Tag is not NodeInfo info || info.FileHeading) return "";
                 return info.IsGroup ? StashLibrary.RelativeGroup(info.Folder) : info.Entry!.Group;
             }
         }
@@ -359,10 +468,6 @@ namespace LunarROMCorruptor.Controls
                     DeleteSelected();
                     e.Handled = true;
                     break;
-                case Keys.F5:
-                    Reload();
-                    e.Handled = true;
-                    break;
                 case Keys.F when e.Control:
                     FilterTxt.Focus();
                     FilterTxt.SelectAll();
@@ -391,16 +496,50 @@ namespace LunarROMCorruptor.Controls
                 string text = e.Node.Text;
                 if (info?.IsGroup == true && e.Node.Nodes.Count > 0) text += $"  ({CountStashes(e.Node)})";
                 TextRenderer.DrawText(e.Graphics, text, font, new Point(e.Bounds.X, e.Bounds.Y + 2), fore, TextFormatFlags.NoPrefix);
+                int end = e.Bounds.X + TextRenderer.MeasureText(e.Graphics, text, font, Size.Empty, TextFormatFlags.NoPrefix).Width;
                 if (info?.Entry is { Meta.Rating: > 0 } entry)
                 {
-                    int x = e.Bounds.X + TextRenderer.MeasureText(e.Graphics, text, font, Size.Empty, TextFormatFlags.NoPrefix).Width;
-                    TextRenderer.DrawText(e.Graphics, new string('★', Math.Min(5, entry.Meta.Rating)), StashTree.Font, new Point(x, e.Bounds.Y + 2), Color.Gold, TextFormatFlags.NoPrefix);
+                    string stars = new('★', Math.Min(5, entry.Meta.Rating));
+                    TextRenderer.DrawText(e.Graphics, stars, StashTree.Font, new Point(end, e.Bounds.Y + 2), Color.Gold, TextFormatFlags.NoPrefix);
+                    end += TextRenderer.MeasureText(e.Graphics, stars, StashTree.Font, Size.Empty, TextFormatFlags.NoPrefix).Width;
                 }
+                if (info?.Entry is { } stash) DrawRowDetails(e.Graphics, stash.Meta, end, e.Bounds, selected);
             }
             finally
             {
                 if (font != StashTree.Font) font.Dispose();
             }
+        }
+
+        /// <summary>
+        /// The dim "2d ago · Nightmare+" text at the right of a stash row. The engine is dropped first when the name is too long, then the date.
+        /// </summary>
+        private void DrawRowDetails(Graphics g, StashMetadata meta, int textEnd, Rectangle row, bool selected)
+        {
+            string ago = Ago(meta.Created);
+            string engine = string.IsNullOrEmpty(meta.Engine) ? "" : meta.Engine.Replace(" Engine", "");
+            int right = StashTree.ClientSize.Width - 6;
+            Color colour = selected ? Color.FromArgb(185, 190, 225) : Color.FromArgb(135, 140, 175);
+            foreach (string details in engine.Length > 0 ? new[] { $"{ago} · {engine}", ago } : [ago])
+            {
+                int width = TextRenderer.MeasureText(g, details, StashTree.Font, Size.Empty, TextFormatFlags.NoPrefix).Width;
+                if (right - width < textEnd + 10) continue;
+                TextRenderer.DrawText(g, details, StashTree.Font, new Point(right - width, row.Y + 2), colour, TextFormatFlags.NoPrefix);
+                return;
+            }
+        }
+
+        /// <summary>
+        /// A short relative date: "just now", "5m ago", "3h ago", "2d ago", then "12 Mar" (this year) or "12 Mar 2024".
+        /// </summary>
+        internal static string Ago(DateTime time)
+        {
+            var span = DateTime.Now - time;
+            if (span.TotalMinutes < 1) return "just now";
+            if (span.TotalHours < 1) return $"{(int)span.TotalMinutes}m ago";
+            if (span.TotalDays < 1) return $"{(int)span.TotalHours}h ago";
+            if (span.TotalDays < 7) return $"{(int)span.TotalDays}d ago";
+            return time.Year == DateTime.Now.Year ? time.ToString("d MMM") : time.ToString("d MMM yyyy");
         }
 
         private static int CountStashes(TreeNode node)
@@ -470,6 +609,83 @@ namespace LunarROMCorruptor.Controls
 
         #endregion
 
+        #region Preview panel
+
+        private void StashTree_AfterSelect(object? sender, TreeViewEventArgs e) => UpdatePreview();
+
+        private void UpdatePreview()
+        {
+            if (!BodySplit.Panel2Collapsed) PreviewPanel.Invalidate();
+        }
+
+        /// <summary>
+        /// The panel under the tree: the selected stash's thumbnail and the same info as the hover preview.
+        /// </summary>
+        private void PreviewPanel_Paint(object? sender, PaintEventArgs e)
+        {
+            var g = e.Graphics;
+            const int pad = 6;
+            var area = PreviewPanel.ClientRectangle;
+            var dim = Color.FromArgb(135, 140, 175);
+            var info = StashTree.SelectedNode?.Tag as NodeInfo;
+            if (info?.Entry is not { } entry)
+            {
+                string message = info == null ? "Select a stash to see its preview."
+                    : $"{StashTree.SelectedNode!.Text}\n{CountStashes(StashTree.SelectedNode)} stash(es)";
+                TextRenderer.DrawText(g, message, Font, area, dim, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix);
+                return;
+            }
+            int textLeft = pad;
+            var image = StashLibrary.ThumbnailCache.Get(entry.ThumbnailFile);
+            if (image != null && area.Width >= 170 && area.Height > 2 * pad)
+            {
+                int maxW = (int)(area.Width * 0.42), maxH = area.Height - 2 * pad;
+                double scale = Math.Min((double)maxW / image.Width, (double)maxH / image.Height);
+                int w = Math.Max(1, (int)(image.Width * scale)), h = Math.Max(1, (int)(image.Height * scale));
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(image, pad, pad + (maxH - h) / 2, w, h);
+                textLeft = pad + w + pad;
+            }
+            int textWidth = area.Width - textLeft - pad;
+            if (textWidth < 20) return;
+            using var bold = new Font(Font, FontStyle.Bold);
+            int titleHeight = TextRenderer.MeasureText(g, "Ag", bold).Height;
+            TextRenderer.DrawText(g, entry.Name, bold, new Rectangle(textLeft, pad, textWidth, titleHeight), Color.FromArgb(192, 255, 255), TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+            var body = new Rectangle(textLeft, pad + titleHeight + 2, textWidth, area.Height - pad * 2 - titleHeight - 2);
+            TextRenderer.DrawText(g, PreviewText(entry), Font, body, Color.FromArgb(213, 216, 216), TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPrefix);
+        }
+
+        private void PreviewPanel_DoubleClick(object? sender, EventArgs e)
+        {
+            if (SelectedEntry is { } entry) DetailsRequested?.Invoke(entry);
+        }
+
+        private void ShowPreviewMenuItem_Click(object? sender, EventArgs e)
+        {
+            BodySplit.Panel2Collapsed = !ShowPreviewMenuItem.Checked;
+            Settings.Default.StashShowPreview = ShowPreviewMenuItem.Checked;
+            Settings.Default.Save();
+            UpdatePreview();
+        }
+
+        private void SetPreviewHeight(int height)
+        {
+            try
+            {
+                int distance = BodySplit.Height - BodySplit.SplitterWidth - Math.Max(BodySplit.Panel2MinSize, height);
+                if (distance >= BodySplit.Panel1MinSize) BodySplit.SplitterDistance = distance;
+            }
+            catch (InvalidOperationException) { } //Too small to fit, keep the default
+        }
+
+        private void BodySplit_SplitterMoved(object? sender, SplitterEventArgs e)
+        {
+            if (_loadingSettings || !IsHandleCreated || BodySplit.Panel2Collapsed) return;
+            Settings.Default.StashPreviewHeight = BodySplit.Panel2.Height; //Saved when LRC closes
+        }
+
+        #endregion
+
         #region Context menu
 
         private void StashMenu_Opening(object? sender, System.ComponentModel.CancelEventArgs e)
@@ -477,11 +693,12 @@ namespace LunarROMCorruptor.Controls
             PreviewTip.Hide(StashTree);
             var info = StashTree.SelectedNode?.Tag as NodeInfo;
             bool stash = info?.Entry != null;
-            foreach (var item in new ToolStripItem[] { QuickLoadMenuItem, ApplyToLoadedMenuItem, DetailsMenuItem, EditMenuItem, LoadSettingsMenuItem, ScreenshotMenuItem, RatingMenuItem, ExportMenuItem })
+            foreach (var item in new ToolStripItem[] { CorruptMenuItem, ApplyToLoadedMenuItem, DetailsMenuItem, EditMenuItem, LoadMenuItem, LoadStashsFileOnlyBtn, ScreenshotMenuItem, RatingMenuItem, ExportMenuItem })
                 item.Enabled = stash;
             LoadSettingsMenuItem.Enabled = stash && !string.IsNullOrEmpty(info!.Entry!.Meta.Engine);
             QuickLoadMenuItem.Enabled = stash && !string.IsNullOrEmpty(info!.Entry!.Meta.SourcePath);
-            RenameMenuItem.Enabled = DeleteMenuItem.Enabled = MoveToMenuItem.Enabled = info != null;
+            bool realNode = info != null && !info.FileHeading;
+            RenameMenuItem.Enabled = DeleteMenuItem.Enabled = MoveToMenuItem.Enabled = realNode;
             OpenFolderMenuItem.Enabled = true;
             if (stash)
             {
@@ -494,7 +711,7 @@ namespace LunarROMCorruptor.Controls
         private void BuildMoveMenu(NodeInfo? info)
         {
             MoveToMenuItem.DropDownItems.Clear();
-            if (info == null || _library == null) return;
+            if (info == null || info.FileHeading || _library == null) return;
             void Add(StashLibrary.GroupNode group, int depth)
             {
                 bool self = Modules.CorruptionInternals.CorruptionCore.PathsEqual(group.Path, info.Folder);
@@ -528,6 +745,7 @@ namespace LunarROMCorruptor.Controls
                 entry.Meta.Rating = stars;
                 StashLibrary.SaveMeta(entry);
                 StashTree.Invalidate();
+                UpdatePreview();
             }
             catch (Exception ex)
             {
@@ -535,17 +753,20 @@ namespace LunarROMCorruptor.Controls
             }
         }
 
-        private void SortNewestMenuItem_Click(object? sender, EventArgs e)
+        private void SortCombo_SelectedIndexChanged(object? sender, EventArgs e)
         {
-            Settings.Default.StashSortNewestFirst = SortNewestMenuItem.Checked;
+            if (_loadingSettings) return;
+            Settings.Default.StashSortMode = SortMode.ToString();
             Settings.Default.Save();
-            BuildTree((StashTree.SelectedNode?.Tag as NodeInfo)?.Folder);
+            BuildTree((StashTree.SelectedNode?.Tag as NodeInfo)?.Entry?.Folder);
         }
 
-        private void AutoScreenshotMenuItem_Click(object? sender, EventArgs e)
+        private void OnlyLoadedFileChk_CheckedChanged(object? sender, EventArgs e)
         {
-            Settings.Default.StashAutoScreenshot = AutoScreenshotMenuItem.Checked;
+            if (_loadingSettings) return;
+            Settings.Default.StashOnlyLoadedFile = OnlyLoadedFileChk.Checked;
             Settings.Default.Save();
+            BuildTree((StashTree.SelectedNode?.Tag as NodeInfo)?.Folder);
         }
 
         private void NewGroupMenuItem_Click(object? sender, EventArgs e)
@@ -567,13 +788,13 @@ namespace LunarROMCorruptor.Controls
         public void RenameSelected()
         {
             var node = StashTree.SelectedNode;
-            if (node == null) { TraceLogger.Log("Select a stash or group to rename.", StatusSeverityType.Warning, true); return; }
+            if (node == null || node.Tag is NodeInfo { FileHeading: true }) { TraceLogger.Log("Select a stash or group to rename.", StatusSeverityType.Warning, true); return; }
             node.BeginEdit();
         }
 
         private void StashTree_BeforeLabelEdit(object? sender, NodeLabelEditEventArgs e)
         {
-            if (e.Node?.Tag is not NodeInfo) e.CancelEdit = true;
+            if (e.Node?.Tag is not NodeInfo { FileHeading: false }) e.CancelEdit = true;
         }
 
         private void StashTree_AfterLabelEdit(object? sender, NodeLabelEditEventArgs e)
@@ -609,7 +830,7 @@ namespace LunarROMCorruptor.Controls
 
         public void DeleteSelected()
         {
-            if (StashTree.SelectedNode?.Tag is not NodeInfo info)
+            if (StashTree.SelectedNode?.Tag is not NodeInfo info || info.FileHeading)
             {
                 TraceLogger.Log("Select a stash or group to delete.", StatusSeverityType.Warning, true);
                 return;
@@ -654,7 +875,7 @@ namespace LunarROMCorruptor.Controls
             try
             {
                 StashLibrary.Export(entry, dialog.FileName);
-                MessageBox.Show($"Exported to {dialog.FileName}.\n\nOthers can import it with Import... or by dropping it on the stash list. They need their own copy of {(string.IsNullOrEmpty(entry.Meta.SourceFileName) ? "the file" : entry.Meta.SourceFileName)}.", $"{nameof(LunarROMCorruptor)} - Export stash", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                StatusRequested?.Invoke($"Exported to {dialog.FileName}. Others import it by dropping it on the stash list, with their own copy of {(string.IsNullOrEmpty(entry.Meta.SourceFileName) ? "the file" : entry.Meta.SourceFileName)}.");
             }
             catch (Exception ex)
             {
@@ -689,7 +910,7 @@ namespace LunarROMCorruptor.Controls
 
         private void OpenFolderMenuItem_Click(object? sender, EventArgs e)
         {
-            string folder = (StashTree.SelectedNode?.Tag as NodeInfo)?.Folder ?? StashLibrary.Root;
+            string folder = StashTree.SelectedNode?.Tag is NodeInfo { FileHeading: false } info ? info.Folder : StashLibrary.Root;
             Directory.CreateDirectory(StashLibrary.Root);
             CommandRunner.OpenFolderInExplorer(folder);
         }
@@ -746,7 +967,7 @@ namespace LunarROMCorruptor.Controls
 
         private void StashTree_ItemDrag(object? sender, ItemDragEventArgs e)
         {
-            if (e.Item is TreeNode { Tag: NodeInfo } node && e.Button == MouseButtons.Left)
+            if (e.Item is TreeNode { Tag: NodeInfo { FileHeading: false } } node && e.Button == MouseButtons.Left && SortMode != StashSortMode.GroupByFile)
             {
                 PreviewTip.Hide(StashTree);
                 StashTree.SelectedNode = node;
@@ -760,6 +981,7 @@ namespace LunarROMCorruptor.Controls
         private (TreeNode? Node, string Group) DropGroupAt(Point screen)
         {
             var node = StashTree.GetNodeAt(StashTree.PointToClient(screen));
+            if (SortMode == StashSortMode.GroupByFile) return (null, ""); //File headings aren't folders, imports go to the top level
             if (node?.Tag is NodeInfo info)
             {
                 if (info.IsGroup) return (node, StashLibrary.RelativeGroup(info.Folder));

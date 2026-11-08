@@ -76,6 +76,9 @@
     <Compile Update="Forms\Editors\StashEditor.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\MainCorruptionForm.Session.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\MainCorruptionForm.Stash.cs">
       <SubType>Form</SubType>
     </Compile>

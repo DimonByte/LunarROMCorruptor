@@ -178,5 +178,209 @@ namespace LunarROMCorruptor.Properties {
                 this["StashSortNewestFirst"] = value;
             }
         }
+            
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string StashSortMode {
+            get {
+                return ((string)(this["StashSortMode"]));
+            }
+            set {
+                this["StashSortMode"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool StashOnlyLoadedFile {
+            get {
+                return ((bool)(this["StashOnlyLoadedFile"]));
+            }
+            set {
+                this["StashOnlyLoadedFile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool StashShowPreview {
+            get {
+                return ((bool)(this["StashShowPreview"]));
+            }
+            set {
+                this["StashShowPreview"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("110")]
+        public int StashPreviewHeight {
+            get {
+                return ((int)(this["StashPreviewHeight"]));
+            }
+            set {
+                this["StashPreviewHeight"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string WindowBounds {
+            get {
+                return ((string)(this["WindowBounds"]));
+            }
+            set {
+                this["WindowBounds"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool WindowMaximized {
+            get {
+                return ((bool)(this["WindowMaximized"]));
+            }
+            set {
+                this["WindowMaximized"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int LastTabIndex {
+            get {
+                return ((int)(this["LastTabIndex"]));
+            }
+            set {
+                this["LastTabIndex"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastFile {
+            get {
+                return ((string)(this["LastFile"]));
+            }
+            set {
+                this["LastFile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string LastEngine {
+            get {
+                return ((string)(this["LastEngine"]));
+            }
+            set {
+                this["LastEngine"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string RecentFiles {
+            get {
+                return ((string)(this["RecentFiles"]));
+            }
+            set {
+                this["RecentFiles"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool ReopenLastFile {
+            get {
+                return ((bool)(this["ReopenLastFile"]));
+            }
+            set {
+                this["ReopenLastFile"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("-1")]
+        public int TargetSplitterDistance {
+            get {
+                return ((int)(this["TargetSplitterDistance"]));
+            }
+            set {
+                this["TargetSplitterDistance"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool LargeStashWarning {
+            get {
+                return ((bool)(this["LargeStashWarning"]));
+            }
+            set {
+                this["LargeStashWarning"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("50000")]
+        public int LargeStashThreshold {
+            get {
+                return ((int)(this["LargeStashThreshold"]));
+            }
+            set {
+                this["LargeStashThreshold"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string DefaultOverrideArguments {
+            get {
+                return ((string)(this["DefaultOverrideArguments"]));
+            }
+            set {
+                this["DefaultOverrideArguments"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool UseDefaultOverrideArguments {
+            get {
+                return ((bool)(this["UseDefaultOverrideArguments"]));
+            }
+            set {
+                this["UseDefaultOverrideArguments"] = value;
+            }
+        }
+            
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("0")]
+        public int StashAreaTabIndex {
+            get {
+                return ((int)(this["StashAreaTabIndex"]));
+            }
+            set {
+                this["StashAreaTabIndex"] = value;
+            }
+        }
     }
 }

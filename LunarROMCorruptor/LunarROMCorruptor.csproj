@@ -97,6 +97,10 @@
       <DependentUpon>MainCorruptionForm.cs</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Forms\MainCorruptionForm.Session.cs">
+      <DependentUpon>MainCorruptionForm.cs</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Forms\MainCorruptionForm.Automation.cs">
       <DependentUpon>MainCorruptionForm.cs</DependentUpon>
       <SubType>Code</SubType>

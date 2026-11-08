@@ -33,8 +33,8 @@
     <Authors>DimonByte</Authors>
     <Description>Versatile, multi-engine file corruption for ROMs and any binary data.</Description>
     <Copyright>Copyright (c) 2020-2026 DimonByte</Copyright>
-    <FileVersion>2.1.0.0</FileVersion>
-    <AssemblyVersion>2.1.0.0</AssemblyVersion>
+    <FileVersion>2.2.0.0</FileVersion>
+    <AssemblyVersion>2.2.0.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <OutputPath>bin\x64\Debug\</OutputPath>

@@ -26,7 +26,7 @@ namespace LunarROMCorruptor.Modules
 {
     public class IOManager
     {
-        private static readonly string SavesDirectory = Path.Combine(Application.StartupPath, "Saves");
+        internal static readonly string SavesDirectory = Path.Combine(Application.StartupPath, "Saves");
         public static readonly string CorruptionStashDirectory = Path.Combine(Application.StartupPath, "CorruptionStashList");
 
         // Common validation for file names
@@ -288,12 +288,12 @@ namespace LunarROMCorruptor.Modules
             }
         }
 
-        public static void CopySaveToCorruptedFile(string saveAsTxt, ListBox filesaveList)
+        public static bool CopySaveToCorruptedFile(string saveAsTxt, ListBox filesaveList)
         {
             if (string.IsNullOrEmpty(saveAsTxt) || saveAsTxt == "No save location set.")
             {
                 TraceLogger.Log("No valid file path provided. Aborting copy operation.", StatusSeverityType.Warning);
-                return;
+                return false;
             }
 
             try
@@ -302,7 +302,7 @@ namespace LunarROMCorruptor.Modules
                 if (string.IsNullOrEmpty(selectedItemText))
                 {
                     TraceLogger.Log("No item selected for copying. Aborting copy operation.", StatusSeverityType.Warning, true);
-                    return;
+                    return false;
                 }
 
                 string sourcePath = Path.Combine(SavesDirectory, selectedItemText);
@@ -310,11 +310,12 @@ namespace LunarROMCorruptor.Modules
                     MessageBox.Show("The save location is the original file. Copying the file save over it will replace the original file (Restore will no longer be able to undo this). Continue?",
                     $"Warning - {nameof(LunarROMCorruptor)}", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) != DialogResult.Yes)
                 {
-                    return;
+                    return false;
                 }
                 CorruptionInternals.CorruptionCore.InvalidateOutput(saveAsTxt);
                 File.Copy(sourcePath, saveAsTxt, true);
                 TraceLogger.Log($"File copied successfully from: {sourcePath} to: {saveAsTxt}", StatusSeverityType.Information);
+                return true;
             }
             catch (ArgumentException)
             {
@@ -328,6 +329,7 @@ namespace LunarROMCorruptor.Modules
             {
                 TraceLogger.Log($"Unable to copy the file save: {ex.Message}", StatusSeverityType.Error, true);
             }
+            return false;
         }
 
         private static bool IsValidFileName(string fileName)
@@ -366,11 +368,28 @@ namespace LunarROMCorruptor.Modules
     /// </summary>
     public static class CorruptionHistory
     {
-        public const int MaxEntries = 3;
+        public const int MaxEntries = 20;
         public const long MaxStashEntries = 2_000_000; //Bigger stashes aren't written to the history (they'd be hundreds of MB)
         private static readonly Lock _lock = new();
         private static readonly List<CorruptionHistoryEntry> _entries = []; //Newest first
         internal static string HistoryDirectory = Path.Combine(AppContext.BaseDirectory, "CorruptionHistory");
+        private static int _totalAdded;
+
+        /// <summary>
+        /// Raised when an entry is added or the history is cleared. Can be raised on a background thread.
+        /// </summary>
+        public static event Action? Changed;
+
+        /// <summary>
+        /// How many corruptions were added this session (also the ones that dropped off the end), used to number them.
+        /// </summary>
+        public static int TotalAdded
+        {
+            get
+            {
+                lock (_lock) return _totalAdded;
+            }
+        }
 
         public static IReadOnlyList<CorruptionHistoryEntry> Entries
         {
@@ -406,6 +425,7 @@ namespace LunarROMCorruptor.Modules
                 lock (_lock)
                 {
                     _entries.Insert(0, entry);
+                    _totalAdded++;
                     while (_entries.Count > MaxEntries)
                     {
                         var old = _entries[^1];
@@ -414,6 +434,7 @@ namespace LunarROMCorruptor.Modules
                     }
                 }
                 TraceLogger.Log($"Corruption saved to history: {entry}");
+                Changed?.Invoke();
                 return entry;
             }
             catch (Exception ex)
@@ -440,7 +461,9 @@ namespace LunarROMCorruptor.Modules
                 {
                     TraceLogger.Log($"Unable to clear the corruption history folder: {ex.Message}", StatusSeverityType.Warning);
                 }
+                _totalAdded = 0;
             }
+            Changed?.Invoke();
         }
     }
 }

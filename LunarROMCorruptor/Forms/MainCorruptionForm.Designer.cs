@@ -33,21 +33,20 @@
             FilesaveReloadbtn = new Button();
             FilesaveRenameBtn = new Button();
             FileSaveTab = new TabPage();
-            StashAndAutoSaveHelp = new LinkLabel();
-            FileSaveOpenLocationBtn = new Button();
-            FilesaveDelete = new Button();
+            FilesaveList = new ListBox();
+            FileSaveButtonsPanel = new FlowLayoutPanel();
             FilesaveSavebtn = new Button();
             CopySaveToCorruptedFileBtn = new Button();
-            FilesaveList = new ListBox();
+            FilesaveDelete = new Button();
+            FileSaveOpenLocationBtn = new Button();
+            FileSaveTopPanel = new Panel();
             FilesaveEnableAutoSaves = new CheckBox();
+            StashAndAutoSaveHelp = new LinkLabel();
             CorruptionEngineComboBox = new ComboBox();
             CorruptionEnginelbl = new Label();
             CorruptionQueueChkbox = new CheckBox();
             FileCorruptionTab = new TabPage();
-            StashBtnTableLayoutPanel = new TableLayoutPanel();
-            RenameStashBtn = new Button();
-            DeleteStashBtn = new Button();
-            RefreshStashBtn = new Button();
+            TargetSplit = new SplitContainer();
             CorruptEverynthByteRadioBtn = new RadioButton();
             RandomByteCorruptRadioBtn = new RadioButton();
             CorruptionParametersPanel = new Panel();
@@ -73,6 +72,12 @@
             IntensityRandomLabel = new Label();
             Intensity = new NumericUpDown();
             IntensityTrackbar = new TrackBar();
+            StashAreaTabs = new TabControl();
+            StashesPage = new TabPage();
+            StashBtnTableLayoutPanel = new TableLayoutPanel();
+            RenameStashBtn = new Button();
+            DeleteStashBtn = new Button();
+            RefreshStashBtn = new Button();
             StashBytesList = new ListBox();
             CorruptionHistoryBtn = new Button();
             BisectModeChkBox = new CheckBox();
@@ -84,7 +89,6 @@
             TransferStash = new Button();
             AttentionPictureBox = new PictureBox();
             SilentCorruptionchbox = new CheckBox();
-            FixChecksumsChkBox = new CheckBox();
             ByteViewRegionProfileComboBox = new ComboBox();
             AttemptProtectedFileOverrideChkBox = new CheckBox();
             MainTabControl = new TabControl();
@@ -115,8 +119,28 @@
             MoveTaskUpBtn = new Button();
             AddTaskBtn = new Button();
             StartAutomationBtn = new Button();
+            HistoryTab = new TabPage();
+            SessionHistoryView = new LunarROMCorruptor.Controls.SessionHistoryControl();
             GuidesTab = new TabPage();
             GuidesView = new LunarROMCorruptor.Controls.GuidesControl();
+            SettingsTab = new TabPage();
+            ResetSettingsBtn = new Button();
+            FixChecksumsChkBox = new CheckBox();
+            SettingsFilesLbl = new Label();
+            ReopenLastFileChk = new CheckBox();
+            SettingsStashLbl = new Label();
+            AutoScreenshotChk = new CheckBox();
+            LargeStashWarningChk = new CheckBox();
+            LargeStashThresholdNUD = new NumericUpDown();
+            LargeStashEntriesLbl = new Label();
+            SettingsEmulatorLbl = new Label();
+            DefaultArgsLbl = new Label();
+            DefaultArgsTxt = new TextBox();
+            UseDefaultArgsChk = new CheckBox();
+            LoadStashEmulatorChk = new CheckBox();
+            SettingsShortcutsLbl = new Label();
+            ShortcutsListLbl = new Label();
+            ShortcutKeysLbl = new Label();
             AboutTab = new TabPage();
             AboutPanel = new Panel();
             LicenseRTB = new RichTextBox();
@@ -140,6 +164,7 @@
             Restorefilebtn = new Button();
             Changesaveasbtn = new Button();
             Openfilebtn = new Button();
+            RecentFilesBtn = new Button();
             FileSelectiontxt = new TextBox();
             EmulatorFileDialog = new OpenFileDialog();
             MainSaveFileDialog = new SaveFileDialog();
@@ -159,9 +184,21 @@
             OpenEmulatorFolderLocationBtn = new Button();
             BrowseEmulatorbutton = new Button();
             ToolTipHelper = new ToolTip(components);
+            StatusBar = new StatusStrip();
+            StatusMessageLbl = new ToolStripStatusLabel();
+            StatusFileLbl = new ToolStripStatusLabel();
+            StatusStateLbl = new ToolStripStatusLabel();
+            StatusLastLbl = new ToolStripStatusLabel();
+            StatusTimer = new System.Windows.Forms.Timer(components);
+            RecentFilesMenu = new ContextMenuStrip(components);
             FileSaveTab.SuspendLayout();
+            FileSaveButtonsPanel.SuspendLayout();
+            FileSaveTopPanel.SuspendLayout();
             FileCorruptionTab.SuspendLayout();
-            StashBtnTableLayoutPanel.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)TargetSplit).BeginInit();
+            TargetSplit.Panel1.SuspendLayout();
+            TargetSplit.Panel2.SuspendLayout();
+            TargetSplit.SuspendLayout();
             CorruptionParametersPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)ByteViewCloneImage).BeginInit();
             ((System.ComponentModel.ISupportInitialize)EndByteNumb).BeginInit();
@@ -174,6 +211,9 @@
             IntensityGroup.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)Intensity).BeginInit();
             ((System.ComponentModel.ISupportInitialize)IntensityTrackbar).BeginInit();
+            StashAreaTabs.SuspendLayout();
+            StashesPage.SuspendLayout();
+            StashBtnTableLayoutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)AttentionPictureBox).BeginInit();
             MainTabControl.SuspendLayout();
             CorruptionEngineTab.SuspendLayout();
@@ -186,7 +226,10 @@
             AutomationPage.SuspendLayout();
             AutoCorruptPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)DelayInAutomationNUD).BeginInit();
+            HistoryTab.SuspendLayout();
             GuidesTab.SuspendLayout();
+            SettingsTab.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)LargeStashThresholdNUD).BeginInit();
             AboutTab.SuspendLayout();
             AboutPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)LRCLogo).BeginInit();
@@ -196,21 +239,21 @@
             CheckBoxUpperPanel.SuspendLayout();
             StartEmulatorPanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
+            StatusBar.SuspendLayout();
             SuspendLayout();
             // 
             // FilesaveReloadbtn
             // 
-            FilesaveReloadbtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             FilesaveReloadbtn.BackColor = Color.FromArgb(52, 60, 111);
             FilesaveReloadbtn.FlatAppearance.BorderSize = 0;
             FilesaveReloadbtn.FlatStyle = FlatStyle.Flat;
             FilesaveReloadbtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveReloadbtn.Image = Properties.Resources.refresh;
             FilesaveReloadbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveReloadbtn.Location = new Point(22, 202);
-            FilesaveReloadbtn.Margin = new Padding(2, 3, 2, 3);
+            FilesaveReloadbtn.Location = new Point(4, 144);
+            FilesaveReloadbtn.Margin = new Padding(0, 0, 0, 4);
             FilesaveReloadbtn.Name = "FilesaveReloadbtn";
-            FilesaveReloadbtn.Size = new Size(163, 27);
+            FilesaveReloadbtn.Size = new Size(108, 27);
             FilesaveReloadbtn.TabIndex = 160;
             FilesaveReloadbtn.Text = "Reload list";
             FilesaveReloadbtn.UseVisualStyleBackColor = false;
@@ -218,105 +261,78 @@
             // 
             // FilesaveRenameBtn
             // 
-            FilesaveRenameBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             FilesaveRenameBtn.BackColor = Color.FromArgb(52, 60, 111);
             FilesaveRenameBtn.FlatAppearance.BorderSize = 0;
             FilesaveRenameBtn.FlatStyle = FlatStyle.Flat;
             FilesaveRenameBtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveRenameBtn.Image = Properties.Resources.input_field;
             FilesaveRenameBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveRenameBtn.Location = new Point(22, 230);
-            FilesaveRenameBtn.Margin = new Padding(2, 3, 2, 3);
+            FilesaveRenameBtn.Location = new Point(4, 175);
+            FilesaveRenameBtn.Margin = new Padding(0, 0, 0, 4);
             FilesaveRenameBtn.Name = "FilesaveRenameBtn";
-            FilesaveRenameBtn.Size = new Size(79, 27);
+            FilesaveRenameBtn.Size = new Size(108, 27);
             FilesaveRenameBtn.TabIndex = 157;
-            FilesaveRenameBtn.Text = "Rename";
-            FilesaveRenameBtn.TextAlign = ContentAlignment.MiddleRight;
+            FilesaveRenameBtn.Text = "    Rename";
             FilesaveRenameBtn.UseVisualStyleBackColor = false;
             FilesaveRenameBtn.Click += FilesaveRenameBtn_Click;
             // 
             // FileSaveTab
             // 
             FileSaveTab.BackColor = Color.FromArgb(28, 27, 55);
-            FileSaveTab.Controls.Add(StashAndAutoSaveHelp);
-            FileSaveTab.Controls.Add(FilesaveReloadbtn);
-            FileSaveTab.Controls.Add(FileSaveOpenLocationBtn);
-            FileSaveTab.Controls.Add(FilesaveRenameBtn);
-            FileSaveTab.Controls.Add(FilesaveDelete);
-            FileSaveTab.Controls.Add(FilesaveSavebtn);
-            FileSaveTab.Controls.Add(CopySaveToCorruptedFileBtn);
             FileSaveTab.Controls.Add(FilesaveList);
-            FileSaveTab.Controls.Add(FilesaveEnableAutoSaves);
+            FileSaveTab.Controls.Add(FileSaveButtonsPanel);
+            FileSaveTab.Controls.Add(FileSaveTopPanel);
             FileSaveTab.Location = new Point(4, 24);
             FileSaveTab.Margin = new Padding(2, 3, 2, 3);
             FileSaveTab.Name = "FileSaveTab";
-            FileSaveTab.Size = new Size(192, 72);
-            FileSaveTab.TabIndex = 4;
+            FileSaveTab.Size = new Size(411, 421);
+            FileSaveTab.TabIndex = 1;
             FileSaveTab.Text = "💾 File Saves";
             // 
-            // StashAndAutoSaveHelp
+            // FilesaveList
             // 
-            StashAndAutoSaveHelp.AutoSize = true;
-            StashAndAutoSaveHelp.LinkColor = Color.FromArgb(0, 192, 192);
-            StashAndAutoSaveHelp.Location = new Point(156, 8);
-            StashAndAutoSaveHelp.Margin = new Padding(4, 0, 4, 0);
-            StashAndAutoSaveHelp.Name = "StashAndAutoSaveHelp";
-            StashAndAutoSaveHelp.Size = new Size(299, 15);
-            StashAndAutoSaveHelp.TabIndex = 161;
-            StashAndAutoSaveHelp.TabStop = true;
-            StashAndAutoSaveHelp.Text = "What's the difference between stash files and file saves?";
-            StashAndAutoSaveHelp.LinkClicked += StashAndAutoSaveHelp_LinkClicked;
+            FilesaveList.BackColor = Color.FromArgb(39, 43, 83);
+            FilesaveList.BorderStyle = BorderStyle.None;
+            FilesaveList.Dock = DockStyle.Fill;
+            FilesaveList.ForeColor = Color.FromArgb(213, 216, 216);
+            FilesaveList.FormattingEnabled = true;
+            FilesaveList.HorizontalScrollbar = true;
+            FilesaveList.IntegralHeight = false;
+            FilesaveList.Location = new Point(0, 28);
+            FilesaveList.Margin = new Padding(2, 3, 2, 3);
+            FilesaveList.Name = "FilesaveList";
+            FilesaveList.Size = new Size(295, 393);
+            FilesaveList.TabIndex = 155;
             // 
-            // FileSaveOpenLocationBtn
+            // FileSaveButtonsPanel
             // 
-            FileSaveOpenLocationBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            FileSaveOpenLocationBtn.BackColor = Color.FromArgb(52, 60, 111);
-            FileSaveOpenLocationBtn.FlatAppearance.BorderSize = 0;
-            FileSaveOpenLocationBtn.FlatStyle = FlatStyle.Flat;
-            FileSaveOpenLocationBtn.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            FileSaveOpenLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            FileSaveOpenLocationBtn.Image = Properties.Resources.hyperlink;
-            FileSaveOpenLocationBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            FileSaveOpenLocationBtn.Location = new Point(22, 258);
-            FileSaveOpenLocationBtn.Margin = new Padding(2, 3, 2, 3);
-            FileSaveOpenLocationBtn.Name = "FileSaveOpenLocationBtn";
-            FileSaveOpenLocationBtn.Size = new Size(163, 26);
-            FileSaveOpenLocationBtn.TabIndex = 157;
-            FileSaveOpenLocationBtn.Text = "Open Folder Location";
-            FileSaveOpenLocationBtn.UseVisualStyleBackColor = false;
-            FileSaveOpenLocationBtn.Click += FileSaveOpenLocationBtn_Click;
-            // 
-            // FilesaveDelete
-            // 
-            FilesaveDelete.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            FilesaveDelete.BackColor = Color.FromArgb(52, 60, 111);
-            FilesaveDelete.FlatAppearance.BorderSize = 0;
-            FilesaveDelete.FlatStyle = FlatStyle.Flat;
-            FilesaveDelete.ForeColor = Color.FromArgb(213, 216, 216);
-            FilesaveDelete.Image = Properties.Resources.trash;
-            FilesaveDelete.ImageAlign = ContentAlignment.MiddleLeft;
-            FilesaveDelete.Location = new Point(102, 230);
-            FilesaveDelete.Margin = new Padding(2, 3, 2, 3);
-            FilesaveDelete.Name = "FilesaveDelete";
-            FilesaveDelete.Size = new Size(83, 27);
-            FilesaveDelete.TabIndex = 156;
-            FilesaveDelete.Text = "    Delete";
-            FilesaveDelete.UseVisualStyleBackColor = false;
-            FilesaveDelete.Click += FilesaveDelete_Click;
+            FileSaveButtonsPanel.Controls.Add(FilesaveSavebtn);
+            FileSaveButtonsPanel.Controls.Add(CopySaveToCorruptedFileBtn);
+            FileSaveButtonsPanel.Controls.Add(FilesaveReloadbtn);
+            FileSaveButtonsPanel.Controls.Add(FilesaveRenameBtn);
+            FileSaveButtonsPanel.Controls.Add(FilesaveDelete);
+            FileSaveButtonsPanel.Controls.Add(FileSaveOpenLocationBtn);
+            FileSaveButtonsPanel.Dock = DockStyle.Right;
+            FileSaveButtonsPanel.FlowDirection = FlowDirection.TopDown;
+            FileSaveButtonsPanel.Location = new Point(295, 28);
+            FileSaveButtonsPanel.Name = "FileSaveButtonsPanel";
+            FileSaveButtonsPanel.Padding = new Padding(4, 2, 4, 0);
+            FileSaveButtonsPanel.Size = new Size(116, 393);
+            FileSaveButtonsPanel.TabIndex = 2;
+            FileSaveButtonsPanel.WrapContents = false;
             // 
             // FilesaveSavebtn
             // 
-            FilesaveSavebtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             FilesaveSavebtn.BackColor = Color.FromArgb(52, 60, 111);
             FilesaveSavebtn.FlatAppearance.BorderSize = 0;
             FilesaveSavebtn.FlatStyle = FlatStyle.Flat;
             FilesaveSavebtn.ForeColor = Color.FromArgb(213, 216, 216);
             FilesaveSavebtn.Image = Properties.Resources.floppy_disk_arrow_in;
             FilesaveSavebtn.ImageAlign = ContentAlignment.TopCenter;
-            FilesaveSavebtn.Location = new Point(22, 31);
-            FilesaveSavebtn.Margin = new Padding(2, 3, 2, 3);
+            FilesaveSavebtn.Location = new Point(4, 2);
+            FilesaveSavebtn.Margin = new Padding(0, 0, 0, 4);
             FilesaveSavebtn.Name = "FilesaveSavebtn";
-            FilesaveSavebtn.Size = new Size(163, 102);
+            FilesaveSavebtn.Size = new Size(108, 64);
             FilesaveSavebtn.TabIndex = 160;
             FilesaveSavebtn.Text = "Save";
             FilesaveSavebtn.UseVisualStyleBackColor = false;
@@ -324,43 +340,72 @@
             // 
             // CopySaveToCorruptedFileBtn
             // 
-            CopySaveToCorruptedFileBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             CopySaveToCorruptedFileBtn.BackColor = Color.FromArgb(52, 60, 111);
             CopySaveToCorruptedFileBtn.FlatAppearance.BorderSize = 0;
             CopySaveToCorruptedFileBtn.FlatStyle = FlatStyle.Flat;
             CopySaveToCorruptedFileBtn.ForeColor = Color.FromArgb(213, 216, 216);
             CopySaveToCorruptedFileBtn.Image = Properties.Resources.arrow_up_circle_solid;
             CopySaveToCorruptedFileBtn.ImageAlign = ContentAlignment.TopCenter;
-            CopySaveToCorruptedFileBtn.Location = new Point(22, 134);
-            CopySaveToCorruptedFileBtn.Margin = new Padding(2, 3, 2, 3);
+            CopySaveToCorruptedFileBtn.Location = new Point(4, 70);
+            CopySaveToCorruptedFileBtn.Margin = new Padding(0, 0, 0, 4);
             CopySaveToCorruptedFileBtn.Name = "CopySaveToCorruptedFileBtn";
-            CopySaveToCorruptedFileBtn.Size = new Size(163, 67);
+            CopySaveToCorruptedFileBtn.Size = new Size(108, 70);
             CopySaveToCorruptedFileBtn.TabIndex = 158;
-            CopySaveToCorruptedFileBtn.Text = "Copy Save to Corrupted File";
+            CopySaveToCorruptedFileBtn.Text = "Copy to save location";
             CopySaveToCorruptedFileBtn.TextAlign = ContentAlignment.BottomCenter;
             CopySaveToCorruptedFileBtn.UseVisualStyleBackColor = false;
             CopySaveToCorruptedFileBtn.Click += CopySaveToCorruptedFileBtn_Click;
             // 
-            // FilesaveList
+            // FilesaveDelete
             // 
-            FilesaveList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            FilesaveList.BackColor = Color.FromArgb(39, 43, 83);
-            FilesaveList.BorderStyle = BorderStyle.None;
-            FilesaveList.ForeColor = Color.FromArgb(213, 216, 216);
-            FilesaveList.FormattingEnabled = true;
-            FilesaveList.HorizontalScrollbar = true;
-            FilesaveList.IntegralHeight = false;
-            FilesaveList.Location = new Point(7, 31);
-            FilesaveList.Margin = new Padding(2, 3, 2, 3);
-            FilesaveList.Name = "FilesaveList";
-            FilesaveList.Size = new Size(11, 38);
-            FilesaveList.TabIndex = 155;
+            FilesaveDelete.BackColor = Color.FromArgb(52, 60, 111);
+            FilesaveDelete.FlatAppearance.BorderSize = 0;
+            FilesaveDelete.FlatStyle = FlatStyle.Flat;
+            FilesaveDelete.ForeColor = Color.FromArgb(213, 216, 216);
+            FilesaveDelete.Image = Properties.Resources.trash;
+            FilesaveDelete.ImageAlign = ContentAlignment.MiddleLeft;
+            FilesaveDelete.Location = new Point(4, 206);
+            FilesaveDelete.Margin = new Padding(0, 0, 0, 4);
+            FilesaveDelete.Name = "FilesaveDelete";
+            FilesaveDelete.Size = new Size(108, 27);
+            FilesaveDelete.TabIndex = 156;
+            FilesaveDelete.Text = "    Delete";
+            FilesaveDelete.UseVisualStyleBackColor = false;
+            FilesaveDelete.Click += FilesaveDelete_Click;
+            // 
+            // FileSaveOpenLocationBtn
+            // 
+            FileSaveOpenLocationBtn.BackColor = Color.FromArgb(52, 60, 111);
+            FileSaveOpenLocationBtn.FlatAppearance.BorderSize = 0;
+            FileSaveOpenLocationBtn.FlatStyle = FlatStyle.Flat;
+            FileSaveOpenLocationBtn.Font = new Font("Microsoft Sans Serif", 8F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            FileSaveOpenLocationBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            FileSaveOpenLocationBtn.Image = Properties.Resources.hyperlink;
+            FileSaveOpenLocationBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            FileSaveOpenLocationBtn.Location = new Point(4, 237);
+            FileSaveOpenLocationBtn.Margin = new Padding(0, 0, 0, 4);
+            FileSaveOpenLocationBtn.Name = "FileSaveOpenLocationBtn";
+            FileSaveOpenLocationBtn.Size = new Size(108, 27);
+            FileSaveOpenLocationBtn.TabIndex = 157;
+            FileSaveOpenLocationBtn.Text = "    Open Folder";
+            FileSaveOpenLocationBtn.UseVisualStyleBackColor = false;
+            FileSaveOpenLocationBtn.Click += FileSaveOpenLocationBtn_Click;
+            // 
+            // FileSaveTopPanel
+            // 
+            FileSaveTopPanel.Controls.Add(FilesaveEnableAutoSaves);
+            FileSaveTopPanel.Controls.Add(StashAndAutoSaveHelp);
+            FileSaveTopPanel.Dock = DockStyle.Top;
+            FileSaveTopPanel.Location = new Point(0, 0);
+            FileSaveTopPanel.Name = "FileSaveTopPanel";
+            FileSaveTopPanel.Size = new Size(411, 28);
+            FileSaveTopPanel.TabIndex = 0;
             // 
             // FilesaveEnableAutoSaves
             // 
             FilesaveEnableAutoSaves.AutoSize = true;
             FilesaveEnableAutoSaves.ForeColor = Color.FromArgb(213, 216, 216);
-            FilesaveEnableAutoSaves.Location = new Point(7, 8);
+            FilesaveEnableAutoSaves.Location = new Point(6, 5);
             FilesaveEnableAutoSaves.Margin = new Padding(2, 3, 2, 3);
             FilesaveEnableAutoSaves.Name = "FilesaveEnableAutoSaves";
             FilesaveEnableAutoSaves.Size = new Size(143, 19);
@@ -368,6 +413,19 @@
             FilesaveEnableAutoSaves.Text = "Enable Auto File Saves";
             FilesaveEnableAutoSaves.UseVisualStyleBackColor = true;
             FilesaveEnableAutoSaves.CheckedChanged += FilesaveEnableAutoSaves_CheckedChanged;
+            // 
+            // StashAndAutoSaveHelp
+            // 
+            StashAndAutoSaveHelp.AutoSize = true;
+            StashAndAutoSaveHelp.LinkColor = Color.FromArgb(0, 192, 192);
+            StashAndAutoSaveHelp.Location = new Point(160, 7);
+            StashAndAutoSaveHelp.Margin = new Padding(4, 0, 4, 0);
+            StashAndAutoSaveHelp.Name = "StashAndAutoSaveHelp";
+            StashAndAutoSaveHelp.Size = new Size(115, 15);
+            StashAndAutoSaveHelp.TabIndex = 161;
+            StashAndAutoSaveHelp.TabStop = true;
+            StashAndAutoSaveHelp.Text = "Stashes vs file saves?";
+            StashAndAutoSaveHelp.LinkClicked += StashAndAutoSaveHelp_LinkClicked;
             // 
             // CorruptionEngineComboBox
             // 
@@ -416,113 +474,49 @@
             // FileCorruptionTab
             // 
             FileCorruptionTab.BackColor = Color.FromArgb(28, 27, 55);
-            FileCorruptionTab.Controls.Add(StashBtnTableLayoutPanel);
-            FileCorruptionTab.Controls.Add(CorruptEverynthByteRadioBtn);
-            FileCorruptionTab.Controls.Add(RandomByteCorruptRadioBtn);
-            FileCorruptionTab.Controls.Add(CorruptionParametersPanel);
-            FileCorruptionTab.Controls.Add(StashBytesList);
-            FileCorruptionTab.Controls.Add(CorruptionHistoryBtn);
-            FileCorruptionTab.Controls.Add(BisectModeChkBox);
-            FileCorruptionTab.Controls.Add(EnableStashSavesChkbox);
-            FileCorruptionTab.Controls.Add(StashBrowser);
-            FileCorruptionTab.Controls.Add(StashEditorbtn);
-            FileCorruptionTab.Controls.Add(CorruptFileAndStashBtn);
-            FileCorruptionTab.Controls.Add(Corruptusingstashbtn);
-            FileCorruptionTab.Controls.Add(TransferStash);
+            FileCorruptionTab.Controls.Add(TargetSplit);
             FileCorruptionTab.Controls.Add(AttentionPictureBox);
             FileCorruptionTab.Location = new Point(4, 24);
             FileCorruptionTab.Margin = new Padding(2, 3, 2, 3);
             FileCorruptionTab.Name = "FileCorruptionTab";
             FileCorruptionTab.Padding = new Padding(2, 3, 2, 3);
-            FileCorruptionTab.Size = new Size(803, 457);
+            FileCorruptionTab.Size = new Size(803, 455);
             FileCorruptionTab.TabIndex = 0;
             FileCorruptionTab.Text = "🎯 Target Parameters";
             // 
-            // StashBtnTableLayoutPanel
+            // TargetSplit
             // 
-            StashBtnTableLayoutPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            StashBtnTableLayoutPanel.ColumnCount = 3;
-            StashBtnTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            StashBtnTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            StashBtnTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
-            StashBtnTableLayoutPanel.Controls.Add(RenameStashBtn, 0, 0);
-            StashBtnTableLayoutPanel.Controls.Add(DeleteStashBtn, 2, 0);
-            StashBtnTableLayoutPanel.Controls.Add(RefreshStashBtn, 1, 0);
-            StashBtnTableLayoutPanel.Location = new Point(544, 416);
-            StashBtnTableLayoutPanel.Margin = new Padding(0);
-            StashBtnTableLayoutPanel.Name = "StashBtnTableLayoutPanel";
-            StashBtnTableLayoutPanel.RowCount = 1;
-            StashBtnTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            StashBtnTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
-            StashBtnTableLayoutPanel.Size = new Size(255, 32);
-            StashBtnTableLayoutPanel.TabIndex = 173;
+            TargetSplit.BackColor = Color.FromArgb(52, 60, 111);
+            TargetSplit.Dock = DockStyle.Fill;
+            TargetSplit.FixedPanel = FixedPanel.Panel1;
+            TargetSplit.Location = new Point(2, 3);
+            TargetSplit.Name = "TargetSplit";
             // 
-            // RenameStashBtn
+            // TargetSplit.Panel1
             // 
-            RenameStashBtn.BackColor = Color.FromArgb(52, 60, 111);
-            RenameStashBtn.Dock = DockStyle.Fill;
-            RenameStashBtn.FlatAppearance.BorderSize = 0;
-            RenameStashBtn.FlatStyle = FlatStyle.Flat;
-            RenameStashBtn.Font = new Font("Segoe UI", 6F);
-            RenameStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            RenameStashBtn.Image = Properties.Resources.input_field;
-            RenameStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            RenameStashBtn.Location = new Point(0, 1);
-            RenameStashBtn.Margin = new Padding(0, 1, 1, 1);
-            RenameStashBtn.Name = "RenameStashBtn";
-            RenameStashBtn.Size = new Size(84, 30);
-            RenameStashBtn.TabIndex = 0;
-            RenameStashBtn.Text = "Rename";
-            RenameStashBtn.TextAlign = ContentAlignment.MiddleRight;
-            RenameStashBtn.UseVisualStyleBackColor = false;
-            RenameStashBtn.Click += RenameStash_Click;
+            TargetSplit.Panel1.AutoScroll = true;
+            TargetSplit.Panel1.BackColor = Color.FromArgb(28, 27, 55);
+            TargetSplit.Panel1.Controls.Add(CorruptEverynthByteRadioBtn);
+            TargetSplit.Panel1.Controls.Add(RandomByteCorruptRadioBtn);
+            TargetSplit.Panel1.Controls.Add(CorruptionParametersPanel);
+            TargetSplit.Panel1MinSize = 200;
             // 
-            // DeleteStashBtn
+            // TargetSplit.Panel2
             // 
-            DeleteStashBtn.BackColor = Color.FromArgb(52, 60, 111);
-            DeleteStashBtn.Dock = DockStyle.Fill;
-            DeleteStashBtn.FlatAppearance.BorderSize = 0;
-            DeleteStashBtn.FlatStyle = FlatStyle.Flat;
-            DeleteStashBtn.Font = new Font("Segoe UI", 7F);
-            DeleteStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            DeleteStashBtn.Image = Properties.Resources.trash;
-            DeleteStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            DeleteStashBtn.Location = new Point(171, 1);
-            DeleteStashBtn.Margin = new Padding(1, 1, 0, 1);
-            DeleteStashBtn.Name = "DeleteStashBtn";
-            DeleteStashBtn.Size = new Size(84, 30);
-            DeleteStashBtn.TabIndex = 0;
-            DeleteStashBtn.Text = "Delete ";
-            DeleteStashBtn.TextAlign = ContentAlignment.MiddleRight;
-            DeleteStashBtn.UseVisualStyleBackColor = false;
-            DeleteStashBtn.Click += DeleteStash_Click;
-            // 
-            // RefreshStashBtn
-            // 
-            RefreshStashBtn.BackColor = Color.FromArgb(52, 60, 111);
-            RefreshStashBtn.Dock = DockStyle.Fill;
-            RefreshStashBtn.FlatAppearance.BorderSize = 0;
-            RefreshStashBtn.FlatStyle = FlatStyle.Flat;
-            RefreshStashBtn.Font = new Font("Segoe UI", 7F);
-            RefreshStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            RefreshStashBtn.Image = Properties.Resources.refresh;
-            RefreshStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            RefreshStashBtn.Location = new Point(86, 1);
-            RefreshStashBtn.Margin = new Padding(1);
-            RefreshStashBtn.Name = "RefreshStashBtn";
-            RefreshStashBtn.Size = new Size(83, 30);
-            RefreshStashBtn.TabIndex = 0;
-            RefreshStashBtn.Text = "Refresh";
-            RefreshStashBtn.TextAlign = ContentAlignment.MiddleRight;
-            RefreshStashBtn.UseVisualStyleBackColor = false;
-            RefreshStashBtn.Click += RefreshStash_Click;
+            TargetSplit.Panel2.BackColor = Color.FromArgb(28, 27, 55);
+            TargetSplit.Panel2.Controls.Add(StashAreaTabs);
+            TargetSplit.Panel2MinSize = 330;
+            TargetSplit.Size = new Size(799, 449);
+            TargetSplit.SplitterDistance = 376;
+            TargetSplit.TabIndex = 0;
+            TargetSplit.SplitterMoved += TargetSplit_SplitterMoved;
             // 
             // CorruptEverynthByteRadioBtn
             // 
             CorruptEverynthByteRadioBtn.AutoSize = true;
             CorruptEverynthByteRadioBtn.BackColor = Color.FromArgb(39, 43, 83);
             CorruptEverynthByteRadioBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptEverynthByteRadioBtn.Location = new Point(153, 3);
+            CorruptEverynthByteRadioBtn.Location = new Point(148, 0);
             CorruptEverynthByteRadioBtn.Margin = new Padding(4, 3, 4, 3);
             CorruptEverynthByteRadioBtn.Name = "CorruptEverynthByteRadioBtn";
             CorruptEverynthByteRadioBtn.Size = new Size(178, 19);
@@ -537,7 +531,7 @@
             RandomByteCorruptRadioBtn.BackColor = Color.FromArgb(39, 43, 83);
             RandomByteCorruptRadioBtn.Checked = true;
             RandomByteCorruptRadioBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            RandomByteCorruptRadioBtn.Location = new Point(16, 3);
+            RandomByteCorruptRadioBtn.Location = new Point(11, 0);
             RandomByteCorruptRadioBtn.Margin = new Padding(4, 3, 4, 3);
             RandomByteCorruptRadioBtn.Name = "RandomByteCorruptRadioBtn";
             RandomByteCorruptRadioBtn.Size = new Size(130, 19);
@@ -549,7 +543,6 @@
             // 
             // CorruptionParametersPanel
             // 
-            CorruptionParametersPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             CorruptionParametersPanel.BackColor = Color.FromArgb(39, 43, 83);
             CorruptionParametersPanel.Controls.Add(RemoveSelctedExcludeRangeBtn);
             CorruptionParametersPanel.Controls.Add(ResetExclusionsBtn);
@@ -567,7 +560,7 @@
             CorruptionParametersPanel.Controls.Add(StartBytelbl);
             CorruptionParametersPanel.Controls.Add(EverynthbyteGroupbox);
             CorruptionParametersPanel.Controls.Add(IntensityGroup);
-            CorruptionParametersPanel.Location = new Point(7, 7);
+            CorruptionParametersPanel.Location = new Point(2, 4);
             CorruptionParametersPanel.Margin = new Padding(2, 3, 2, 3);
             CorruptionParametersPanel.Name = "CorruptionParametersPanel";
             CorruptionParametersPanel.Size = new Size(373, 440);
@@ -893,6 +886,117 @@
             IntensityTrackbar.Value = 1;
             IntensityTrackbar.Scroll += IntensityTrackbar_Scroll;
             // 
+            // StashAreaTabs
+            // 
+            StashAreaTabs.Controls.Add(StashesPage);
+            StashAreaTabs.Controls.Add(FileSaveTab);
+            StashAreaTabs.Dock = DockStyle.Fill;
+            StashAreaTabs.Location = new Point(0, 0);
+            StashAreaTabs.Name = "StashAreaTabs";
+            StashAreaTabs.Padding = new Point(4, 3);
+            StashAreaTabs.SelectedIndex = 0;
+            StashAreaTabs.Size = new Size(419, 449);
+            StashAreaTabs.TabIndex = 0;
+            StashAreaTabs.SelectedIndexChanged += StashAreaTabs_SelectedIndexChanged;
+            // 
+            // StashesPage
+            // 
+            StashesPage.BackColor = Color.FromArgb(28, 27, 55);
+            StashesPage.Controls.Add(StashBtnTableLayoutPanel);
+            StashesPage.Controls.Add(StashBytesList);
+            StashesPage.Controls.Add(CorruptionHistoryBtn);
+            StashesPage.Controls.Add(BisectModeChkBox);
+            StashesPage.Controls.Add(EnableStashSavesChkbox);
+            StashesPage.Controls.Add(StashBrowser);
+            StashesPage.Controls.Add(StashEditorbtn);
+            StashesPage.Controls.Add(CorruptFileAndStashBtn);
+            StashesPage.Controls.Add(Corruptusingstashbtn);
+            StashesPage.Controls.Add(TransferStash);
+            StashesPage.Location = new Point(4, 24);
+            StashesPage.Name = "StashesPage";
+            StashesPage.Size = new Size(411, 421);
+            StashesPage.TabIndex = 0;
+            StashesPage.Text = "📦 Stashes";
+            // 
+            // StashBtnTableLayoutPanel
+            // 
+            StashBtnTableLayoutPanel.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            StashBtnTableLayoutPanel.ColumnCount = 3;
+            StashBtnTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            StashBtnTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            StashBtnTableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.3333321F));
+            StashBtnTableLayoutPanel.Controls.Add(RenameStashBtn, 0, 0);
+            StashBtnTableLayoutPanel.Controls.Add(DeleteStashBtn, 2, 0);
+            StashBtnTableLayoutPanel.Controls.Add(RefreshStashBtn, 1, 0);
+            StashBtnTableLayoutPanel.Location = new Point(162, 386);
+            StashBtnTableLayoutPanel.Margin = new Padding(0);
+            StashBtnTableLayoutPanel.Name = "StashBtnTableLayoutPanel";
+            StashBtnTableLayoutPanel.RowCount = 1;
+            StashBtnTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            StashBtnTableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.Percent, 50F));
+            StashBtnTableLayoutPanel.Size = new Size(247, 32);
+            StashBtnTableLayoutPanel.TabIndex = 173;
+            // 
+            // RenameStashBtn
+            // 
+            RenameStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            RenameStashBtn.Dock = DockStyle.Fill;
+            RenameStashBtn.FlatAppearance.BorderSize = 0;
+            RenameStashBtn.FlatStyle = FlatStyle.Flat;
+            RenameStashBtn.Font = new Font("Segoe UI", 6F);
+            RenameStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RenameStashBtn.Image = Properties.Resources.input_field;
+            RenameStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            RenameStashBtn.Location = new Point(0, 1);
+            RenameStashBtn.Margin = new Padding(0, 1, 1, 1);
+            RenameStashBtn.Name = "RenameStashBtn";
+            RenameStashBtn.Size = new Size(81, 30);
+            RenameStashBtn.TabIndex = 0;
+            RenameStashBtn.Text = "Rename";
+            RenameStashBtn.TextAlign = ContentAlignment.MiddleRight;
+            RenameStashBtn.UseVisualStyleBackColor = false;
+            RenameStashBtn.Click += RenameStash_Click;
+            // 
+            // DeleteStashBtn
+            // 
+            DeleteStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            DeleteStashBtn.Dock = DockStyle.Fill;
+            DeleteStashBtn.FlatAppearance.BorderSize = 0;
+            DeleteStashBtn.FlatStyle = FlatStyle.Flat;
+            DeleteStashBtn.Font = new Font("Segoe UI", 7F);
+            DeleteStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            DeleteStashBtn.Image = Properties.Resources.trash;
+            DeleteStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            DeleteStashBtn.Location = new Point(165, 1);
+            DeleteStashBtn.Margin = new Padding(1, 1, 0, 1);
+            DeleteStashBtn.Name = "DeleteStashBtn";
+            DeleteStashBtn.Size = new Size(82, 30);
+            DeleteStashBtn.TabIndex = 0;
+            DeleteStashBtn.Text = "Delete ";
+            DeleteStashBtn.TextAlign = ContentAlignment.MiddleRight;
+            DeleteStashBtn.UseVisualStyleBackColor = false;
+            DeleteStashBtn.Click += DeleteStash_Click;
+            // 
+            // RefreshStashBtn
+            // 
+            RefreshStashBtn.BackColor = Color.FromArgb(52, 60, 111);
+            RefreshStashBtn.Dock = DockStyle.Fill;
+            RefreshStashBtn.FlatAppearance.BorderSize = 0;
+            RefreshStashBtn.FlatStyle = FlatStyle.Flat;
+            RefreshStashBtn.Font = new Font("Segoe UI", 7F);
+            RefreshStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RefreshStashBtn.Image = Properties.Resources.refresh;
+            RefreshStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            RefreshStashBtn.Location = new Point(83, 1);
+            RefreshStashBtn.Margin = new Padding(1);
+            RefreshStashBtn.Name = "RefreshStashBtn";
+            RefreshStashBtn.Size = new Size(80, 30);
+            RefreshStashBtn.TabIndex = 0;
+            RefreshStashBtn.Text = "Refresh";
+            RefreshStashBtn.TextAlign = ContentAlignment.MiddleRight;
+            RefreshStashBtn.UseVisualStyleBackColor = false;
+            RefreshStashBtn.Click += RefreshStash_Click;
+            // 
             // StashBytesList
             // 
             StashBytesList.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
@@ -903,10 +1007,10 @@
             StashBytesList.FormattingEnabled = true;
             StashBytesList.HorizontalScrollbar = true;
             StashBytesList.IntegralHeight = false;
-            StashBytesList.Location = new Point(384, 25);
+            StashBytesList.Location = new Point(2, 22);
             StashBytesList.Margin = new Padding(2, 3, 2, 3);
             StashBytesList.Name = "StashBytesList";
-            StashBytesList.Size = new Size(134, 393);
+            StashBytesList.Size = new Size(134, 366);
             StashBytesList.TabIndex = 158;
             // 
             // CorruptionHistoryBtn
@@ -916,20 +1020,20 @@
             CorruptionHistoryBtn.FlatAppearance.BorderSize = 0;
             CorruptionHistoryBtn.FlatStyle = FlatStyle.Flat;
             CorruptionHistoryBtn.ForeColor = Color.FromArgb(213, 216, 216);
-            CorruptionHistoryBtn.Location = new Point(384, 420);
+            CorruptionHistoryBtn.Location = new Point(2, 390);
             CorruptionHistoryBtn.Margin = new Padding(2, 3, 2, 3);
             CorruptionHistoryBtn.Name = "CorruptionHistoryBtn";
-            CorruptionHistoryBtn.Size = new Size(134, 27);
+            CorruptionHistoryBtn.Size = new Size(134, 28);
             CorruptionHistoryBtn.TabIndex = 180;
             CorruptionHistoryBtn.Text = "Corruption History ▾";
-            ToolTipHelper.SetToolTip(CorruptionHistoryBtn, "If stash saves are enabled, the 3 most recent corruption stashes are saved here.");
+            ToolTipHelper.SetToolTip(CorruptionHistoryBtn, "If stash saves are enabled, the most recent corruptions of this session are kept here. The ⏳ History tab shows all of them.");
             CorruptionHistoryBtn.UseVisualStyleBackColor = false;
             // 
             // BisectModeChkBox
             // 
             BisectModeChkBox.AutoSize = true;
             BisectModeChkBox.ForeColor = Color.FromArgb(213, 216, 216);
-            BisectModeChkBox.Location = new Point(512, 3);
+            BisectModeChkBox.Location = new Point(130, 0);
             BisectModeChkBox.Margin = new Padding(2, 3, 2, 3);
             BisectModeChkBox.Name = "BisectModeChkBox";
             BisectModeChkBox.Size = new Size(91, 19);
@@ -945,7 +1049,7 @@
             EnableStashSavesChkbox.Checked = true;
             EnableStashSavesChkbox.CheckState = CheckState.Checked;
             EnableStashSavesChkbox.ForeColor = Color.FromArgb(213, 216, 216);
-            EnableStashSavesChkbox.Location = new Point(384, 3);
+            EnableStashSavesChkbox.Location = new Point(2, 0);
             EnableStashSavesChkbox.Margin = new Padding(2, 3, 2, 3);
             EnableStashSavesChkbox.Name = "EnableStashSavesChkbox";
             EnableStashSavesChkbox.Size = new Size(124, 19);
@@ -958,10 +1062,10 @@
             // 
             StashBrowser.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             StashBrowser.BackColor = Color.FromArgb(39, 43, 83);
-            StashBrowser.Location = new Point(544, 25);
+            StashBrowser.Location = new Point(162, 22);
             StashBrowser.Margin = new Padding(2, 3, 2, 3);
             StashBrowser.Name = "StashBrowser";
-            StashBrowser.Size = new Size(254, 332);
+            StashBrowser.Size = new Size(246, 302);
             StashBrowser.TabIndex = 158;
             // 
             // StashEditorbtn
@@ -973,7 +1077,7 @@
             StashEditorbtn.ForeColor = Color.FromArgb(213, 216, 216);
             StashEditorbtn.Image = Properties.Resources.edit_pencil;
             StashEditorbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            StashEditorbtn.Location = new Point(700, 0);
+            StashEditorbtn.Location = new Point(310, 0);
             StashEditorbtn.Margin = new Padding(2, 3, 2, 3);
             StashEditorbtn.Name = "StashEditorbtn";
             StashEditorbtn.Size = new Size(101, 25);
@@ -989,17 +1093,17 @@
             CorruptFileAndStashBtn.BackColor = Color.FromArgb(52, 60, 111);
             CorruptFileAndStashBtn.FlatAppearance.BorderSize = 0;
             CorruptFileAndStashBtn.FlatStyle = FlatStyle.Flat;
-            CorruptFileAndStashBtn.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            CorruptFileAndStashBtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             CorruptFileAndStashBtn.ForeColor = Color.FromArgb(213, 216, 216);
             CorruptFileAndStashBtn.Image = Properties.Resources.arrow_up_circle_solid;
             CorruptFileAndStashBtn.ImageAlign = ContentAlignment.MiddleLeft;
-            CorruptFileAndStashBtn.Location = new Point(544, 359);
+            CorruptFileAndStashBtn.Location = new Point(162, 329);
             CorruptFileAndStashBtn.Margin = new Padding(2, 3, 2, 3);
             CorruptFileAndStashBtn.Name = "CorruptFileAndStashBtn";
-            CorruptFileAndStashBtn.Size = new Size(255, 27);
+            CorruptFileAndStashBtn.Size = new Size(247, 27);
             CorruptFileAndStashBtn.TabIndex = 0;
-            CorruptFileAndStashBtn.Text = "Corrupt stash’s file using selected stash";
-            ToolTipHelper.SetToolTip(CorruptFileAndStashBtn, "Quick load: loads the file and save location written in the selected stash's headers (OpenLocation / SaveAsLocation), then applies the stash.");
+            CorruptFileAndStashBtn.Text = "Replay on original file";
+            ToolTipHelper.SetToolTip(CorruptFileAndStashBtn, "Loads the file the selected stash was made for and the save location it used, then applies the stash:\r\nexactly the same corruption as when it was saved.");
             CorruptFileAndStashBtn.UseVisualStyleBackColor = false;
             CorruptFileAndStashBtn.Click += CorruptFileAndStashBtn_Click;
             // 
@@ -1009,16 +1113,16 @@
             Corruptusingstashbtn.BackColor = Color.FromArgb(52, 60, 111);
             Corruptusingstashbtn.FlatAppearance.BorderSize = 0;
             Corruptusingstashbtn.FlatStyle = FlatStyle.Flat;
-            Corruptusingstashbtn.Font = new Font("Segoe UI", 7F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            Corruptusingstashbtn.Font = new Font("Segoe UI", 8.25F, FontStyle.Regular, GraphicsUnit.Point, 0);
             Corruptusingstashbtn.ForeColor = Color.FromArgb(213, 216, 216);
             Corruptusingstashbtn.Image = Properties.Resources.arrow_up_circle_solid;
             Corruptusingstashbtn.ImageAlign = ContentAlignment.MiddleLeft;
-            Corruptusingstashbtn.Location = new Point(544, 388);
+            Corruptusingstashbtn.Location = new Point(162, 358);
             Corruptusingstashbtn.Margin = new Padding(2, 3, 2, 3);
             Corruptusingstashbtn.Name = "Corruptusingstashbtn";
-            Corruptusingstashbtn.Size = new Size(255, 27);
+            Corruptusingstashbtn.Size = new Size(247, 27);
             Corruptusingstashbtn.TabIndex = 0;
-            Corruptusingstashbtn.Text = "Corrupt loaded file using selected stash";
+            Corruptusingstashbtn.Text = "Apply to current file";
             ToolTipHelper.SetToolTip(Corruptusingstashbtn, "Applies the selected stash to the file that is loaded right now and saves it to the current save location.\r\nIgnores stash headers.");
             Corruptusingstashbtn.UseVisualStyleBackColor = false;
             Corruptusingstashbtn.Click += Corruptusingstash_Click;
@@ -1031,10 +1135,10 @@
             TransferStash.FlatStyle = FlatStyle.Flat;
             TransferStash.Font = new Font("Webdings", 18F, FontStyle.Bold, GraphicsUnit.Point, 2);
             TransferStash.ForeColor = Color.Silver;
-            TransferStash.Location = new Point(520, 25);
+            TransferStash.Location = new Point(138, 22);
             TransferStash.Margin = new Padding(2, 3, 2, 3);
             TransferStash.Name = "TransferStash";
-            TransferStash.Size = new Size(22, 422);
+            TransferStash.Size = new Size(22, 396);
             TransferStash.TabIndex = 0;
             TransferStash.Tag = "";
             TransferStash.Text = "4";
@@ -1049,7 +1153,7 @@
             AttentionPictureBox.Location = new Point(2, 3);
             AttentionPictureBox.Margin = new Padding(4, 3, 4, 3);
             AttentionPictureBox.Name = "AttentionPictureBox";
-            AttentionPictureBox.Size = new Size(799, 451);
+            AttentionPictureBox.Size = new Size(799, 449);
             AttentionPictureBox.SizeMode = PictureBoxSizeMode.CenterImage;
             AttentionPictureBox.TabIndex = 164;
             AttentionPictureBox.TabStop = false;
@@ -1060,31 +1164,15 @@
             SilentCorruptionchbox.AutoSize = true;
             SilentCorruptionchbox.BackColor = Color.Transparent;
             SilentCorruptionchbox.ForeColor = Color.FromArgb(213, 216, 216);
-            SilentCorruptionchbox.Location = new Point(195, 5);
+            SilentCorruptionchbox.Location = new Point(388, 60);
             SilentCorruptionchbox.Margin = new Padding(2, 3, 2, 3);
             SilentCorruptionchbox.Name = "SilentCorruptionchbox";
             SilentCorruptionchbox.Size = new Size(66, 19);
             SilentCorruptionchbox.TabIndex = 172;
             SilentCorruptionchbox.Text = "🔇Mute";
+            ToolTipHelper.SetToolTip(SilentCorruptionchbox, "Mutes the sound of LRC when a corruption process is complete.");
             SilentCorruptionchbox.UseVisualStyleBackColor = false;
             SilentCorruptionchbox.CheckedChanged += SilentCorruptionchbox_CheckedChanged;
-            // 
-            // FixChecksumsChkBox
-            // 
-            FixChecksumsChkBox.AutoSize = true;
-            FixChecksumsChkBox.BackColor = Color.Transparent;
-            FixChecksumsChkBox.Checked = true;
-            FixChecksumsChkBox.CheckState = CheckState.Checked;
-            FixChecksumsChkBox.ForeColor = Color.FromArgb(213, 216, 216);
-            FixChecksumsChkBox.Location = new Point(265, 5);
-            FixChecksumsChkBox.Margin = new Padding(2, 3, 2, 3);
-            FixChecksumsChkBox.Name = "FixChecksumsChkBox";
-            FixChecksumsChkBox.Size = new Size(104, 19);
-            FixChecksumsChkBox.TabIndex = 173;
-            FixChecksumsChkBox.Text = "Fix Checksums";
-            ToolTipHelper.SetToolTip(FixChecksumsChkBox, resources.GetString("FixChecksumsChkBox.ToolTip"));
-            FixChecksumsChkBox.UseVisualStyleBackColor = false;
-            FixChecksumsChkBox.CheckedChanged += FixChecksumsChkBox_CheckedChanged;
             // 
             // ByteViewRegionProfileComboBox
             // 
@@ -1104,12 +1192,12 @@
             AttemptProtectedFileOverrideChkBox.AutoSize = true;
             AttemptProtectedFileOverrideChkBox.BackColor = Color.Transparent;
             AttemptProtectedFileOverrideChkBox.ForeColor = Color.FromArgb(213, 216, 216);
-            AttemptProtectedFileOverrideChkBox.Location = new Point(81, 5);
+            AttemptProtectedFileOverrideChkBox.Location = new Point(16, 36);
             AttemptProtectedFileOverrideChkBox.Margin = new Padding(2, 3, 2, 3);
             AttemptProtectedFileOverrideChkBox.Name = "AttemptProtectedFileOverrideChkBox";
-            AttemptProtectedFileOverrideChkBox.Size = new Size(110, 19);
+            AttemptProtectedFileOverrideChkBox.Size = new Size(356, 19);
             AttemptProtectedFileOverrideChkBox.TabIndex = 172;
-            AttemptProtectedFileOverrideChkBox.Text = "Take Ownership";
+            AttemptProtectedFileOverrideChkBox.Text = "Take Ownership of files LRC can't read or write (protected files)";
             ToolTipHelper.SetToolTip(AttemptProtectedFileOverrideChkBox, resources.GetString("AttemptProtectedFileOverrideChkBox.ToolTip"));
             AttemptProtectedFileOverrideChkBox.UseVisualStyleBackColor = false;
             AttemptProtectedFileOverrideChkBox.CheckedChanged += AttemptProtectedFileOverrideChkBox_CheckedChanged;
@@ -1118,18 +1206,20 @@
             // 
             MainTabControl.Controls.Add(FileCorruptionTab);
             MainTabControl.Controls.Add(CorruptionEngineTab);
-            MainTabControl.Controls.Add(FileSaveTab);
             MainTabControl.Controls.Add(ByteViewTab);
             MainTabControl.Controls.Add(AutomationPage);
+            MainTabControl.Controls.Add(HistoryTab);
             MainTabControl.Controls.Add(GuidesTab);
+            MainTabControl.Controls.Add(SettingsTab);
             MainTabControl.Controls.Add(AboutTab);
             MainTabControl.Controls.Add(LogsTabPage);
             MainTabControl.Dock = DockStyle.Fill;
             MainTabControl.Location = new Point(0, 82);
             MainTabControl.Margin = new Padding(2, 3, 2, 3);
             MainTabControl.Name = "MainTabControl";
+            MainTabControl.Padding = new Point(4, 3);
             MainTabControl.SelectedIndex = 0;
-            MainTabControl.Size = new Size(811, 485);
+            MainTabControl.Size = new Size(811, 483);
             MainTabControl.TabIndex = 143;
             // 
             // CorruptionEngineTab
@@ -1539,6 +1629,26 @@
             StartAutomationBtn.UseVisualStyleBackColor = false;
             StartAutomationBtn.Click += StartAutomationBtn_Click;
             // 
+            // HistoryTab
+            // 
+            HistoryTab.BackColor = Color.FromArgb(28, 27, 55);
+            HistoryTab.Controls.Add(SessionHistoryView);
+            HistoryTab.Location = new Point(4, 24);
+            HistoryTab.Name = "HistoryTab";
+            HistoryTab.Size = new Size(192, 72);
+            HistoryTab.TabIndex = 10;
+            HistoryTab.Text = "⏳ History";
+            // 
+            // SessionHistoryView
+            // 
+            SessionHistoryView.BackColor = Color.FromArgb(28, 27, 55);
+            SessionHistoryView.Dock = DockStyle.Fill;
+            SessionHistoryView.ForeColor = Color.FromArgb(213, 216, 216);
+            SessionHistoryView.Location = new Point(0, 0);
+            SessionHistoryView.Name = "SessionHistoryView";
+            SessionHistoryView.Size = new Size(192, 72);
+            SessionHistoryView.TabIndex = 0;
+            // 
             // GuidesTab
             // 
             GuidesTab.BackColor = Color.FromArgb(28, 27, 55);
@@ -1560,6 +1670,241 @@
             GuidesView.Size = new Size(188, 66);
             GuidesView.TabIndex = 0;
             // 
+            // SettingsTab
+            // 
+            SettingsTab.AutoScroll = true;
+            SettingsTab.BackColor = Color.FromArgb(28, 27, 55);
+            SettingsTab.Controls.Add(ResetSettingsBtn);
+            SettingsTab.Controls.Add(FixChecksumsChkBox);
+            SettingsTab.Controls.Add(SilentCorruptionchbox);
+            SettingsTab.Controls.Add(SettingsFilesLbl);
+            SettingsTab.Controls.Add(AttemptProtectedFileOverrideChkBox);
+            SettingsTab.Controls.Add(ReopenLastFileChk);
+            SettingsTab.Controls.Add(SettingsStashLbl);
+            SettingsTab.Controls.Add(AutoScreenshotChk);
+            SettingsTab.Controls.Add(LargeStashWarningChk);
+            SettingsTab.Controls.Add(LargeStashThresholdNUD);
+            SettingsTab.Controls.Add(LargeStashEntriesLbl);
+            SettingsTab.Controls.Add(SettingsEmulatorLbl);
+            SettingsTab.Controls.Add(DefaultArgsLbl);
+            SettingsTab.Controls.Add(DefaultArgsTxt);
+            SettingsTab.Controls.Add(UseDefaultArgsChk);
+            SettingsTab.Controls.Add(LoadStashEmulatorChk);
+            SettingsTab.Controls.Add(SettingsShortcutsLbl);
+            SettingsTab.Controls.Add(ShortcutsListLbl);
+            SettingsTab.Controls.Add(ShortcutKeysLbl);
+            SettingsTab.ForeColor = Color.FromArgb(213, 216, 216);
+            SettingsTab.Location = new Point(4, 24);
+            SettingsTab.Name = "SettingsTab";
+            SettingsTab.Size = new Size(192, 72);
+            SettingsTab.TabIndex = 11;
+            SettingsTab.Text = "⚙️ Settings";
+            // 
+            // ResetSettingsBtn
+            // 
+            ResetSettingsBtn.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            ResetSettingsBtn.BackColor = Color.FromArgb(52, 60, 111);
+            ResetSettingsBtn.FlatAppearance.BorderSize = 0;
+            ResetSettingsBtn.FlatStyle = FlatStyle.Flat;
+            ResetSettingsBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            ResetSettingsBtn.Image = Properties.Resources.restart;
+            ResetSettingsBtn.ImageAlign = ContentAlignment.MiddleLeft;
+            ResetSettingsBtn.Location = new Point(390, 4);
+            ResetSettingsBtn.Margin = new Padding(2, 3, 2, 3);
+            ResetSettingsBtn.Name = "ResetSettingsBtn";
+            ResetSettingsBtn.Size = new Size(164, 25);
+            ResetSettingsBtn.TabIndex = 175;
+            ResetSettingsBtn.Text = "Reset Settings to Default";
+            ResetSettingsBtn.TextAlign = ContentAlignment.MiddleRight;
+            ToolTipHelper.SetToolTip(ResetSettingsBtn, "Restored corrupted file to normal");
+            ResetSettingsBtn.UseVisualStyleBackColor = false;
+            ResetSettingsBtn.Click += ResetSettingsBtn_Click;
+            // 
+            // FixChecksumsChkBox
+            // 
+            FixChecksumsChkBox.AutoSize = true;
+            FixChecksumsChkBox.BackColor = Color.Transparent;
+            FixChecksumsChkBox.Checked = true;
+            FixChecksumsChkBox.CheckState = CheckState.Checked;
+            FixChecksumsChkBox.ForeColor = Color.FromArgb(213, 216, 216);
+            FixChecksumsChkBox.Location = new Point(388, 36);
+            FixChecksumsChkBox.Margin = new Padding(2, 3, 2, 3);
+            FixChecksumsChkBox.Name = "FixChecksumsChkBox";
+            FixChecksumsChkBox.Size = new Size(104, 19);
+            FixChecksumsChkBox.TabIndex = 174;
+            FixChecksumsChkBox.Text = "Fix Checksums";
+            ToolTipHelper.SetToolTip(FixChecksumsChkBox, resources.GetString("FixChecksumsChkBox.ToolTip"));
+            FixChecksumsChkBox.UseVisualStyleBackColor = false;
+            // 
+            // SettingsFilesLbl
+            // 
+            SettingsFilesLbl.AutoSize = true;
+            SettingsFilesLbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+            SettingsFilesLbl.ForeColor = Color.FromArgb(192, 255, 255);
+            SettingsFilesLbl.Location = new Point(10, 12);
+            SettingsFilesLbl.Name = "SettingsFilesLbl";
+            SettingsFilesLbl.Size = new Size(36, 17);
+            SettingsFilesLbl.TabIndex = 0;
+            SettingsFilesLbl.Text = "Files";
+            // 
+            // ReopenLastFileChk
+            // 
+            ReopenLastFileChk.AutoSize = true;
+            ReopenLastFileChk.ForeColor = Color.FromArgb(213, 216, 216);
+            ReopenLastFileChk.Location = new Point(16, 60);
+            ReopenLastFileChk.Name = "ReopenLastFileChk";
+            ReopenLastFileChk.Size = new Size(213, 19);
+            ReopenLastFileChk.TabIndex = 2;
+            ReopenLastFileChk.Text = "Reopen the last file when LRC starts";
+            ReopenLastFileChk.UseVisualStyleBackColor = true;
+            ReopenLastFileChk.CheckedChanged += ReopenLastFileChk_CheckedChanged;
+            // 
+            // SettingsStashLbl
+            // 
+            SettingsStashLbl.AutoSize = true;
+            SettingsStashLbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+            SettingsStashLbl.ForeColor = Color.FromArgb(192, 255, 255);
+            SettingsStashLbl.Location = new Point(10, 96);
+            SettingsStashLbl.Name = "SettingsStashLbl";
+            SettingsStashLbl.Size = new Size(54, 17);
+            SettingsStashLbl.TabIndex = 3;
+            SettingsStashLbl.Text = "Stashes";
+            // 
+            // AutoScreenshotChk
+            // 
+            AutoScreenshotChk.AutoSize = true;
+            AutoScreenshotChk.ForeColor = Color.FromArgb(213, 216, 216);
+            AutoScreenshotChk.Location = new Point(16, 120);
+            AutoScreenshotChk.Name = "AutoScreenshotChk";
+            AutoScreenshotChk.Size = new Size(386, 19);
+            AutoScreenshotChk.TabIndex = 4;
+            AutoScreenshotChk.Text = "Screenshot the emulator when saving a stash (used as its thumbnail)";
+            AutoScreenshotChk.UseVisualStyleBackColor = true;
+            AutoScreenshotChk.CheckedChanged += AutoScreenshotChk_CheckedChanged;
+            // 
+            // LargeStashWarningChk
+            // 
+            LargeStashWarningChk.AutoSize = true;
+            LargeStashWarningChk.ForeColor = Color.FromArgb(213, 216, 216);
+            LargeStashWarningChk.Location = new Point(16, 146);
+            LargeStashWarningChk.Name = "LargeStashWarningChk";
+            LargeStashWarningChk.Size = new Size(251, 19);
+            LargeStashWarningChk.TabIndex = 5;
+            LargeStashWarningChk.Text = "Warn before saving a stash with more than";
+            LargeStashWarningChk.UseVisualStyleBackColor = true;
+            LargeStashWarningChk.CheckedChanged += LargeStashWarningChk_CheckedChanged;
+            // 
+            // LargeStashThresholdNUD
+            // 
+            LargeStashThresholdNUD.BackColor = Color.FromArgb(45, 45, 64);
+            LargeStashThresholdNUD.ForeColor = Color.FromArgb(213, 216, 216);
+            LargeStashThresholdNUD.Increment = new decimal(new int[] { 10000, 0, 0, 0 });
+            LargeStashThresholdNUD.Location = new Point(282, 144);
+            LargeStashThresholdNUD.Maximum = new decimal(new int[] { 100000000, 0, 0, 0 });
+            LargeStashThresholdNUD.Minimum = new decimal(new int[] { 1000, 0, 0, 0 });
+            LargeStashThresholdNUD.Name = "LargeStashThresholdNUD";
+            LargeStashThresholdNUD.Size = new Size(100, 23);
+            LargeStashThresholdNUD.TabIndex = 6;
+            LargeStashThresholdNUD.ThousandsSeparator = true;
+            LargeStashThresholdNUD.Value = new decimal(new int[] { 50000, 0, 0, 0 });
+            LargeStashThresholdNUD.ValueChanged += LargeStashThresholdNUD_ValueChanged;
+            // 
+            // LargeStashEntriesLbl
+            // 
+            LargeStashEntriesLbl.AutoSize = true;
+            LargeStashEntriesLbl.Location = new Point(388, 147);
+            LargeStashEntriesLbl.Name = "LargeStashEntriesLbl";
+            LargeStashEntriesLbl.Size = new Size(173, 15);
+            LargeStashEntriesLbl.TabIndex = 7;
+            LargeStashEntriesLbl.Text = "entries (big stashes load slowly)";
+            // 
+            // SettingsEmulatorLbl
+            // 
+            SettingsEmulatorLbl.AutoSize = true;
+            SettingsEmulatorLbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+            SettingsEmulatorLbl.ForeColor = Color.FromArgb(192, 255, 255);
+            SettingsEmulatorLbl.Location = new Point(10, 184);
+            SettingsEmulatorLbl.Name = "SettingsEmulatorLbl";
+            SettingsEmulatorLbl.Size = new Size(64, 17);
+            SettingsEmulatorLbl.TabIndex = 8;
+            SettingsEmulatorLbl.Text = "Emulator";
+            // 
+            // DefaultArgsLbl
+            // 
+            DefaultArgsLbl.AutoSize = true;
+            DefaultArgsLbl.Location = new Point(16, 211);
+            DefaultArgsLbl.Name = "DefaultArgsLbl";
+            DefaultArgsLbl.Size = new Size(154, 15);
+            DefaultArgsLbl.TabIndex = 9;
+            DefaultArgsLbl.Text = "Default override arguments:";
+            // 
+            // DefaultArgsTxt
+            // 
+            DefaultArgsTxt.BackColor = Color.FromArgb(45, 45, 64);
+            DefaultArgsTxt.BorderStyle = BorderStyle.FixedSingle;
+            DefaultArgsTxt.ForeColor = Color.FromArgb(213, 216, 216);
+            DefaultArgsTxt.Location = new Point(190, 208);
+            DefaultArgsTxt.Name = "DefaultArgsTxt";
+            DefaultArgsTxt.Size = new Size(360, 23);
+            DefaultArgsTxt.TabIndex = 10;
+            ToolTipHelper.SetToolTip(DefaultArgsTxt, "Filled in to \"Override Arguments\" (Run Emulator Program) every time LRC starts.");
+            DefaultArgsTxt.TextChanged += DefaultArgsTxt_TextChanged;
+            // 
+            // UseDefaultArgsChk
+            // 
+            UseDefaultArgsChk.AutoSize = true;
+            UseDefaultArgsChk.ForeColor = Color.FromArgb(213, 216, 216);
+            UseDefaultArgsChk.Location = new Point(16, 238);
+            UseDefaultArgsChk.Name = "UseDefaultArgsChk";
+            UseDefaultArgsChk.Size = new Size(255, 19);
+            UseDefaultArgsChk.TabIndex = 11;
+            UseDefaultArgsChk.Text = "Tick \"Override Arguments\" when LRC starts";
+            UseDefaultArgsChk.UseVisualStyleBackColor = true;
+            UseDefaultArgsChk.CheckedChanged += UseDefaultArgsChk_CheckedChanged;
+            // 
+            // LoadStashEmulatorChk
+            // 
+            LoadStashEmulatorChk.AutoSize = true;
+            LoadStashEmulatorChk.ForeColor = Color.FromArgb(213, 216, 216);
+            LoadStashEmulatorChk.Location = new Point(16, 264);
+            LoadStashEmulatorChk.Name = "LoadStashEmulatorChk";
+            LoadStashEmulatorChk.Size = new Size(420, 19);
+            LoadStashEmulatorChk.TabIndex = 15;
+            LoadStashEmulatorChk.Text = "Switch to the emulator a stash was saved with when loading or replaying it";
+            ToolTipHelper.SetToolTip(LoadStashEmulatorChk, "Stashes remember the emulator (and its override arguments) they were made with.\r\nTurn this off to always keep the emulator that is selected now.");
+            LoadStashEmulatorChk.UseVisualStyleBackColor = true;
+            LoadStashEmulatorChk.CheckedChanged += LoadStashEmulatorChk_CheckedChanged;
+            // 
+            // SettingsShortcutsLbl
+            // 
+            SettingsShortcutsLbl.AutoSize = true;
+            SettingsShortcutsLbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
+            SettingsShortcutsLbl.ForeColor = Color.FromArgb(192, 255, 255);
+            SettingsShortcutsLbl.Location = new Point(10, 302);
+            SettingsShortcutsLbl.Name = "SettingsShortcutsLbl";
+            SettingsShortcutsLbl.Size = new Size(127, 17);
+            SettingsShortcutsLbl.TabIndex = 12;
+            SettingsShortcutsLbl.Text = "Keyboard shortcuts";
+            // 
+            // ShortcutsListLbl
+            // 
+            ShortcutsListLbl.AutoSize = true;
+            ShortcutsListLbl.Location = new Point(140, 326);
+            ShortcutsListLbl.Name = "ShortcutsListLbl";
+            ShortcutsListLbl.Size = new Size(278, 105);
+            ShortcutsListLbl.TabIndex = 13;
+            ShortcutsListLbl.Text = resources.GetString("ShortcutsListLbl.Text");
+            // 
+            // ShortcutKeysLbl
+            // 
+            ShortcutKeysLbl.AutoSize = true;
+            ShortcutKeysLbl.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            ShortcutKeysLbl.Location = new Point(16, 326);
+            ShortcutKeysLbl.Name = "ShortcutKeysLbl";
+            ShortcutKeysLbl.Size = new Size(91, 105);
+            ShortcutKeysLbl.TabIndex = 14;
+            ShortcutKeysLbl.Text = "F5 / Ctrl+Enter\r\nCtrl+R\r\nF6\r\nCtrl+O\r\nCtrl+S\r\nCtrl+F\r\nF2 / Del / Enter";
+            // 
             // AboutTab
             // 
             AboutTab.BackColor = Color.FromArgb(28, 27, 55);
@@ -1568,7 +1913,7 @@
             AboutTab.Margin = new Padding(4, 3, 4, 3);
             AboutTab.Name = "AboutTab";
             AboutTab.Padding = new Padding(4, 3, 4, 3);
-            AboutTab.Size = new Size(803, 457);
+            AboutTab.Size = new Size(192, 72);
             AboutTab.TabIndex = 5;
             AboutTab.Text = "ℹ️ About";
             // 
@@ -1583,7 +1928,7 @@
             AboutPanel.Location = new Point(8, 7);
             AboutPanel.Margin = new Padding(2, 3, 2, 3);
             AboutPanel.Name = "AboutPanel";
-            AboutPanel.Size = new Size(788, 444);
+            AboutPanel.Size = new Size(177, 59);
             AboutPanel.TabIndex = 136;
             AboutPanel.Tag = "color:normal";
             // 
@@ -1597,7 +1942,7 @@
             LicenseRTB.Margin = new Padding(4, 3, 4, 3);
             LicenseRTB.Name = "LicenseRTB";
             LicenseRTB.ReadOnly = true;
-            LicenseRTB.Size = new Size(611, 385);
+            LicenseRTB.Size = new Size(0, 0);
             LicenseRTB.TabIndex = 159;
             LicenseRTB.Text = resources.GetString("LicenseRTB.Text");
             // 
@@ -1683,7 +2028,7 @@
             CorruptButtonPanel.Controls.Add(CorruptButton);
             CorruptButtonPanel.Controls.Add(CorruptionProgressBar);
             CorruptButtonPanel.Dock = DockStyle.Bottom;
-            CorruptButtonPanel.Location = new Point(0, 658);
+            CorruptButtonPanel.Location = new Point(0, 656);
             CorruptButtonPanel.Margin = new Padding(2, 3, 2, 3);
             CorruptButtonPanel.Name = "CorruptButtonPanel";
             CorruptButtonPanel.Size = new Size(811, 60);
@@ -1749,6 +2094,7 @@
             FileSelectPanel.Controls.Add(Restorefilebtn);
             FileSelectPanel.Controls.Add(Changesaveasbtn);
             FileSelectPanel.Controls.Add(Openfilebtn);
+            FileSelectPanel.Controls.Add(RecentFilesBtn);
             FileSelectPanel.Controls.Add(SaveasTxt);
             FileSelectPanel.Controls.Add(FileSelectiontxt);
             FileSelectPanel.Dock = DockStyle.Top;
@@ -1792,6 +2138,7 @@
             DeleteCorruptedFileBtn.Name = "DeleteCorruptedFileBtn";
             DeleteCorruptedFileBtn.Size = new Size(27, 24);
             DeleteCorruptedFileBtn.TabIndex = 168;
+            ToolTipHelper.SetToolTip(DeleteCorruptedFileBtn, "Delete Corrupted File.");
             DeleteCorruptedFileBtn.UseVisualStyleBackColor = false;
             DeleteCorruptedFileBtn.Click += DeleteCorruptedFileBtn_Click;
             // 
@@ -1857,9 +2204,6 @@
             CheckBoxUpperPanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             CheckBoxUpperPanel.BackColor = Color.FromArgb(28, 27, 55);
             CheckBoxUpperPanel.Controls.Add(CorruptionQueueChkbox);
-            CheckBoxUpperPanel.Controls.Add(AttemptProtectedFileOverrideChkBox);
-            CheckBoxUpperPanel.Controls.Add(SilentCorruptionchbox);
-            CheckBoxUpperPanel.Controls.Add(FixChecksumsChkBox);
             CheckBoxUpperPanel.Location = new Point(186, 54);
             CheckBoxUpperPanel.Margin = new Padding(4, 3, 4, 3);
             CheckBoxUpperPanel.Name = "CheckBoxUpperPanel";
@@ -1914,11 +2258,28 @@
             Openfilebtn.Location = new Point(0, 0);
             Openfilebtn.Margin = new Padding(2, 3, 2, 3);
             Openfilebtn.Name = "Openfilebtn";
-            Openfilebtn.Size = new Size(181, 27);
+            Openfilebtn.Size = new Size(155, 27);
             Openfilebtn.TabIndex = 0;
             Openfilebtn.Text = "Open File";
+            ToolTipHelper.SetToolTip(Openfilebtn, "Open a file to corrupt (Ctrl+O)");
             Openfilebtn.UseVisualStyleBackColor = false;
             Openfilebtn.Click += Openfilebtn_Click;
+            // 
+            // RecentFilesBtn
+            // 
+            RecentFilesBtn.BackColor = Color.FromArgb(52, 60, 111);
+            RecentFilesBtn.FlatAppearance.BorderSize = 0;
+            RecentFilesBtn.FlatStyle = FlatStyle.Flat;
+            RecentFilesBtn.ForeColor = Color.FromArgb(213, 216, 216);
+            RecentFilesBtn.Location = new Point(156, 0);
+            RecentFilesBtn.Margin = new Padding(0, 3, 2, 3);
+            RecentFilesBtn.Name = "RecentFilesBtn";
+            RecentFilesBtn.Size = new Size(25, 27);
+            RecentFilesBtn.TabIndex = 2;
+            RecentFilesBtn.Text = "▾";
+            ToolTipHelper.SetToolTip(RecentFilesBtn, "Recent files");
+            RecentFilesBtn.UseVisualStyleBackColor = false;
+            RecentFilesBtn.Click += RecentFilesBtn_Click;
             // 
             // FileSelectiontxt
             // 
@@ -2057,7 +2418,7 @@
             StartEmulatorPanel.Controls.Add(Runemulatorchbox);
             StartEmulatorPanel.Controls.Add(BrowseEmulatorbutton);
             StartEmulatorPanel.Dock = DockStyle.Bottom;
-            StartEmulatorPanel.Location = new Point(0, 567);
+            StartEmulatorPanel.Location = new Point(0, 565);
             StartEmulatorPanel.Margin = new Padding(2, 3, 2, 3);
             StartEmulatorPanel.Name = "StartEmulatorPanel";
             StartEmulatorPanel.Size = new Size(811, 91);
@@ -2151,18 +2512,76 @@
             // 
             ToolTipHelper.UseAnimation = false;
             // 
+            // StatusBar
+            // 
+            StatusBar.BackColor = Color.FromArgb(22, 22, 44);
+            StatusBar.ForeColor = Color.FromArgb(213, 216, 216);
+            StatusBar.Items.AddRange(new ToolStripItem[] { StatusMessageLbl, StatusFileLbl, StatusStateLbl, StatusLastLbl });
+            StatusBar.Location = new Point(0, 716);
+            StatusBar.Name = "StatusBar";
+            StatusBar.ShowItemToolTips = true;
+            StatusBar.Size = new Size(811, 24);
+            StatusBar.TabIndex = 144;
+            // 
+            // StatusMessageLbl
+            // 
+            StatusMessageLbl.ForeColor = Color.FromArgb(213, 216, 216);
+            StatusMessageLbl.Name = "StatusMessageLbl";
+            StatusMessageLbl.Size = new Size(583, 19);
+            StatusMessageLbl.Spring = true;
+            StatusMessageLbl.Text = "Ready.";
+            StatusMessageLbl.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // StatusFileLbl
+            // 
+            StatusFileLbl.BorderSides = ToolStripStatusLabelBorderSides.Left;
+            StatusFileLbl.BorderStyle = Border3DStyle.Etched;
+            StatusFileLbl.ForeColor = Color.FromArgb(213, 216, 216);
+            StatusFileLbl.Name = "StatusFileLbl";
+            StatusFileLbl.Size = new Size(85, 19);
+            StatusFileLbl.Text = "No file loaded";
+            // 
+            // StatusStateLbl
+            // 
+            StatusStateLbl.BorderSides = ToolStripStatusLabelBorderSides.Left;
+            StatusStateLbl.BorderStyle = Border3DStyle.Etched;
+            StatusStateLbl.ForeColor = Color.FromArgb(213, 216, 216);
+            StatusStateLbl.Name = "StatusStateLbl";
+            StatusStateLbl.Size = new Size(23, 19);
+            StatusStateLbl.Text = "—";
+            // 
+            // StatusLastLbl
+            // 
+            StatusLastLbl.BorderSides = ToolStripStatusLabelBorderSides.Left;
+            StatusLastLbl.BorderStyle = Border3DStyle.Etched;
+            StatusLastLbl.ForeColor = Color.FromArgb(213, 216, 216);
+            StatusLastLbl.Name = "StatusLastLbl";
+            StatusLastLbl.Size = new Size(105, 19);
+            StatusLastLbl.Text = "No corruption yet";
+            // 
+            // StatusTimer
+            // 
+            StatusTimer.Interval = 10000;
+            StatusTimer.Tick += StatusTimer_Tick;
+            // 
+            // RecentFilesMenu
+            // 
+            RecentFilesMenu.Name = "RecentFilesMenu";
+            RecentFilesMenu.Size = new Size(61, 4);
+            // 
             // MainCorruptionForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(811, 718);
+            ClientSize = new Size(811, 740);
             Controls.Add(MainTabControl);
             Controls.Add(StartEmulatorPanel);
             Controls.Add(CorruptButtonPanel);
             Controls.Add(FileSelectPanel);
+            Controls.Add(StatusBar);
             Icon = (Icon)resources.GetObject("$this.Icon");
             Margin = new Padding(4, 3, 4, 3);
-            MinimumSize = new Size(827, 719);
+            MinimumSize = new Size(827, 779);
             Name = "MainCorruptionForm";
             StartPosition = FormStartPosition.CenterScreen;
             Text = "LunarROMCorruptor - vx.x";
@@ -2171,10 +2590,15 @@
             DragEnter += Form1_DragEnter;
             DragLeave += Form1_DragLeave;
             FileSaveTab.ResumeLayout(false);
-            FileSaveTab.PerformLayout();
+            FileSaveButtonsPanel.ResumeLayout(false);
+            FileSaveTopPanel.ResumeLayout(false);
+            FileSaveTopPanel.PerformLayout();
             FileCorruptionTab.ResumeLayout(false);
-            FileCorruptionTab.PerformLayout();
-            StashBtnTableLayoutPanel.ResumeLayout(false);
+            TargetSplit.Panel1.ResumeLayout(false);
+            TargetSplit.Panel1.PerformLayout();
+            TargetSplit.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)TargetSplit).EndInit();
+            TargetSplit.ResumeLayout(false);
             CorruptionParametersPanel.ResumeLayout(false);
             CorruptionParametersPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)ByteViewCloneImage).EndInit();
@@ -2190,6 +2614,10 @@
             IntensityGroup.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)Intensity).EndInit();
             ((System.ComponentModel.ISupportInitialize)IntensityTrackbar).EndInit();
+            StashAreaTabs.ResumeLayout(false);
+            StashesPage.ResumeLayout(false);
+            StashesPage.PerformLayout();
+            StashBtnTableLayoutPanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)AttentionPictureBox).EndInit();
             MainTabControl.ResumeLayout(false);
             CorruptionEngineTab.ResumeLayout(false);
@@ -2206,7 +2634,11 @@
             AutoCorruptPanel.ResumeLayout(false);
             AutoCorruptPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)DelayInAutomationNUD).EndInit();
+            HistoryTab.ResumeLayout(false);
             GuidesTab.ResumeLayout(false);
+            SettingsTab.ResumeLayout(false);
+            SettingsTab.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)LargeStashThresholdNUD).EndInit();
             AboutTab.ResumeLayout(false);
             AboutPanel.ResumeLayout(false);
             AboutPanel.PerformLayout();
@@ -2220,7 +2652,10 @@
             StartEmulatorPanel.ResumeLayout(false);
             StartEmulatorPanel.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
+            StatusBar.ResumeLayout(false);
+            StatusBar.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
 
         }
 
@@ -2312,7 +2747,6 @@
         private System.Windows.Forms.SplitContainer ByteViewContainer;
         private System.Windows.Forms.ComboBox ByteViewModeComboBox;
         private ComboBox ByteViewRegionProfileComboBox;
-        private CheckBox FixChecksumsChkBox;
         private CheckBox BisectModeChkBox;
         private System.Windows.Forms.Label ByteViewInfoLbl;
         private System.Windows.Forms.Label ByteViewLbl;
@@ -2354,6 +2788,39 @@
         internal Button RemoveSelctedExcludeRangeBtn;
         internal Button ResetExclusionsBtn;
         internal Button StartEmulatorNowBtn;
+        private SplitContainer TargetSplit;
+        private TabControl StashAreaTabs;
+        private TabPage StashesPage;
+        private Panel FileSaveTopPanel;
+        private FlowLayoutPanel FileSaveButtonsPanel;
+        private StatusStrip StatusBar;
+        private ToolStripStatusLabel StatusMessageLbl;
+        private ToolStripStatusLabel StatusFileLbl;
+        private ToolStripStatusLabel StatusStateLbl;
+        private ToolStripStatusLabel StatusLastLbl;
+        private System.Windows.Forms.Timer StatusTimer;
+        internal Button RecentFilesBtn;
+        private ContextMenuStrip RecentFilesMenu;
+        private TabPage HistoryTab;
+        internal LunarROMCorruptor.Controls.SessionHistoryControl SessionHistoryView;
+        private TabPage SettingsTab;
+        private Label SettingsFilesLbl;
+        private CheckBox ReopenLastFileChk;
+        private Label SettingsStashLbl;
+        private CheckBox AutoScreenshotChk;
+        private CheckBox LargeStashWarningChk;
+        private NumericUpDown LargeStashThresholdNUD;
+        private Label LargeStashEntriesLbl;
+        private Label SettingsEmulatorLbl;
+        private Label DefaultArgsLbl;
+        private TextBox DefaultArgsTxt;
+        private CheckBox UseDefaultArgsChk;
+        private CheckBox LoadStashEmulatorChk;
+        private Label SettingsShortcutsLbl;
+        private Label ShortcutsListLbl;
+        private Label ShortcutKeysLbl;
+        private CheckBox FixChecksumsChkBox;
+        internal Button ResetSettingsBtn;
     }
 }
 

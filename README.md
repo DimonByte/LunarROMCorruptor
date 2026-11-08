@@ -103,7 +103,7 @@ Instead of one corruption method, LRC has a set of **corruption engines**. Some 
 2. Pick an engine on the **Corruption Engine** tab, or choose a preset.
 3. On **Target Parameters**, choose the byte range and how much to corrupt (start small: *Random byte mode* with an intensity of 10 to 100).
 4. Click **Corrupt File**. Turn on *Run program after corruption* to start your emulator automatically.
-5. Like it? Save the stash with the **▶** button next to the stash list. Select it later and click **Corrupt stash's file using selected stash** to get exactly the same corruption.
+5. Like it? Save the stash with the **▶** button next to the stash list. Select it later and click **Replay on original file** to get exactly the same corruption.
 
 The full walkthrough is in [Getting Started](docs/Getting-Started.md).
 

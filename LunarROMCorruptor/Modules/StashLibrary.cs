@@ -63,6 +63,10 @@ namespace LunarROMCorruptor.Modules
         public long Entries { get; set; }
         public string? BasedOn { get; set; } //Name of the stash this one was mutated/edited from
 
+        //The emulator it was tested with (loaded again with the stash unless that's turned off in Settings)
+        public string? EmulatorPath { get; set; }
+        public string? EmulatorArguments { get; set; } //Only set when Override Arguments was ticked
+
         public List<string> Screenshots { get; set; } = []; //File names inside the screenshots folder, oldest first
 
         [JsonIgnore] public string SourceFileName => string.IsNullOrEmpty(SourcePath) ? "" : Path.GetFileName(SourcePath);
@@ -85,6 +89,7 @@ namespace LunarROMCorruptor.Modules
             if (Rating > 0) sb.AppendLine(new string('★', Math.Clamp(Rating, 0, 5)) + new string('☆', 5 - Math.Clamp(Rating, 0, 5)));
             if (!string.IsNullOrEmpty(SourcePath)) sb.AppendLine($"File: {SourceFileName}{(string.IsNullOrEmpty(Platform) ? "" : $" ({Platform})")}");
             if (!string.IsNullOrEmpty(Engine)) sb.AppendLine($"Engine: {Engine}");
+            if (!string.IsNullOrEmpty(EmulatorPath)) sb.AppendLine($"Emulator: {Path.GetFileName(EmulatorPath)}{(EmulatorArguments != null ? " (custom arguments)" : "")}");
             if (EndByte >= 0) sb.AppendLine($"Range: 0x{StartByte:X} - 0x{EndByte:X}, {(EveryNth ? $"every {Intensity:N0}th" : $"intensity {Intensity:N0}")}");
             sb.AppendLine($"Changes: {Entries:N0}");
             sb.AppendLine($"Saved: {Created:yyyy-MM-dd HH:mm}");

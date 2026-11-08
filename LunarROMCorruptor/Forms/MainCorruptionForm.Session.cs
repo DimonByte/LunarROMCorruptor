@@ -357,6 +357,7 @@ namespace LunarROMCorruptor
                 LargeStashThresholdNUD.Enabled = LargeStashWarningChk.Checked;
                 DefaultArgsTxt.Text = Settings.Default.DefaultOverrideArguments;
                 UseDefaultArgsChk.Checked = Settings.Default.UseDefaultOverrideArguments;
+                LoadStashEmulatorChk.Checked = Settings.Default.LoadStashEmulator;
                 //The emulator defaults fill in Run Emulator Program
                 if (!string.IsNullOrEmpty(Settings.Default.DefaultOverrideArguments)) OverrideArguments.Text = Settings.Default.DefaultOverrideArguments;
                 OverrideArgumentschbox.Checked = Settings.Default.UseDefaultOverrideArguments;
@@ -393,6 +394,8 @@ namespace LunarROMCorruptor
         }
 
         private void UseDefaultArgsChk_CheckedChanged(object? sender, EventArgs e) => SaveSetting(() => Settings.Default.UseDefaultOverrideArguments = UseDefaultArgsChk.Checked);
+
+        private void LoadStashEmulatorChk_CheckedChanged(object? sender, EventArgs e) => SaveSetting(() => Settings.Default.LoadStashEmulator = LoadStashEmulatorChk.Checked);
 
         #endregion
 

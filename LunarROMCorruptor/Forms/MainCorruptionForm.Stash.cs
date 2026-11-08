@@ -88,7 +88,7 @@ namespace LunarROMCorruptor
         private StashMetadata DescribeCorruption(CorruptionSettings settings, string outputPath)
         {
             var frame = GetEngineFrame(settings.Engine);
-            return new StashMetadata
+            var meta = new StashMetadata
             {
                 SourcePath = CorruptionCore.SourcePath,
                 SaveAsPath = outputPath,
@@ -99,6 +99,42 @@ namespace LunarROMCorruptor
                 EveryNth = settings.EveryNth,
                 Intensity = settings.Intensity
             };
+            FillEmulatorInfo(meta);
+            return meta;
+        }
+
+        /// <summary>
+        /// Remembers the emulator (and its override arguments, when ticked) in the stash info. Call on the UI thread.
+        /// </summary>
+        private void FillEmulatorInfo(StashMetadata meta)
+        {
+            string path = EmulatorLocationtxt.Text;
+            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path)) return;
+            meta.EmulatorPath = path;
+            meta.EmulatorArguments = OverrideArgumentschbox.Checked ? OverrideArguments.Text : null;
+        }
+
+        /// <summary>
+        /// Switches Run Emulator Program to the emulator a stash was saved with (unless turned off in Settings).
+        /// </summary>
+        private void LoadStashEmulator(StashMetadata meta)
+        {
+            if (!Settings.Default.LoadStashEmulator || string.IsNullOrEmpty(meta.EmulatorPath)) return;
+            if (!File.Exists(meta.EmulatorPath))
+            {
+                TraceLogger.Log($"The emulator this stash was saved with isn't there anymore ({meta.EmulatorPath}), the current emulator is kept.", StatusSeverityType.Warning);
+                SetStatus($"{Path.GetFileName(meta.EmulatorPath)} (the stash's emulator) wasn't found, the current emulator is kept.", StatusKind.Warning);
+                return;
+            }
+            if (!CorruptionCore.PathsEqual(EmulatorLocationtxt.Text, meta.EmulatorPath))
+            {
+                EmulatorLocationtxt.Text = meta.EmulatorPath;
+                Settings.Default.EmulatorPath = meta.EmulatorPath;
+                Settings.Default.Save();
+                TraceLogger.Log($"Switched to the stash's emulator: {meta.EmulatorPath}");
+            }
+            OverrideArgumentschbox.Checked = meta.EmulatorArguments != null;
+            if (meta.EmulatorArguments != null) OverrideArguments.Text = meta.EmulatorArguments;
         }
 
         private async Task<StashMetadata> CompleteMetadataAsync(StashMetadata meta)
@@ -158,6 +194,7 @@ namespace LunarROMCorruptor
                 TraceLogger.Log("Note: this stash reached its size limit during corruption, so it doesn't contain every change.", StatusSeverityType.Warning, true);
 
             var meta = _lastCorruption?.Clone() ?? new StashMetadata { SourcePath = stash.OpenLocation ?? CorruptionCore.SourcePath, SaveAsPath = stash.SaveAsLocation };
+            if (meta.EmulatorPath == null) FillEmulatorInfo(meta);
             await CompleteMetadataAsync(meta);
             meta.Name = DefaultStashName(meta);
             meta.Entries = stash.Count;
@@ -431,6 +468,7 @@ namespace LunarROMCorruptor
         private void LoadStashSettings(StashEntry entry)
         {
             var m = entry.Meta;
+            LoadStashEmulator(m); //Before the engine check: stashes without engine settings can still have an emulator
             var engine = EngineParser.ParseEngineType(m.Engine ?? "");
             if (engine == CorruptionEngineType.INVALID)
             {
@@ -532,6 +570,7 @@ namespace LunarROMCorruptor
         private async Task SaveHistoryEntryAsync(CorruptionHistoryEntry history)
         {
             var meta = history.Meta?.Clone() ?? new StashMetadata { SourcePath = history.SourcePath, Engine = history.EngineName };
+            if (meta.EmulatorPath == null) FillEmulatorInfo(meta);
             await CompleteMetadataAsync(meta);
             meta.Name = $"{(string.IsNullOrEmpty(meta.SourcePath) ? "Stash" : Path.GetFileNameWithoutExtension(meta.SourcePath))} - {history.EngineName.Replace(" Engine", "")} - {history.Time:yyyy-MM-dd HH.mm.ss}";
             meta.Entries = history.Changes;

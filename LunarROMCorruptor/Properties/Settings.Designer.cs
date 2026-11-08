@@ -382,5 +382,17 @@ namespace LunarROMCorruptor.Properties {
                 this["StashAreaTabIndex"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool LoadStashEmulator {
+            get {
+                return ((bool)(this["LoadStashEmulator"]));
+            }
+            set {
+                this["LoadStashEmulator"] = value;
+            }
+        }
     }
 }

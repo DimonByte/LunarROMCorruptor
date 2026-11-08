@@ -24,11 +24,13 @@ Every stash is its own folder in `CorruptionStashList`:
 | File | What's in it |
 | :--- | :--- |
 | `stash.stash` | The changes (see [the format](#stash-file-format)). |
-| `info.json` | Its name, notes, tags and rating, the file it was made for (path, size, CRC32 checksum, type), the save location, the engine **and all its settings**, the byte range and intensity, how many changes it has, and which stash it was based on (Stash Editor variations). |
+| `info.json` | Its name, notes, tags and rating, the file it was made for (path, size, CRC32 checksum, type), the save location, the engine **and all its settings**, the byte range and intensity, the emulator it was made with (and its override arguments, if ticked), how many changes it has, and which stash it was based on (Stash Editor variations). |
 | `thumbnail.png` | The preview shown when you hover over it. |
 | `screenshots\` | Screenshots of the corruption. |
 
-When you save a stash while your emulator is running (started by LRC with *Run program after corruption*), LRC takes a **screenshot of the emulator window** and uses it as the thumbnail. Turn this off in the stash list's right-click menu (*Screenshot the emulator when saving a stash*). Without a screenshot, the ByteView image is used as the thumbnail.
+When you save a stash while your emulator is running (started by LRC with *Run program after corruption*), LRC takes a **screenshot of the emulator window** and uses it as the thumbnail. Turn this off on the **⚙️ Settings** tab (*Screenshot the emulator when saving a stash*). Without a screenshot, the ByteView image is used as the thumbnail.
+
+Loading or replaying a stash (*Replay on original file*, *Load*, or **Load engine + range** in its details window) also switches *Run Emulator Program* to the emulator the stash was saved with, and sets its override arguments. If that emulator isn't there anymore, the current one is kept. Turn this off on the **⚙️ Settings** tab (*Switch to the emulator a stash was saved with...*). *Apply to current file* doesn't change the emulator.
 
 Stashes from older versions (single `.stash` files) are moved into their own folder automatically, with their info read from the stash headers. You can still drop plain `.stash` files into the folder.
 

@@ -71,6 +71,7 @@ The settings of the selected engine, plus the **Preset** bar at the top: pick a 
 | **Screenshot the emulator when saving a stash** | Uses a screenshot of the running emulator as the stash's thumbnail. |
 | **Warn before saving a stash with more than N entries** | Big stashes are slow to load. |
 | **Default override arguments** | Filled in to *Override Arguments* every time LRC starts (and ticked, if you choose). |
+| **Switch to the emulator a stash was saved with** | Stashes remember their emulator; loading or replaying one switches to it. Turn off to always keep the current emulator. |
 
 ### Keyboard shortcuts
 

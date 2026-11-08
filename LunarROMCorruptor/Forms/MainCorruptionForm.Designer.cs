@@ -137,6 +137,7 @@
             DefaultArgsLbl = new Label();
             DefaultArgsTxt = new TextBox();
             UseDefaultArgsChk = new CheckBox();
+            LoadStashEmulatorChk = new CheckBox();
             SettingsShortcutsLbl = new Label();
             ShortcutsListLbl = new Label();
             ShortcutKeysLbl = new Label();
@@ -1688,6 +1689,7 @@
             SettingsTab.Controls.Add(DefaultArgsLbl);
             SettingsTab.Controls.Add(DefaultArgsTxt);
             SettingsTab.Controls.Add(UseDefaultArgsChk);
+            SettingsTab.Controls.Add(LoadStashEmulatorChk);
             SettingsTab.Controls.Add(SettingsShortcutsLbl);
             SettingsTab.Controls.Add(ShortcutsListLbl);
             SettingsTab.Controls.Add(ShortcutKeysLbl);
@@ -1860,12 +1862,25 @@
             UseDefaultArgsChk.UseVisualStyleBackColor = true;
             UseDefaultArgsChk.CheckedChanged += UseDefaultArgsChk_CheckedChanged;
             // 
+            // LoadStashEmulatorChk
+            // 
+            LoadStashEmulatorChk.AutoSize = true;
+            LoadStashEmulatorChk.ForeColor = Color.FromArgb(213, 216, 216);
+            LoadStashEmulatorChk.Location = new Point(16, 264);
+            LoadStashEmulatorChk.Name = "LoadStashEmulatorChk";
+            LoadStashEmulatorChk.Size = new Size(420, 19);
+            LoadStashEmulatorChk.TabIndex = 15;
+            LoadStashEmulatorChk.Text = "Switch to the emulator a stash was saved with when loading or replaying it";
+            ToolTipHelper.SetToolTip(LoadStashEmulatorChk, "Stashes remember the emulator (and its override arguments) they were made with.\r\nTurn this off to always keep the emulator that is selected now.");
+            LoadStashEmulatorChk.UseVisualStyleBackColor = true;
+            LoadStashEmulatorChk.CheckedChanged += LoadStashEmulatorChk_CheckedChanged;
+            // 
             // SettingsShortcutsLbl
             // 
             SettingsShortcutsLbl.AutoSize = true;
             SettingsShortcutsLbl.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
             SettingsShortcutsLbl.ForeColor = Color.FromArgb(192, 255, 255);
-            SettingsShortcutsLbl.Location = new Point(10, 276);
+            SettingsShortcutsLbl.Location = new Point(10, 302);
             SettingsShortcutsLbl.Name = "SettingsShortcutsLbl";
             SettingsShortcutsLbl.Size = new Size(127, 17);
             SettingsShortcutsLbl.TabIndex = 12;
@@ -1874,7 +1889,7 @@
             // ShortcutsListLbl
             // 
             ShortcutsListLbl.AutoSize = true;
-            ShortcutsListLbl.Location = new Point(140, 300);
+            ShortcutsListLbl.Location = new Point(140, 326);
             ShortcutsListLbl.Name = "ShortcutsListLbl";
             ShortcutsListLbl.Size = new Size(278, 105);
             ShortcutsListLbl.TabIndex = 13;
@@ -1884,7 +1899,7 @@
             // 
             ShortcutKeysLbl.AutoSize = true;
             ShortcutKeysLbl.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            ShortcutKeysLbl.Location = new Point(16, 300);
+            ShortcutKeysLbl.Location = new Point(16, 326);
             ShortcutKeysLbl.Name = "ShortcutKeysLbl";
             ShortcutKeysLbl.Size = new Size(91, 105);
             ShortcutKeysLbl.TabIndex = 14;
@@ -2800,6 +2815,7 @@
         private Label DefaultArgsLbl;
         private TextBox DefaultArgsTxt;
         private CheckBox UseDefaultArgsChk;
+        private CheckBox LoadStashEmulatorChk;
         private Label SettingsShortcutsLbl;
         private Label ShortcutsListLbl;
         private Label ShortcutKeysLbl;
